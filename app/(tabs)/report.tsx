@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { generateReportStats } from '@/lib/reportUtils';
 import { StatCard } from '@/components/StatCard';
@@ -22,10 +22,8 @@ export default function ReportScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>내 웰니스 리포트</Text>
       
-      {/* AI 인사이트 카드 (조건부 렌더링) */}
       <InsightCard insights={stats.insights} />
       
-      {/* 성과 지표 요약 박스 */}
       <View style={styles.statGrid}>
         <View style={styles.statRow}>
           <StatCard label="총 기록 일수" value={stats.totalLogs} suffix="일" />
@@ -40,18 +38,22 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      <Text style={styles.subTitle}>최신 기록 모아보기</Text>
+      <Text style={styles.subTitle}>최신 기록 타임라인</Text>
       {logs.slice(0, 5).map(log => (
         <View key={log.id} style={styles.historyRow}>
           <View>
-            <Text style={styles.historyDate}>{log.date}</Text>
+            <Text style={styles.historyDate}>{log.date.replace(/-/g, '.')}</Text>
             <Text style={styles.historyMemo} numberOfLines={1}>
-              {log.memo ? `"${log.memo}"` : '메모 없음'}
+              {log.memo ? log.memo : '메모 없음'}
             </Text>
           </View>
           <View style={styles.historyData}>
-            <Text style={styles.historyBadge}>기분 {log.mood}</Text>
-            <Text style={styles.historyBadge}>피로 {log.fatigue}</Text>
+            <View style={styles.historyBadge}>
+              <Text style={styles.historyBadgeText}>기분 {log.mood}</Text>
+            </View>
+            <View style={styles.historyBadge}>
+              <Text style={styles.historyBadgeText}>피로 {log.fatigue}</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -65,34 +67,42 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: colors.text },
-  subTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 12, marginBottom: 12, color: colors.text },
-  statGrid: { gap: 8, marginBottom: 24 },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  title: { fontSize: 26, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
+  subTitle: { fontSize: 18, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.md, color: colors.text, letterSpacing: -0.3 },
+  statGrid: { gap: spacing.sm, marginBottom: spacing.xl },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   historyRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    backgroundColor: '#fff', 
-    padding: 16, 
-    borderRadius: 16, 
-    marginBottom: 12, 
+    backgroundColor: colors.card, 
+    padding: spacing.md, 
+    borderRadius: 20, 
+    marginBottom: spacing.sm, 
     borderWidth: 1, 
-    borderColor: '#F3F4F6' 
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 1,
   },
-  historyDate: { fontSize: 15, fontWeight: 'bold', color: '#1F2937', marginBottom: 4 },
-  historyMemo: { fontSize: 13, color: '#6B7280', maxWidth: 140 },
-  historyData: { flexDirection: 'row', gap: 6 },
+  historyDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 4 },
+  historyMemo: { fontSize: 14, color: colors.textLight, maxWidth: 160, letterSpacing: -0.2 },
+  historyData: { flexDirection: 'row', gap: spacing.xs },
   historyBadge: { 
-    backgroundColor: '#F0FDF4', 
-    color: colors.primary, 
-    fontSize: 12, 
-    fontWeight: '600',
+    backgroundColor: colors.background, 
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    borderRadius: 8, 
-    overflow: 'hidden' 
+    paddingVertical: 6, 
+    borderRadius: 12, 
   },
-  emptyText: { textAlign: 'center', color: '#9CA3AF', marginTop: 40, fontSize: 15 }
+  historyBadgeText: {
+    color: colors.text, 
+    fontSize: 12, 
+    fontWeight: '500',
+  },
+  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: spacing.xxl, fontSize: 15 }
 });

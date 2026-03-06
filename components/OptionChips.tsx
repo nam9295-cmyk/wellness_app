@@ -40,12 +40,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   chipSelected: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   text: {
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   textSelected: {
-    color: '#004d00',
+    color: colors.card,
     fontWeight: 'bold',
   }
 });

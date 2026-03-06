@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 
 interface InsightCardProps {
   insights: string[];
@@ -8,11 +8,11 @@ interface InsightCardProps {
 export function InsightCard({ insights }: InsightCardProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>✨ AI 웰니스 분석</Text>
+      <Text style={styles.header}>Wellness Insights</Text>
       <View style={styles.insightList}>
         {insights.map((insight, index) => (
           <View key={index} style={styles.insightItem}>
-            <Text style={styles.bullet}>•</Text>
+            <View style={styles.bullet} />
             <Text style={styles.insightText}>{insight}</Text>
           </View>
         ))}
@@ -23,41 +23,39 @@ export function InsightCard({ insights }: InsightCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FDFBF7', // 약간 따뜻하고 부드러운 배경색
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#F3EFE6',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 1,
+    backgroundColor: colors.primaryLight + '15', 
+    borderRadius: 20,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
   },
   header: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#D97706', // 앰버 컬러 톤 매칭
-    marginBottom: 12,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   insightList: {
-    gap: 12,
+    gap: spacing.sm,
   },
   insightItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   bullet: {
-    fontSize: 16,
-    color: colors.primaryLight,
-    marginRight: 8,
-    lineHeight: 22,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    marginTop: 10,
+    marginRight: 12,
   },
   insightText: {
     fontSize: 15,
-    color: '#4B5563',
-    lineHeight: 22,
+    color: colors.text,
+    lineHeight: 24,
     flex: 1,
+    letterSpacing: -0.2,
   }
 });

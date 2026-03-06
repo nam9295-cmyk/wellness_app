@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 import { OptionChips } from '@/components/OptionChips';
 import { SectionTitle } from '@/components/SectionTitle';
 import { useStore } from '@/lib/store';
@@ -20,7 +20,6 @@ export default function LogScreen() {
   const [water, setWater] = useState<WaterState>(todayLog?.water || '보통');
   const [memo, setMemo] = useState<string>(todayLog?.memo || '');
 
-  // 탭 이동 시 화면이 다시 렌더링될 때 최신 상태 반영
   useEffect(() => {
     if (todayLog) {
       setSleep(todayLog.sleep);
@@ -45,7 +44,7 @@ export default function LogScreen() {
       water,
       memo,
     });
-    Alert.alert('저장 완료', '오늘의 웰니스 상태가 기록되었습니다!', [
+    Alert.alert('저장 완료', '오늘의 웰니스 상태가 기록되었습니다.', [
       { text: '확인', onPress: () => router.push('/(tabs)') }
     ]);
   };
@@ -61,15 +60,15 @@ export default function LogScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.mainTitle}>{todayLog ? '오늘 기록 수정하기' : '오늘 어떤 하루를 보냈나요?'}</Text>
+        <Text style={styles.mainTitle}>{todayLog ? '오늘 기록 수정하기' : '오늘 하루 남기기'}</Text>
         
         <SectionTitle title="수면 상태" />
         <OptionChips<SleepState> options={['매우 부족', '부족', '보통', '좋음', '매우 좋음']} selectedValue={sleep} onSelect={setSleep} />
 
-        <SectionTitle title="피로도 (1: 매우 피곤 ~ 5: 활기참)" />
+        <SectionTitle title="피로도 (1: 피곤 ~ 5: 활기참)" />
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={fatigue} onSelect={setFatigue} />
 
-        <SectionTitle title="현재 기분 (1: 매우 우울 ~ 5: 매우 좋음)" />
+        <SectionTitle title="현재 기분 (1: 우울 ~ 5: 편안함)" />
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={mood} onSelect={setMood} />
 
         <SectionTitle title="식사 상태" />
@@ -88,6 +87,7 @@ export default function LogScreen() {
           value={memo}
           onChangeText={setMemo}
           multiline
+          placeholderTextColor={colors.textLight}
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
@@ -100,20 +100,21 @@ export default function LogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  mainTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: colors.text },
+  scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  mainTitle: { fontSize: 24, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
   textInput: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    minHeight: 100,
+    borderRadius: 16,
+    padding: spacing.md,
+    minHeight: 120,
     textAlignVertical: 'top',
-    fontSize: 16,
-    marginTop: 8,
-    marginBottom: 32,
-    backgroundColor: '#FAFAFA'
+    fontSize: 15,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xl,
+    backgroundColor: colors.card,
+    color: colors.text,
   },
-  button: { backgroundColor: colors.primary, padding: 18, borderRadius: 12, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+  button: { backgroundColor: colors.text, padding: spacing.md, borderRadius: 16, alignItems: 'center', marginTop: spacing.sm },
+  buttonText: { color: colors.card, fontSize: 16, fontWeight: '600', letterSpacing: 0.5 }
 });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 const GOALS = ['피로 관리', '수면 관리', '식습관 관리', '운동 루틴 유지', '기분 관리'];
@@ -62,6 +62,7 @@ export default function MyScreen() {
               onChangeText={setNickname}
               placeholder="닉네임"
               maxLength={10}
+              placeholderTextColor={colors.textLight}
             />
           ) : (
             <Text style={styles.name}>{userSettings?.nickname || '회원'} 님</Text>
@@ -71,13 +72,13 @@ export default function MyScreen() {
         
         <View style={styles.menuList}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>나의 설정 내용</Text>
+            <Text style={styles.sectionTitle}>나의 설정</Text>
             {!isEditing ? (
               <TouchableOpacity onPress={() => setIsEditing(true)}>
                 <Text style={styles.editButtonText}>수정</Text>
               </TouchableOpacity>
             ) : (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 16 }}>
                 <TouchableOpacity onPress={handleCancel}>
                   <Text style={styles.cancelButtonText}>취소</Text>
                 </TouchableOpacity>
@@ -103,21 +104,22 @@ export default function MyScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.label, { marginTop: 24 }]}>알림 설정 (ex: 21:00)</Text>
+              <Text style={[styles.label, { marginTop: spacing.xl }]}>알림 설정 (ex: 21:00)</Text>
               <TextInput
                 style={styles.timeInput}
                 value={notificationTime}
                 onChangeText={setNotificationTime}
                 placeholder="시간 입력"
                 keyboardType="numbers-and-punctuation"
+                placeholderTextColor={colors.textLight}
               />
 
-              <View style={[styles.settingItem, { marginTop: 24, borderWidth: 0, paddingHorizontal: 0, backgroundColor: 'transparent' }]}>
+              <View style={[styles.settingItem, { marginTop: spacing.xl, borderWidth: 0, paddingHorizontal: 0, backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }]}>
                 <Text style={[styles.label, { marginBottom: 0 }]}>생리주기 트래킹</Text>
                 <Switch
                   value={useMenstrualCycle}
                   onValueChange={setUseMenstrualCycle}
-                  trackColor={{ false: '#E5E7EB', true: colors.primary }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
                 />
               </View>
             </View>
@@ -149,61 +151,66 @@ export default function MyScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   profileSection: { 
-    padding: 32, 
+    padding: spacing.xl, 
     alignItems: 'center', 
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1, 
-    borderBottomColor: colors.border,
-    paddingTop: 48,
+    borderBottomColor: 'rgba(0,0,0,0.02)',
+    paddingTop: spacing.xxl,
   },
   avatar: { 
     width: 80, 
     height: 80, 
     borderRadius: 40, 
-    backgroundColor: colors.primaryLight, 
-    marginBottom: 12,
+    backgroundColor: '#F3F4F6', 
+    marginBottom: spacing.md,
     justifyContent: 'center',
     alignItems: 'center'
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primary
+    fontSize: 28,
+    fontWeight: '600',
+    color: colors.text
   },
-  name: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 4 },
-  nameInput: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 4, borderBottomWidth: 2, borderBottomColor: colors.primary, paddingBottom: 2, minWidth: 100, textAlign: 'center' },
-  goalText: { fontSize: 14, color: colors.textLight },
-  menuList: { padding: 24 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  editButtonText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
-  cancelButtonText: { fontSize: 14, color: '#9CA3AF', fontWeight: '600' },
-  saveButtonText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  name: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 4, letterSpacing: -0.5 },
+  nameInput: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 4, minWidth: 120, textAlign: 'center', letterSpacing: -0.5 },
+  goalText: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 },
+  menuList: { padding: spacing.lg, paddingTop: spacing.xl },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, letterSpacing: -0.3 },
+  editButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
+  cancelButtonText: { fontSize: 15, color: colors.textLight, fontWeight: '600' },
+  saveButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   settingItem: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.md,
+    borderRadius: 16,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#F3F4F6'
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 1,
   },
-  settingLabel: { fontSize: 15, color: '#4B5563' },
-  settingValue: { fontSize: 15, fontWeight: '500', color: colors.primary },
-  divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 24 },
-  menuItem: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 16, marginBottom: 8 },
-  menuText: { fontSize: 16, color: '#4B5563' },
+  settingLabel: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
+  settingValue: { fontSize: 15, fontWeight: '500', color: colors.textLight },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xl },
+  menuItem: { paddingVertical: spacing.md, backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+  menuText: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
   
   // Edit Form Styles
-  editForm: { backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#F3EFE6' },
-  label: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 12 },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  chipSelected: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: 13, color: '#4B5563', fontWeight: '500' },
-  chipTextSelected: { color: colors.primary, fontWeight: 'bold' },
-  timeInput: { backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#E5E7EB', width: 120 }
+  editForm: { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
+  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.md, letterSpacing: -0.2 },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
+  chipSelected: { backgroundColor: colors.text, borderColor: colors.text },
+  chipText: { fontSize: 14, color: colors.textLight, fontWeight: '500' },
+  chipTextSelected: { color: colors.background, fontWeight: '600' },
+  timeInput: { backgroundColor: colors.background, borderRadius: 12, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, width: 140, color: colors.text }
 });

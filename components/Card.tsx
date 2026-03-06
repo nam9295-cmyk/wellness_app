@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 import { ReactNode } from 'react';
 
 interface CardProps {
-  title: string;
+  title?: string;
   children: ReactNode;
   style?: ViewStyle;
 }
@@ -11,7 +11,7 @@ interface CardProps {
 export function Card({ title, children, style }: CardProps) {
   return (
     <View style={[styles.card, style]}>
-      <Text style={styles.title}>{title}</Text>
+      {title && <Text style={styles.title}>{title}</Text>}
       {children}
     </View>
   );
@@ -19,22 +19,23 @@ export function Card({ title, children, style }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 16,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    borderRadius: 20,
+    marginBottom: spacing.md,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   title: { 
     fontSize: 16, 
-    fontWeight: 'bold', 
-    marginBottom: 12, 
-    color: colors.text 
+    fontWeight: '600', 
+    marginBottom: spacing.md, 
+    color: colors.text,
+    letterSpacing: -0.3,
   }
 });

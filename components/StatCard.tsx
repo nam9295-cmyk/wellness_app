@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 
 interface StatCardProps {
   label: string;
@@ -21,9 +21,9 @@ export function StatCard({ label, value, suffix }: StatCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    backgroundColor: colors.background,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     borderRadius: 16,
     marginHorizontal: 4,
     alignItems: 'center',
@@ -32,17 +32,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     color: colors.textLight,
-    marginBottom: 6,
-    fontWeight: '500'
+    marginBottom: 8,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   value: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.primary
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.5,
   },
   suffix: {
     fontSize: 14,
-    color: '#9CA3AF',
-    fontWeight: 'normal'
+    color: colors.textLight,
+    fontWeight: '400'
   }
 });

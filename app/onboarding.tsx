@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 const GOALS = ['피로 관리', '수면 관리', '식습관 관리', '운동 루틴 유지', '기분 관리'];
@@ -100,7 +100,7 @@ export default function Onboarding() {
           <Switch
             value={useMenstrualCycle}
             onValueChange={setUseMenstrualCycle}
-            trackColor={{ false: '#E5E7EB', true: colors.primary }}
+            trackColor={{ false: colors.border, true: colors.primary }}
           />
         </View>
 
@@ -118,85 +118,103 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: spacing.lg,
     paddingTop: 60,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     flexGrow: 1,
   },
   title: {
     fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
     color: colors.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
     color: colors.textLight,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
+    letterSpacing: -0.2,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.3,
   },
   sectionDesc: {
     fontSize: 13,
-    color: '#9CA3AF',
-    marginBottom: 8,
+    color: colors.textLight,
+    marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: spacing.md,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 1,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
   chip: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   chipSelected: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   chipText: {
     fontSize: 14,
-    color: '#4B5563',
+    color: colors.textLight,
     fontWeight: '500',
   },
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.card,
     fontWeight: 'bold',
   },
   switchSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    padding: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 1,
   },
   button: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     marginTop: 'auto',
   },
   buttonText: {
-    color: '#fff',
+    color: colors.card,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   }
 });
