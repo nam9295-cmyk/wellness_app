@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { colors } from '@/lib/theme';
 import { OptionChips } from '@/components/OptionChips';
 import { SectionTitle } from '@/components/SectionTitle';
@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 
 export default function LogScreen() {
   const router = useRouter();
-  const { addLog, getTodayLog } = useStore();
+  const { addLog, getTodayLog, isReady } = useStore();
   const todayLog = getTodayLog();
 
   const [sleep, setSleep] = useState<SleepState>(todayLog?.sleep || '보통');
@@ -49,6 +49,14 @@ export default function LogScreen() {
       { text: '확인', onPress: () => router.push('/(tabs)') }
     ]);
   };
+
+  if (!isReady) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

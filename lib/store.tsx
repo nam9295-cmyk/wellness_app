@@ -1,54 +1,50 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WellnessLog } from '@/types';
+import { loadLogs, saveLogs } from './storage';
 
 interface StoreContextType {
   logs: WellnessLog[];
   addLog: (log: Omit<WellnessLog, 'id'>) => void;
   getTodayLog: () => WellnessLog | undefined;
+  isReady: boolean;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-// 초기 더미 데이터 작성
-const MOCK_DATA: WellnessLog[] = [
-  {
-    id: '1',
-    date: new Date(Date.now() - 86400000 * 1).toISOString().split('T')[0],
-    sleep: '보통',
-    fatigue: 3,
-    mood: 4,
-    meal: '균형적',
-    exercise: '가볍게',
-    water: '보통',
-    memo: '어제는 꽤 괜찮은 하루였다.',
-  },
-  {
-    id: '2',
-    date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
-    sleep: '부족',
-    fatigue: 4,
-    mood: 2,
-    meal: '불규칙',
-    exercise: '안 함',
-    water: '부족',
-    memo: '야근해서 피곤했다.',
-  }
-];
-
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [logs, setLogs] = useState<WellnessLog[]>(MOCK_DATA);
+  const [logs, setLogs] = useState<WellnessLog[]>([]);
+  const [isReady, setIsReady] = useState(false);
+
+  // 앱 로드시 저장된 데이터 불러오기
+  useEffect(() => {
+    let isMounted = true;
+    const initializeStore = async () => {
+      const storedLogs = await loadLogs();
+      if (isMounted) {
+        setLogs(storedLogs);
+        setIsReady(true);
+      }
+    };
+    initializeStore();
+    return () => { isMounted = false; };
+  }, []);
 
   const addLog = (logData: Omit<WellnessLog, 'id'>) => {
     const newLog: WellnessLog = { ...logData, id: Date.now().toString() };
     setLogs((prev) => {
-      // 이미 오늘 기록이 있다면 덮어쓰기
+      let updated: WellnessLog[];
+      
       const existingIndex = prev.findIndex(l => l.date === logData.date);
       if (existingIndex >= 0) {
-        const updated = [...prev];
+        updated = [...prev];
         updated[existingIndex] = newLog;
-        return updated;
+      } else {
+        updated = [newLog, ...prev].sort((a, b) => b.date.localeCompare(a.date));
       }
-      return [newLog, ...prev].sort((a, b) => b.date.localeCompare(a.date));
+      
+      // 상태 업데이트 후 로컬 스토리지에 동기화
+      saveLogs(updated);
+      return updated;
     });
   };
 
@@ -58,7 +54,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, isReady }}>
       {children}
     </StoreContext.Provider>
   );

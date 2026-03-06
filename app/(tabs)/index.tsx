@@ -1,13 +1,21 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Card } from '@/components/Card';
 import { colors } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 export default function Home() {
-  const { logs, getTodayLog } = useStore();
+  const { logs, getTodayLog, isReady } = useStore();
   const todayLog = getTodayLog();
 
   const recordCount = logs.length;
+
+  if (!isReady) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
