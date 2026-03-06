@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
+import { getNotificationScenarioPreviews } from '@/lib/notificationScenarios';
 import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
@@ -16,12 +17,14 @@ export default function MyScreen() {
   const [nickname, setNickname] = useState(userSettings?.nickname || '');
   const [selectedGoal, setSelectedGoal] = useState(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
   const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
+  const [notificationEnabled, setNotificationEnabled] = useState(userSettings?.notificationEnabled || DEFAULT_USER_SETTINGS.notificationEnabled);
   const [useMenstrualCycle, setUseMenstrualCycle] = useState(userSettings?.useMenstrualCycle || DEFAULT_USER_SETTINGS.useMenstrualCycle);
 
   const syncFormWithSettings = () => {
     setNickname(userSettings?.nickname || '');
     setSelectedGoal(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
     setNotificationTime(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
+    setNotificationEnabled(userSettings?.notificationEnabled || DEFAULT_USER_SETTINGS.notificationEnabled);
     setUseMenstrualCycle(userSettings?.useMenstrualCycle || DEFAULT_USER_SETTINGS.useMenstrualCycle);
   };
 
@@ -45,6 +48,7 @@ export default function MyScreen() {
       nickname: nickname.trim(),
       goal: selectedGoal,
       notificationTime,
+      notificationEnabled,
       useMenstrualCycle
     });
     
@@ -93,6 +97,7 @@ export default function MyScreen() {
         contextLine: `저장한 블렌드 · ${teaRecommendationContent[selectedTeaId].timings[0]}`,
       }
     : null;
+  const notificationPreviews = getNotificationScenarioPreviews(userSettings);
 
   if (!isReady) {
     return (
@@ -168,7 +173,16 @@ export default function MyScreen() {
                 placeholderTextColor={colors.textLight}
               />
 
-              <View style={[styles.settingItem, { marginTop: spacing.xl, borderWidth: 0, paddingHorizontal: 0, backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }]}>
+              <View style={[styles.settingItem, styles.inlineSettingItem]}>
+                <Text style={[styles.label, { marginBottom: 0 }]}>알림 준비</Text>
+                <Switch
+                  value={notificationEnabled}
+                  onValueChange={setNotificationEnabled}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                />
+              </View>
+
+              <View style={[styles.settingItem, styles.inlineSettingItem]}>
                 <Text style={[styles.label, { marginBottom: 0 }]}>생리주기 트래킹</Text>
                 <Switch
                   value={useMenstrualCycle}
@@ -190,11 +204,45 @@ export default function MyScreen() {
               </View>
 
               <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>알림 준비</Text>
+                <Text style={styles.settingValue}>{userSettings?.notificationEnabled ? '준비됨' : '준비 중'}</Text>
+              </View>
+
+              <View style={styles.settingItem}>
                 <Text style={styles.settingLabel}>생리주기 트래킹</Text>
                 <Text style={styles.settingValue}>{userSettings?.useMenstrualCycle ? '사용 중' : '사용 안 함'}</Text>
               </View>
             </View>
           )}
+
+          <View style={styles.divider} />
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>알림 준비</Text>
+            <Text style={styles.sectionMeta}>{userSettings?.notificationEnabled ? '시나리오 연결됨' : '시나리오 준비 중'}</Text>
+          </View>
+
+          <View style={styles.notificationCard}>
+            <Text style={styles.notificationIntro}>
+              실제 푸시 발송은 아직 연결하지 않았지만, 아래 흐름을 기준으로 바로 확장할 수 있게 준비해두었어요.
+            </Text>
+
+            {notificationPreviews.map((scenario, index) => (
+              <View
+                key={scenario.id}
+                style={[styles.notificationItem, index === 0 && styles.notificationItemFirst]}
+              >
+                <View style={styles.notificationItemHeader}>
+                  <Text style={styles.notificationTitle}>{scenario.title}</Text>
+                  <Text style={[styles.notificationStatus, scenario.enabled && styles.notificationStatusReady]}>
+                    {scenario.statusLabel}
+                  </Text>
+                </View>
+                <Text style={styles.notificationDesc}>{scenario.description}</Text>
+                <Text style={styles.notificationMeta}>{scenario.scheduleLabel}</Text>
+              </View>
+            ))}
+          </View>
 
           <View style={styles.divider} />
 
@@ -304,11 +352,79 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 1,
   },
+  inlineSettingItem: {
+    marginTop: spacing.xl,
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   settingLabel: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
   settingValue: { fontSize: 15, fontWeight: '500', color: colors.textLight },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xl },
   menuItem: { paddingVertical: spacing.md, backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   menuText: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
+  notificationCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  notificationIntro: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textLight,
+    marginBottom: spacing.lg,
+    letterSpacing: -0.2,
+  },
+  notificationItem: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  notificationItemFirst: {
+    paddingTop: 0,
+    borderTopWidth: 0,
+  },
+  notificationItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  notificationTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: -0.2,
+  },
+  notificationStatus: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textLight,
+    letterSpacing: -0.1,
+  },
+  notificationStatusReady: {
+    color: colors.primary,
+  },
+  notificationDesc: {
+    marginTop: spacing.xs,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textLight,
+    letterSpacing: -0.2,
+  },
+  notificationMeta: {
+    marginTop: spacing.xs,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: -0.1,
+  },
   teaItem: {
     backgroundColor: colors.card,
     borderRadius: 16,

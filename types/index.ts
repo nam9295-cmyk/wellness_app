@@ -28,6 +28,7 @@ export interface UserSettings {
   nickname: string;
   goal: WellnessGoal;
   notificationTime: string; // e.g., "09:00" or empty
+  notificationEnabled: boolean;
   useMenstrualCycle: boolean;
 }
 
@@ -35,5 +36,6 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   nickname: '',
   goal: '피로 관리',
   notificationTime: '09:00',
+  notificationEnabled: false,
   useMenstrualCycle: false,
 };

@@ -12,6 +12,7 @@ export default function Onboarding() {
   const [nickname, setNickname] = useState('');
   const [selectedGoal, setSelectedGoal] = useState('');
   const [notificationTime, setNotificationTime] = useState(DEFAULT_USER_SETTINGS.notificationTime);
+  const [notificationEnabled, setNotificationEnabled] = useState(DEFAULT_USER_SETTINGS.notificationEnabled);
   const [useMenstrualCycle, setUseMenstrualCycle] = useState(DEFAULT_USER_SETTINGS.useMenstrualCycle);
 
   const handleStart = async () => {
@@ -28,6 +29,7 @@ export default function Onboarding() {
       nickname: nickname.trim(),
       goal: selectedGoal as (typeof WELLNESS_GOALS)[number],
       notificationTime,
+      notificationEnabled,
       useMenstrualCycle
     });
 
@@ -87,6 +89,18 @@ export default function Onboarding() {
             value={notificationTime}
             onChangeText={setNotificationTime}
             keyboardType="numbers-and-punctuation"
+          />
+        </View>
+
+        <View style={[styles.section, styles.switchSection]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sectionTitle}>알림 준비 켜기</Text>
+            <Text style={styles.sectionDesc}>실제 발송은 아직 준비 중이지만, 시간과 흐름을 먼저 연결해둘 수 있어요.</Text>
+          </View>
+          <Switch
+            value={notificationEnabled}
+            onValueChange={setNotificationEnabled}
+            trackColor={{ false: colors.border, true: colors.primary }}
           />
         </View>
 
