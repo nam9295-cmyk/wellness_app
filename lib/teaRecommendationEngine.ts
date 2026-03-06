@@ -31,6 +31,8 @@ export interface TeaRecommendationContext {
 export interface TeaRecommendationResult {
   teaId: TeaRecommendationId;
   content: TeaRecommendationContent;
+  secondaryTeaId?: TeaRecommendationId;
+  secondaryContent?: TeaRecommendationContent;
   reason: string;
   contextLine: string;
 }
@@ -369,14 +371,14 @@ function getSituationLabel(teaId: TeaRecommendationId, tags: TeaContextTag[]): s
   return teaRecommendationContent[teaId].situations[0];
 }
 
-function getTopTeaId(scoreBoard: TeaScoreBoard): TeaRecommendationId {
-  return teaIds.sort((a, b) => {
+function getRankedTeaIds(scoreBoard: TeaScoreBoard): TeaRecommendationId[] {
+  return [...teaIds].sort((a, b) => {
     if (scoreBoard[b] !== scoreBoard[a]) {
       return scoreBoard[b] - scoreBoard[a];
     }
 
     return a.localeCompare(b);
-  })[0];
+  });
 }
 
 export function getTeaRecommendation(input: TeaRecommendationInput): TeaRecommendationResult {
@@ -387,13 +389,17 @@ export function getTeaRecommendation(input: TeaRecommendationInput): TeaRecommen
   applyGoalScores(scoreBoard, context.activeGoal);
   applyTagScores(scoreBoard, context.tags);
 
-  const topTeaId = getTopTeaId(scoreBoard);
+  const rankedTeaIds = getRankedTeaIds(scoreBoard);
+  const topTeaId = rankedTeaIds[0];
+  const secondaryTeaId = rankedTeaIds[1];
   const content = teaRecommendationContent[topTeaId];
   const situationLabel = getSituationLabel(topTeaId, context.tags);
 
   return {
     teaId: topTeaId,
     content,
+    secondaryTeaId,
+    secondaryContent: secondaryTeaId ? teaRecommendationContent[secondaryTeaId] : undefined,
     reason: getTeaReason(topTeaId, context),
     contextLine: `잘 맞는 흐름: ${getTimeSlotLabel(context.timeSlot)} · ${situationLabel}`,
   };

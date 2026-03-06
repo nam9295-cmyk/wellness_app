@@ -1,5 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/Card';
+import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
@@ -7,6 +9,7 @@ import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
+  const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
   const { logs, getTodayLog, isReady, userSettings } = useStore();
   const todayLog = getTodayLog();
 
@@ -73,12 +76,15 @@ export default function Home() {
         <Text style={styles.recommendationText}>{recommendation.message}</Text>
       </Card>
 
-      <Card title="오늘의 티 추천">
-        <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
-        <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
-        <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
-        <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
-      </Card>
+      <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
+        <Card title="오늘의 티 추천">
+          <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+          <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
+          <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
+          <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
+          <Text style={styles.detailHint}>눌러서 추천 이유 자세히 보기</Text>
+        </Card>
+      </TouchableOpacity>
 
       <Card title="최근 기록 타임라인">
         {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
@@ -93,6 +99,11 @@ export default function Home() {
         )}
       </Card>
       
+      <TeaRecommendationDetailModal
+        visible={isTeaDetailVisible}
+        recommendation={teaRecommendation}
+        onClose={() => setIsTeaDetailVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -114,6 +125,7 @@ const styles = StyleSheet.create({
   teaSubtitle: { fontSize: 13, color: colors.primary, marginBottom: spacing.sm, fontWeight: '600' },
   recommendationText: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },
   teaContext: { fontSize: 13, color: colors.textLight, marginTop: spacing.sm, letterSpacing: -0.2 },
+  detailHint: { fontSize: 12, color: colors.textLight, marginTop: spacing.md, fontWeight: '600', letterSpacing: -0.1 },
   logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
   logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },
   logSummary: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 }
