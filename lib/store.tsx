@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { WellnessLog, UserSettings } from '@/types';
+import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
 import { loadLogs, saveLogs } from './storage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
+import { createWellnessLog, findTodayLog, upsertLog } from './logUtils';
 
 interface StoreContextType {
   logs: WellnessLog[];
-  addLog: (log: Omit<WellnessLog, 'id'>) => void;
+  addLog: (log: WellnessLogInput) => Promise<void>;
   getTodayLog: () => WellnessLog | undefined;
   userSettings: UserSettings | null;
-  updateSettings: (settings: UserSettings) => void;
+  updateSettings: (settings: UserSettings) => Promise<void>;
   isReady: boolean;
 }
 
@@ -36,33 +37,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => { isMounted = false; };
   }, []);
 
-  const addLog = (logData: Omit<WellnessLog, 'id'>) => {
-    const newLog: WellnessLog = { ...logData, id: Date.now().toString() };
-    setLogs((prev) => {
-      let updated: WellnessLog[];
-      
-      const existingIndex = prev.findIndex(l => l.date === logData.date);
-      if (existingIndex >= 0) {
-        updated = [...prev];
-        updated[existingIndex] = newLog;
-      } else {
-        updated = [newLog, ...prev].sort((a, b) => b.date.localeCompare(a.date));
-      }
-      
-      // 상태 업데이트 후 로컬 스토리지에 동기화
-      saveLogs(updated);
-      return updated;
-    });
+  const addLog = async (logData: WellnessLogInput) => {
+    const newLog = createWellnessLog(logData);
+    const updatedLogs = upsertLog(logs, newLog);
+
+    setLogs(updatedLogs);
+    await saveLogs(updatedLogs);
   };
 
   const getTodayLog = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return logs.find(l => l.date === today);
+    return findTodayLog(logs);
   };
 
-  const updateSettings = (settings: UserSettings) => {
+  const updateSettings = async (settings: UserSettings) => {
     setUserSettings(settings);
-    saveUserSettings(settings);
+    await saveUserSettings(settings);
   };
 
   return (

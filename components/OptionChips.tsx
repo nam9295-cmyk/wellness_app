@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '@/lib/theme';
 
 interface Props<T> {
-  options: T[];
+  options: readonly T[];
   selectedValue: T;
   onSelect: (value: T) => void;
 }

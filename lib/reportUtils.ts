@@ -1,4 +1,5 @@
-import { WellnessLog, SleepState, ExerciseState } from '@/types';
+import { isDateWithinLastDays } from '@/lib/date';
+import { ExerciseState, EXERCISE_STATES, SleepState, WellnessLog } from '@/types';
 
 export interface ReportStats {
   totalLogs: number;
@@ -27,21 +28,15 @@ export function generateReportStats(logs: WellnessLog[]): ReportStats {
   const avgFatigue = (logs.reduce((acc, log) => acc + log.fatigue, 0) / totalLogs).toFixed(1);
 
   // 2. 최근 7일 기록 여부 계산
-  const now = new Date();
-  const recent7DaysLogs = logs.filter(log => {
-    const logDate = new Date(log.date);
-    const diffTime = Math.abs(now.getTime() - logDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  }).length;
+  const recent7DaysLogs = logs.filter((log) => isDateWithinLastDays(log.date, 7)).length;
 
   // 3. 가장 자주 선택된 수면 상태
-  const sleepCount: Record<string, number> = {};
-  logs.forEach(log => {
+  const sleepCount: Partial<Record<SleepState, number>> = {};
+  logs.forEach((log) => {
     sleepCount[log.sleep] = (sleepCount[log.sleep] || 0) + 1;
   });
   let maxSleepCount = 0;
-  let frequentSleep = '-';
+  let frequentSleep: ReportStats['frequentSleep'] = '-';
   for (const [sleep, count] of Object.entries(sleepCount)) {
     if (count > maxSleepCount) {
       maxSleepCount = count;
@@ -50,7 +45,8 @@ export function generateReportStats(logs: WellnessLog[]): ReportStats {
   }
 
   // 4. 운동 횟수 파악
-  const exerciseCount = logs.filter(l => l.exercise === '가볍게' || l.exercise === '충분히').length;
+  const activeExerciseStates = new Set<ExerciseState>([EXERCISE_STATES[1], EXERCISE_STATES[2]]);
+  const exerciseCount = logs.filter((log) => activeExerciseStates.has(log.exercise)).length;
   const exerciseRate = Math.round((exerciseCount / totalLogs) * 100);
 
   // 5. 인사이트 문구 생성 로직

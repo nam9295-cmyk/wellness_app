@@ -2,17 +2,16 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-
-const GOALS = ['피로 관리', '수면 관리', '식습관 관리', '운동 루틴 유지', '기분 관리'];
+import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function MyScreen() {
   const { userSettings, updateSettings } = useStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState(userSettings?.nickname || '');
-  const [selectedGoal, setSelectedGoal] = useState(userSettings?.goal || '');
-  const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || '');
-  const [useMenstrualCycle, setUseMenstrualCycle] = useState(userSettings?.useMenstrualCycle || false);
+  const [selectedGoal, setSelectedGoal] = useState(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
+  const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
+  const [useMenstrualCycle, setUseMenstrualCycle] = useState(userSettings?.useMenstrualCycle || DEFAULT_USER_SETTINGS.useMenstrualCycle);
 
   useEffect(() => {
     if (!isEditing && userSettings) {
@@ -23,7 +22,7 @@ export default function MyScreen() {
     }
   }, [isEditing, userSettings]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!nickname.trim()) {
       Alert.alert('알림', '닉네임을 입력해주세요.');
       return;
@@ -33,7 +32,7 @@ export default function MyScreen() {
       return;
     }
 
-    updateSettings({
+    await updateSettings({
       nickname: nickname.trim(),
       goal: selectedGoal,
       notificationTime,
@@ -93,7 +92,7 @@ export default function MyScreen() {
             <View style={styles.editForm}>
               <Text style={styles.label}>주요 목표</Text>
               <View style={styles.chipContainer}>
-                {GOALS.map((g) => (
+                {WELLNESS_GOALS.map((g) => (
                   <TouchableOpacity
                     key={g}
                     style={[styles.chip, selectedGoal === g && styles.chipSelected]}

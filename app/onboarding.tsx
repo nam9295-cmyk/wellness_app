@@ -3,8 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch
 import { useRouter } from 'expo-router';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-
-const GOALS = ['피로 관리', '수면 관리', '식습관 관리', '운동 루틴 유지', '기분 관리'];
+import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function Onboarding() {
   const router = useRouter();
@@ -12,10 +11,10 @@ export default function Onboarding() {
 
   const [nickname, setNickname] = useState('');
   const [selectedGoal, setSelectedGoal] = useState('');
-  const [notificationTime, setNotificationTime] = useState('09:00');
-  const [useMenstrualCycle, setUseMenstrualCycle] = useState(false);
+  const [notificationTime, setNotificationTime] = useState(DEFAULT_USER_SETTINGS.notificationTime);
+  const [useMenstrualCycle, setUseMenstrualCycle] = useState(DEFAULT_USER_SETTINGS.useMenstrualCycle);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!nickname.trim()) {
       Alert.alert('알림', '닉네임을 입력해주세요.');
       return;
@@ -25,9 +24,9 @@ export default function Onboarding() {
       return;
     }
 
-    updateSettings({
+    await updateSettings({
       nickname: nickname.trim(),
-      goal: selectedGoal,
+      goal: selectedGoal as (typeof WELLNESS_GOALS)[number],
       notificationTime,
       useMenstrualCycle
     });
@@ -60,7 +59,7 @@ export default function Onboarding() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>앱을 사용하는 가장 큰 목적은 무엇인가요?</Text>
           <View style={styles.chipContainer}>
-            {GOALS.map((goal) => (
+            {WELLNESS_GOALS.map((goal) => (
               <TouchableOpacity
                 key={goal}
                 style={[

@@ -4,8 +4,9 @@ import { colors, spacing } from '@/lib/theme';
 import { OptionChips } from '@/components/OptionChips';
 import { SectionTitle } from '@/components/SectionTitle';
 import { useStore } from '@/lib/store';
-import { SleepState, MealState, ExerciseState, WaterState } from '@/types';
+import { EXERCISE_STATES, MEAL_STATES, SleepState, MealState, ExerciseState, SLEEP_STATES, WATER_STATES, WaterState } from '@/types';
 import { useRouter } from 'expo-router';
+import { getTodayDateString } from '@/lib/date';
 
 export default function LogScreen() {
   const router = useRouter();
@@ -32,10 +33,9 @@ export default function LogScreen() {
     }
   }, [todayLog]);
 
-  const handleSave = () => {
-    const today = new Date().toISOString().split('T')[0];
-    addLog({
-      date: today,
+  const handleSave = async () => {
+    await addLog({
+      date: getTodayDateString(),
       sleep,
       fatigue,
       mood,
@@ -63,7 +63,7 @@ export default function LogScreen() {
         <Text style={styles.mainTitle}>{todayLog ? '오늘 기록 수정하기' : '오늘 하루 남기기'}</Text>
         
         <SectionTitle title="수면 상태" />
-        <OptionChips<SleepState> options={['매우 부족', '부족', '보통', '좋음', '매우 좋음']} selectedValue={sleep} onSelect={setSleep} />
+        <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
 
         <SectionTitle title="피로도 (1: 피곤 ~ 5: 활기참)" />
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={fatigue} onSelect={setFatigue} />
@@ -72,13 +72,13 @@ export default function LogScreen() {
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={mood} onSelect={setMood} />
 
         <SectionTitle title="식사 상태" />
-        <OptionChips<MealState> options={['불규칙', '보통', '균형적']} selectedValue={meal} onSelect={setMeal} />
+        <OptionChips<MealState> options={MEAL_STATES} selectedValue={meal} onSelect={setMeal} />
 
         <SectionTitle title="운동 여부" />
-        <OptionChips<ExerciseState> options={['안 함', '가볍게', '충분히']} selectedValue={exercise} onSelect={setExercise} />
+        <OptionChips<ExerciseState> options={EXERCISE_STATES} selectedValue={exercise} onSelect={setExercise} />
 
         <SectionTitle title="수분 섭취" />
-        <OptionChips<WaterState> options={['부족', '보통', '충분']} selectedValue={water} onSelect={setWater} />
+        <OptionChips<WaterState> options={WATER_STATES} selectedValue={water} onSelect={setWater} />
 
         <SectionTitle title="한 줄 메모" />
         <TextInput

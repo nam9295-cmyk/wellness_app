@@ -4,6 +4,7 @@ import { useStore } from '@/lib/store';
 import { generateReportStats } from '@/lib/reportUtils';
 import { StatCard } from '@/components/StatCard';
 import { InsightCard } from '@/components/InsightCard';
+import { formatDisplayDate } from '@/lib/date';
 
 export default function ReportScreen() {
   const { logs, isReady } = useStore();
@@ -42,7 +43,7 @@ export default function ReportScreen() {
       {logs.slice(0, 5).map(log => (
         <View key={log.id} style={styles.historyRow}>
           <View>
-            <Text style={styles.historyDate}>{log.date.replace(/-/g, '.')}</Text>
+            <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
             <Text style={styles.historyMemo} numberOfLines={1}>
               {log.memo ? log.memo : '메모 없음'}
             </Text>

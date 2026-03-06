@@ -1,25 +1,21 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserSettings } from '@/types';
+import { DEFAULT_USER_SETTINGS, UserSettings } from '@/types';
+import { readJson, writeJson } from './asyncStorage';
 
 const SETTINGS_KEY = '@wellness_user_settings';
 
 export const saveUserSettings = async (settings: UserSettings): Promise<boolean> => {
-  try {
-    const jsonValue = JSON.stringify(settings);
-    await AsyncStorage.setItem(SETTINGS_KEY, jsonValue);
-    return true;
-  } catch (e) {
-    console.error('Failed to save user settings:', e);
-    return false;
-  }
+  return writeJson(SETTINGS_KEY, settings);
 };
 
 export const loadUserSettings = async (): Promise<UserSettings | null> => {
-  try {
-    const jsonValue = await AsyncStorage.getItem(SETTINGS_KEY);
-    return jsonValue != null ? JSON.parse(jsonValue) : null;
-  } catch (e) {
-    console.error('Failed to load user settings:', e);
+  const settings = await readJson<UserSettings | null>(SETTINGS_KEY, null);
+
+  if (!settings) {
     return null;
   }
+
+  return {
+    ...DEFAULT_USER_SETTINGS,
+    ...settings,
+  };
 };

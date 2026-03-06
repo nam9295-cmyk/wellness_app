@@ -6,11 +6,31 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "platforms": [
+      "ios",
+      "web"
+    ],
+    "backgroundColor": "#FAF9F6",
     "plugins": [
       "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "name": "Wellness MVP",
+      "shortName": "Wellness",
+      "themeColor": "#EDC5C4",
+      "backgroundColor": "#FAF9F6"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "303f333f-6d50-4c40-b49a-27f5ab02a111"
+      }
+    },
+    "owner": "nam9295"
   }
 }

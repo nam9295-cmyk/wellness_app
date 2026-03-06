@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { Card } from '@/components/Card';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
+import { formatDisplayDate } from '@/lib/date';
 
 export default function Home() {
   const { logs, getTodayLog, isReady, userSettings } = useStore();
@@ -64,7 +65,7 @@ export default function Home() {
       <Card title="최근 기록 타임라인">
         {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
           <View key={log.id} style={[styles.logItem, index === 2 && { borderBottomWidth: 0 }]}>
-            <Text style={styles.logDate}>{log.date.replace(/-/g, '.')}</Text>
+            <Text style={styles.logDate}>{formatDisplayDate(log.date)}</Text>
             <Text style={styles.logSummary} numberOfLines={1}>
               기분 {log.mood}점 · 수면 {log.sleep} · 운동 {log.exercise}
             </Text>
