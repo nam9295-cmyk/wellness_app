@@ -27,7 +27,7 @@ export function TeaBlendInfoCard({
         <View style={styles.heroText}>
           <Text style={styles.name}>{content.name}</Text>
           <Text style={styles.subtitle}>{content.subtitle}</Text>
-          <Text style={styles.description}>{content.description}</Text>
+          <Text style={styles.description} numberOfLines={compact ? 2 : undefined}>{content.description}</Text>
         </View>
       </View>
 
@@ -42,20 +42,29 @@ export function TeaBlendInfoCard({
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>블렌드 인상</Text>
-        <Text style={styles.metaText}>{profileHighlights.join(' · ')}</Text>
-      </View>
+      {!compact ? (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>블렌드 인상</Text>
+            <Text style={styles.metaText}>{profileHighlights.join(' · ')}</Text>
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>잘 맞는 시간대</Text>
-        <Text style={styles.metaText}>{content.timings.join(' · ')}</Text>
-      </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>잘 맞는 시간대</Text>
+            <Text style={styles.metaText}>{content.timings.join(' · ')}</Text>
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>잘 맞는 상황</Text>
-        <Text style={styles.metaText}>{content.situations.join(' · ')}</Text>
-      </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>잘 맞는 상황</Text>
+            <Text style={styles.metaText}>{content.situations.join(' · ')}</Text>
+          </View>
+        </>
+      ) : (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>잘 맞는 흐름</Text>
+          <Text style={styles.metaText}>{content.timings[0]} · {content.situations[0]}</Text>
+        </View>
+      )}
     </View>
   );
 }

@@ -321,40 +321,40 @@ function getTeaReason(teaId: TeaRecommendationId, context: TeaRecommendationCont
   switch (teaId) {
     case 'britishBlack':
       if (tags.includes('focus_ready')) {
-        return '아침이나 집중이 필요한 시간대에 단정한 구조감이 잘 어울려요.';
+        return '또렷한 흐름이 필요한 오늘, 단정한 구조감이 잘 맞아요.';
       }
 
-      return '또렷한 중심이 필요한 루틴에 잘 맞는 쪽으로 골랐어요.';
+      return '리듬을 또렷하게 잡아줄 한 잔으로 잘 어울려요.';
     case 'asianGold':
       if (tags.includes('low_stimulation') || tags.includes('gentle_balance')) {
-        return '오늘은 과하지 않고 부드럽게 이어지는 티가 잘 맞아요.';
+        return '부드럽고 과하지 않은 리듬이 오늘과 잘 맞아요.';
       }
 
       if (tags.includes('steady_flow')) {
-        return '좋은 흐름을 무겁지 않게 이어가고 싶을 때 잘 어울려요.';
+        return '지금의 좋은 흐름을 가볍게 이어가기 좋아요.';
       }
 
-      return '균형감 있게 정돈되는 한 잔이 오늘 리듬과 잘 맞아요.';
+      return '균형감 있게 정돈되는 한 잔이 잘 어울려요.';
     case 'hibiscusFruit':
       if (tags.includes('refresh_hydration') || tags.includes('mood_reset')) {
-        return '산뜻하게 분위기를 전환하고 싶은 흐름에 잘 맞아요.';
+        return '산뜻하게 기분을 전환하고 싶을 때 잘 맞아요.';
       }
 
       if (timeSlot === 'late_night') {
-        return '늦은 시간에도 비교적 가볍게 즐기기 좋은 쪽으로 골랐어요.';
+        return '늦은 시간에도 비교적 가볍게 즐기기 좋아요.';
       }
 
-      return '밝고 경쾌한 무드가 필요한 순간에 잘 어울려요.';
+      return '밝고 경쾌한 무드가 필요한 순간에 어울려요.';
     case 'mintyChocolat':
       if (tags.includes('clean_finish')) {
-        return '식후에 깔끔하게 전환하고 싶을 때 잘 맞아요.';
+        return '식후에 깔끔하게 전환하기 좋아요.';
       }
 
       if (tags.includes('mood_reset')) {
-        return '상쾌함과 만족감을 함께 찾고 싶은 날에 어울려요.';
+        return '상쾌함과 만족감을 함께 챙기기 좋아요.';
       }
 
-      return '오후에 기분을 환기하고 싶을 때 잘 맞는 쪽이에요.';
+      return '오후 리듬을 환기할 때 잘 맞아요.';
   }
 }
 
@@ -484,7 +484,7 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
   const targetLogs = getRecentFlowLogs(logs);
 
   if (targetLogs.length === 0) {
-    return '기록이 쌓이면 최근 흐름에 맞는 티를 더 정교하게 보여드릴게요.';
+    return '기록이 쌓이면 최근 흐름에 맞춘 추천이 더 또렷해져요.';
   }
 
   const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
@@ -496,27 +496,27 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
 
   if (lowSleepCount >= 2) {
     return teaId === 'asianGold' || teaId === 'hibiscusFruit'
-      ? '최근 기록에서 수면이 가벼운 날이 이어져 보여요. 과하지 않고 부드럽게 이어지는 티가 최근 흐름과 잘 맞아요.'
-      : '최근 수면 흐름을 고려해 자극이 강하지 않은 쪽으로 균형을 맞췄어요.';
+      ? '최근엔 부드럽고 자극이 적은 흐름이 더 잘 어울려요.'
+      : '최근 수면 흐름을 고려해 자극이 강하지 않은 쪽으로 골랐어요.';
   }
 
   if (lowWaterCount >= 2) {
-    return '수분이 부족한 날이 반복돼서, 산뜻하게 전환되는 블렌드를 중심으로 골랐어요.';
+    return '산뜻하게 리듬을 환기해줄 블렌드를 골랐어요.';
   }
 
   if (lowMoodCount >= 2 || avgMood <= 2.7) {
-    return '기분이 가라앉는 날이 보여서, 최근 흐름을 가볍게 환기해줄 수 있는 무드의 티를 골랐어요.';
+    return '가볍게 분위기를 전환해줄 무드가 잘 맞아요.';
   }
 
   if (activeDays <= 1) {
-    return '운동 기록이 적은 주간에는 무겁지 않게 리듬을 다시 붙이기 좋은 티가 잘 맞아요.';
+    return '무겁지 않게 리듬을 다시 붙이기 좋아요.';
   }
 
   if (avgMood >= 3.5 && avgFatigue >= 3) {
-    return '전반적으로 안정적인 흐름이 보여서, 지금 리듬을 자연스럽게 이어갈 수 있는 티를 골랐어요.';
+    return '지금의 안정적인 흐름을 자연스럽게 이어가기 좋아요.';
   }
 
-  return '최근 기록 전반을 보면 한쪽으로 치우치기보다 균형감 있게 이어지는 티가 잘 맞는 흐름이에요.';
+  return '최근 흐름엔 한쪽으로 치우치지 않는 균형감이 잘 맞아요.';
 }
 
 function getRecentFlowContextLine(teaId: TeaRecommendationId, logs: WellnessLog[]): string {

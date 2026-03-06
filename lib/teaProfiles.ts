@@ -20,6 +20,12 @@ interface TeaProfile {
   scores: TeaProfileScores;
 }
 
+export interface TeaPresentationAxis {
+  label: '구조감' | '산뜻함' | '풍미감' | '데일리성' | '기분 전환';
+  englishLabel: 'Structure' | 'Refresh' | 'Complexity' | 'Daily Fit' | 'Mood Shift';
+  value: number;
+}
+
 export const teaProfiles: Record<TeaRecommendationId, TeaProfile> = {
   britishBlack: {
     id: 'britishBlack',
@@ -68,4 +74,40 @@ export function getTeaProfileHighlights(teaId: TeaRecommendationId, limit = 3): 
     })
     .slice(0, limit)
     .map(([key]) => profileScoreLabels[key]);
+}
+
+function normalizeToFivePointScale(value: number) {
+  return Math.max(1, Math.min(5, Math.round((value / 10) * 5)));
+}
+
+export function getTeaPresentationProfile(teaId: TeaRecommendationId): TeaPresentationAxis[] {
+  const scores = teaProfiles[teaId].scores;
+
+  return [
+    {
+      label: '구조감',
+      englishLabel: 'Structure',
+      value: normalizeToFivePointScale((scores.blackTea + scores.nutty + scores.cozy) / 3),
+    },
+    {
+      label: '산뜻함',
+      englishLabel: 'Refresh',
+      value: normalizeToFivePointScale((scores.refresh + scores.citrus + scores.minty) / 3),
+    },
+    {
+      label: '풍미감',
+      englishLabel: 'Complexity',
+      value: normalizeToFivePointScale((scores.chocolatey + scores.floral + scores.citrus + scores.nutty) / 4),
+    },
+    {
+      label: '데일리성',
+      englishLabel: 'Daily Fit',
+      value: normalizeToFivePointScale((scores.cozy + scores.refresh + scores.nightFriendly) / 3),
+    },
+    {
+      label: '기분 전환',
+      englishLabel: 'Mood Shift',
+      value: normalizeToFivePointScale((scores.refresh + scores.fruity + scores.minty + scores.citrus) / 4),
+    },
+  ];
 }

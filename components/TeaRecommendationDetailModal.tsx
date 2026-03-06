@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TeaBlendInfoCard } from '@/components/TeaBlendInfoCard';
+import { TeaProfileMeter } from '@/components/TeaProfileMeter';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
+import { teaAssets } from '@/lib/teaAssets';
 import { useStore } from '@/lib/store';
 import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { colors, spacing } from '@/lib/theme';
@@ -21,6 +23,7 @@ export function TeaRecommendationDetailModal({
 }: TeaRecommendationDetailModalProps) {
   const { savedTeaIds, saveTeaToBox } = useStore();
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const asset = teaAssets[recommendation.teaId];
 
   const isSaved = savedTeaIds.includes(recommendation.teaId);
 
@@ -52,24 +55,69 @@ export function TeaRecommendationDetailModal({
           >
             <View style={styles.handle} />
 
-            <View style={styles.headerRow}>
-              <TeaThumbnail teaId={recommendation.teaId} size="md" />
-              <View style={styles.headerText}>
-                <Text style={styles.title}>{recommendation.content.name}</Text>
-                <Text style={styles.subtitle}>{recommendation.content.subtitle}</Text>
+            <View
+              style={[
+                styles.heroCard,
+                {
+                  backgroundColor: asset.backgroundColor,
+                  borderColor: asset.accentColor + '28',
+                },
+              ]}
+            >
+              <View style={styles.heroTopRow}>
+                <Text style={styles.heroEyebrow}>오늘의 추천 블렌드</Text>
+                <Pressable onPress={onClose} hitSlop={12}>
+                  <Text style={styles.closeText}>닫기</Text>
+                </Pressable>
               </View>
 
-              <Pressable onPress={onClose} hitSlop={12}>
-                <Text style={styles.closeText}>닫기</Text>
-              </Pressable>
+              <View style={styles.heroImageWrap}>
+                <TeaThumbnail teaId={recommendation.teaId} size="xl" />
+              </View>
+
+              <Text style={styles.title}>{recommendation.content.name}</Text>
+              <Text style={[styles.subtitle, { color: asset.accentColor }]}>{recommendation.content.subtitle}</Text>
+              <Text style={styles.description}>{recommendation.content.description}</Text>
+
+              <Text style={styles.keywordTitle}>핵심 무드</Text>
+              <View style={styles.keywordWrap}>
+                {recommendation.content.flavorKeywords.slice(0, 3).map((keyword) => (
+                  <View key={keyword} style={styles.keywordChip}>
+                    <Text style={styles.keywordText}>{keyword}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
-            <Text style={styles.description}>{recommendation.content.description}</Text>
-
-            <View style={styles.section}>
+            <View style={styles.reasonCard}>
               <Text style={styles.sectionLabel}>{reasonTitle}</Text>
               <Text style={styles.bodyText}>{recommendation.reason}</Text>
               <Text style={styles.contextText}>{recommendation.contextLine}</Text>
+            </View>
+
+            <TeaProfileMeter teaId={recommendation.teaId} />
+
+            <View style={styles.metaGrid}>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>잘 맞는 시간대</Text>
+                <View style={styles.metaChipWrap}>
+                  {recommendation.content.timings.map((timing) => (
+                    <View key={timing} style={styles.metaChip}>
+                      <Text style={styles.metaChipText}>{timing}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>잘 맞는 상황</Text>
+                <View style={styles.metaChipWrap}>
+                  {recommendation.content.situations.map((situation) => (
+                    <View key={situation} style={styles.metaChip}>
+                      <Text style={styles.metaChipText}>{situation}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
 
             <View style={styles.actionSection}>
@@ -82,12 +130,6 @@ export function TeaRecommendationDetailModal({
                 <Text style={styles.feedbackText}>{feedbackMessage}</Text>
               ) : null}
             </View>
-
-            <TeaBlendInfoCard
-              teaId={recommendation.teaId}
-              content={recommendation.content}
-              title="이 블렌드 더 보기"
-            />
 
             {recommendation.secondaryContent && recommendation.secondaryTeaId ? (
               <TeaBlendInfoCard
@@ -128,7 +170,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   sheetContent: {
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
   handle: {
     alignSelf: 'center',
@@ -138,13 +180,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginBottom: spacing.md,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
+  heroCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    padding: spacing.lg,
   },
-  headerText: {
-    flex: 1,
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroEyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textLight,
+    letterSpacing: 0.2,
+  },
+  heroImageWrap: {
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: 24,
@@ -170,8 +225,77 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: -0.2,
   },
-  section: {
+  keywordTitle: {
+    marginTop: spacing.md,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textLight,
+    letterSpacing: 0.1,
+  },
+  keywordWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  keywordChip: {
+    backgroundColor: colors.card,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  keywordText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: -0.1,
+  },
+  reasonCard: {
     marginTop: spacing.lg,
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  metaGrid: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  metaCard: {
+    backgroundColor: colors.background,
+    borderRadius: 18,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textLight,
+    marginBottom: spacing.xs,
+    letterSpacing: 0.1,
+  },
+  metaChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  metaChip: {
+    backgroundColor: colors.card,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  metaChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: -0.1,
   },
   actionSection: {
     marginTop: spacing.lg,

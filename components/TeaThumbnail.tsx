@@ -5,13 +5,14 @@ import { colors } from '@/lib/theme';
 
 interface TeaThumbnailProps {
   teaId: TeaRecommendationId;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const thumbnailSizes = {
   sm: 64,
   md: 88,
   lg: 112,
+  xl: 220,
 } as const;
 
 export function TeaThumbnail({ teaId, size = 'md' }: TeaThumbnailProps) {
@@ -27,6 +28,7 @@ export function TeaThumbnail({ teaId, size = 'md' }: TeaThumbnailProps) {
         {
           width: dimension,
           height: dimension,
+          borderRadius: size === 'xl' ? 28 : 20,
           backgroundColor: asset.backgroundColor,
           borderColor: asset.accentColor + '24',
         },
