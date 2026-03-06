@@ -15,7 +15,9 @@ export interface WellnessLog {
   memo: string;
 }
 
-export interface UserProfile {
-  id: string;
-  name: string;
+export interface UserSettings {
+  nickname: string;
+  goal: string;
+  notificationTime: string; // e.g., "09:00" or empty
+  useMenstrualCycle: boolean;
 }

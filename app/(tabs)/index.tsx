@@ -4,7 +4,7 @@ import { colors } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 export default function Home() {
-  const { logs, getTodayLog, isReady } = useStore();
+  const { logs, getTodayLog, isReady, userSettings } = useStore();
   const todayLog = getTodayLog();
 
   const recordCount = logs.length;
@@ -17,11 +17,14 @@ export default function Home() {
     );
   }
 
+  const nickname = userSettings?.nickname || '회원';
+  const goalMessage = userSettings?.goal ? `[${userSettings.goal}] 모드로 ` : '';
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>안녕하세요! 👋</Text>
+      <Text style={styles.greeting}>안녕하세요 {nickname}님! 👋</Text>
       <Text style={styles.subtitle}>
-        {todayLog ? '오늘도 건강한 하루를 기록하셨군요!' : '아직 오늘의 기록이 없어요. 웰니스 상태를 기록해볼까요?'}
+        {todayLog ? '오늘도 건강한 하루를 기록하셨군요!' : `아직 오늘의 기록이 없어요. ${goalMessage}웰니스 상태를 기록해볼까요?`}
       </Text>
       
       <Card title="오늘의 상태 요약">

@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { WellnessLog } from '@/types';
+import { WellnessLog, UserSettings } from '@/types';
 import { loadLogs, saveLogs } from './storage';
+import { loadUserSettings, saveUserSettings } from './userStorage';
 
 interface StoreContextType {
   logs: WellnessLog[];
   addLog: (log: Omit<WellnessLog, 'id'>) => void;
   getTodayLog: () => WellnessLog | undefined;
+  userSettings: UserSettings | null;
+  updateSettings: (settings: UserSettings) => void;
   isReady: boolean;
 }
 
@@ -13,6 +16,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<WellnessLog[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   // 앱 로드시 저장된 데이터 불러오기
@@ -20,8 +24,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     const initializeStore = async () => {
       const storedLogs = await loadLogs();
+      const storedSettings = await loadUserSettings();
+      
       if (isMounted) {
         setLogs(storedLogs);
+        setUserSettings(storedSettings);
         setIsReady(true);
       }
     };
@@ -53,8 +60,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return logs.find(l => l.date === today);
   };
 
+  const updateSettings = (settings: UserSettings) => {
+    setUserSettings(settings);
+    saveUserSettings(settings);
+  };
+
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, isReady }}>
       {children}
     </StoreContext.Provider>
   );
