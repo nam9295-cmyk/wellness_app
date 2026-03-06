@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
 import { loadLogs, saveLogs } from './storage';
+import { loadTeaBox, saveTeaBox } from './teaBoxStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
 import { createWellnessLog, findTodayLog, upsertLog } from './logUtils';
 
@@ -10,6 +12,9 @@ interface StoreContextType {
   getTodayLog: () => WellnessLog | undefined;
   userSettings: UserSettings | null;
   updateSettings: (settings: UserSettings) => Promise<void>;
+  savedTeaIds: TeaRecommendationId[];
+  saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
+  removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
   isReady: boolean;
 }
 
@@ -18,6 +23,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<WellnessLog[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [savedTeaIds, setSavedTeaIds] = useState<TeaRecommendationId[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   // 앱 로드시 저장된 데이터 불러오기
@@ -26,10 +32,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const initializeStore = async () => {
       const storedLogs = await loadLogs();
       const storedSettings = await loadUserSettings();
+      const storedTeaBox = await loadTeaBox();
       
       if (isMounted) {
         setLogs(storedLogs);
         setUserSettings(storedSettings);
+        setSavedTeaIds(storedTeaBox);
         setIsReady(true);
       }
     };
@@ -54,8 +62,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await saveUserSettings(settings);
   };
 
+  const saveTeaToBox = async (teaId: TeaRecommendationId) => {
+    if (savedTeaIds.includes(teaId)) {
+      return { added: false };
+    }
+
+    const updatedTeaBox = [teaId, ...savedTeaIds];
+    setSavedTeaIds(updatedTeaBox);
+    await saveTeaBox(updatedTeaBox);
+
+    return { added: true };
+  };
+
+  const removeTeaFromBox = async (teaId: TeaRecommendationId) => {
+    if (!savedTeaIds.includes(teaId)) {
+      return { removed: false };
+    }
+
+    const updatedTeaBox = savedTeaIds.filter((savedTeaId) => savedTeaId !== teaId);
+    setSavedTeaIds(updatedTeaBox);
+    await saveTeaBox(updatedTeaBox);
+
+    return { removed: true };
+  };
+
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, savedTeaIds, saveTeaToBox, removeTeaFromBox, isReady }}>
       {children}
     </StoreContext.Provider>
   );

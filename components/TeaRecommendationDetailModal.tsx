@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TeaBlendInfoCard } from '@/components/TeaBlendInfoCard';
+import { useStore } from '@/lib/store';
 import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { colors, spacing } from '@/lib/theme';
 
@@ -16,6 +18,22 @@ export function TeaRecommendationDetailModal({
   onClose,
   reasonTitle = '오늘 잘 맞는 이유',
 }: TeaRecommendationDetailModalProps) {
+  const { savedTeaIds, saveTeaToBox } = useStore();
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+
+  const isSaved = savedTeaIds.includes(recommendation.teaId);
+
+  useEffect(() => {
+    if (visible) {
+      setFeedbackMessage('');
+    }
+  }, [visible, recommendation.teaId]);
+
+  const handleSaveTea = async () => {
+    const result = await saveTeaToBox(recommendation.teaId);
+    setFeedbackMessage(result.added ? '내 티함에 담았어요.' : '이미 담겨 있는 블렌드예요.');
+  };
+
   return (
     <Modal
       transparent
@@ -50,6 +68,17 @@ export function TeaRecommendationDetailModal({
               <Text style={styles.sectionLabel}>{reasonTitle}</Text>
               <Text style={styles.bodyText}>{recommendation.reason}</Text>
               <Text style={styles.contextText}>{recommendation.contextLine}</Text>
+            </View>
+
+            <View style={styles.actionSection}>
+              <Pressable style={[styles.saveButton, isSaved && styles.saveButtonSaved]} onPress={handleSaveTea}>
+                <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+                  {isSaved ? '내 티함에 담겨 있어요' : '내 티함에 담기'}
+                </Text>
+              </Pressable>
+              {feedbackMessage ? (
+                <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+              ) : null}
             </View>
 
             <TeaBlendInfoCard
@@ -143,6 +172,9 @@ const styles = StyleSheet.create({
   section: {
     marginTop: spacing.lg,
   },
+  actionSection: {
+    marginTop: spacing.lg,
+  },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -158,6 +190,30 @@ const styles = StyleSheet.create({
   },
   contextText: {
     marginTop: spacing.xs,
+    fontSize: 13,
+    color: colors.textLight,
+    letterSpacing: -0.2,
+  },
+  saveButton: {
+    backgroundColor: colors.text,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveButtonSaved: {
+    backgroundColor: colors.primaryLight,
+  },
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.card,
+    letterSpacing: -0.1,
+  },
+  saveButtonTextSaved: {
+    color: colors.text,
+  },
+  feedbackText: {
+    marginTop: spacing.sm,
     fontSize: 13,
     color: colors.textLight,
     letterSpacing: -0.2,

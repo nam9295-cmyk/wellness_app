@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
+import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
+import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function MyScreen() {
-  const { isReady, userSettings, updateSettings } = useStore();
+  const { isReady, userSettings, updateSettings, savedTeaIds, removeTeaFromBox } = useStore();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedTeaId, setSelectedTeaId] = useState<TeaRecommendationId | null>(null);
   const [nickname, setNickname] = useState(userSettings?.nickname || '');
   const [selectedGoal, setSelectedGoal] = useState(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
   const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
@@ -56,6 +60,38 @@ export default function MyScreen() {
     syncFormWithSettings();
     setIsEditing(false);
   };
+
+  const handleRemoveTea = (teaId: TeaRecommendationId) => {
+    const tea = teaRecommendationContent[teaId];
+
+    Alert.alert(
+      '내 티함에서 삭제',
+      `${tea.name}을(를) 내 티함에서 뺄까요?`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            await removeTeaFromBox(teaId);
+
+            if (selectedTeaId === teaId) {
+              setSelectedTeaId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const selectedTeaRecommendation: TeaRecommendationResult | null = selectedTeaId
+    ? {
+        teaId: selectedTeaId,
+        content: teaRecommendationContent[selectedTeaId],
+        reason: '다시 보고 싶은 블렌드를 내 티함에 담아두었어요. 지금의 취향과 무드에 맞는지 천천히 살펴볼 수 있어요.',
+        contextLine: `저장한 블렌드 · ${teaRecommendationContent[selectedTeaId].timings[0]}`,
+      }
+    : null;
 
   if (!isReady) {
     return (
@@ -161,11 +197,55 @@ export default function MyScreen() {
 
           <View style={styles.divider} />
 
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>내 티함</Text>
+            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 담겨 있어요</Text>
+          </View>
+
+          {savedTeaIds.length > 0 ? (
+            <View>
+              {savedTeaIds.map((teaId) => {
+                const tea = teaRecommendationContent[teaId];
+
+                return (
+                  <View key={teaId} style={styles.teaItem}>
+                    <TouchableOpacity style={styles.teaItemMain} activeOpacity={0.88} onPress={() => setSelectedTeaId(teaId)}>
+                      <View style={styles.teaItemText}>
+                        <Text style={styles.teaItemBadge}>담아둔 블렌드</Text>
+                        <Text style={styles.teaName}>{tea.name}</Text>
+                        <Text style={styles.teaSubtitle}>{tea.subtitle}</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => handleRemoveTea(teaId)} style={styles.removeButton}>
+                      <Text style={styles.removeButtonText}>삭제</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyTeaBox}>
+              <Text style={styles.emptyTeaText}>마음에 드는 추천 티를 담아두면, 여기서 다시 꺼내 보며 비교할 수 있어요.</Text>
+            </View>
+          )}
+
+          <View style={styles.divider} />
+
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>앱 정보 (v1.0.0)</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {selectedTeaRecommendation ? (
+        <TeaRecommendationDetailModal
+          visible={Boolean(selectedTeaRecommendation)}
+          recommendation={selectedTeaRecommendation}
+          reasonTitle="저장해둔 블렌드"
+          onClose={() => setSelectedTeaId(null)}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -201,6 +281,7 @@ const styles = StyleSheet.create({
   menuList: { padding: spacing.lg, paddingTop: spacing.xl },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, letterSpacing: -0.3 },
+  sectionMeta: { fontSize: 13, color: colors.textLight, fontWeight: '600', letterSpacing: -0.2 },
   editButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
   cancelButtonText: { fontSize: 15, color: colors.textLight, fontWeight: '600' },
   saveButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
@@ -226,6 +307,69 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xl },
   menuItem: { paddingVertical: spacing.md, backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   menuText: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
+  teaItem: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  teaItemMain: {
+    flex: 1,
+    padding: spacing.md,
+  },
+  teaItemText: {
+    gap: 4,
+  },
+  teaItemBadge: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '700',
+    marginBottom: 2,
+    letterSpacing: -0.1,
+  },
+  teaName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.2,
+  },
+  teaSubtitle: {
+    fontSize: 14,
+    color: colors.textLight,
+    letterSpacing: -0.2,
+  },
+  removeButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    alignSelf: 'stretch',
+  },
+  removeButtonText: {
+    fontSize: 13,
+    color: colors.textLight,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  emptyTeaBox: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  emptyTeaText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textLight,
+    letterSpacing: -0.2,
+  },
   
   // Edit Form Styles
   editForm: { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
