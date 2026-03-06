@@ -12,6 +12,7 @@ export default function LogScreen() {
   const router = useRouter();
   const { addLog, getTodayLog, isReady } = useStore();
   const todayLog = getTodayLog();
+  const isEditingTodayLog = Boolean(todayLog);
 
   const [sleep, setSleep] = useState<SleepState>(todayLog?.sleep || '보통');
   const [fatigue, setFatigue] = useState<number>(todayLog?.fatigue || 3);
@@ -44,9 +45,16 @@ export default function LogScreen() {
       water,
       memo,
     });
-    Alert.alert('저장 완료', '오늘의 웰니스 상태가 기록되었습니다.', [
-      { text: '확인', onPress: () => router.push('/(tabs)') }
-    ]);
+
+    Alert.alert(
+      isEditingTodayLog ? '수정 완료' : '저장 완료',
+      isEditingTodayLog
+        ? '오늘의 웰니스 기록이 수정되었습니다.'
+        : '오늘의 웰니스 상태가 기록되었습니다.',
+      [
+        { text: '확인', onPress: () => router.replace('/(tabs)') }
+      ]
+    );
   };
 
   if (!isReady) {
@@ -60,7 +68,7 @@ export default function LogScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.mainTitle}>{todayLog ? '오늘 기록 수정하기' : '오늘 하루 남기기'}</Text>
+        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정하기' : '오늘 하루 남기기'}</Text>
         
         <SectionTitle title="수면 상태" />
         <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
@@ -91,7 +99,7 @@ export default function LogScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>기록 저장하기</Text>
+          <Text style={styles.buttonText}>{isEditingTodayLog ? '수정 내용 저장하기' : '기록 저장하기'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

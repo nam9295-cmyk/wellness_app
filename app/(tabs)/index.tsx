@@ -3,12 +3,14 @@ import { Card } from '@/components/Card';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
+import { getHomeRecommendation } from '@/lib/homeRecommendation';
 
 export default function Home() {
   const { logs, getTodayLog, isReady, userSettings } = useStore();
   const todayLog = getTodayLog();
 
   const recordCount = logs.length;
+  const recommendation = getHomeRecommendation(logs, userSettings);
 
   if (!isReady) {
     return (
@@ -62,6 +64,10 @@ export default function Home() {
         <Text style={styles.statText}>지금까지 총 <Text style={styles.statHighlight}>{recordCount}</Text>일 기록했어요.</Text>
       </Card>
 
+      <Card title={recommendation.title}>
+        <Text style={styles.recommendationText}>{recommendation.message}</Text>
+      </Card>
+
       <Card title="최근 기록 타임라인">
         {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
           <View key={log.id} style={[styles.logItem, index === 2 && { borderBottomWidth: 0 }]}>
@@ -92,6 +98,7 @@ const styles = StyleSheet.create({
   memoText: { fontSize: 14, color: colors.text, lineHeight: 22 },
   statText: { fontSize: 16, color: colors.text },
   statHighlight: { fontSize: 20, fontWeight: '700', color: colors.primary },
+  recommendationText: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },
   logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
   logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },
   logSummary: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 }

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function MyScreen() {
-  const { userSettings, updateSettings } = useStore();
+  const { isReady, userSettings, updateSettings } = useStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState(userSettings?.nickname || '');
@@ -13,12 +13,16 @@ export default function MyScreen() {
   const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
   const [useMenstrualCycle, setUseMenstrualCycle] = useState(userSettings?.useMenstrualCycle || DEFAULT_USER_SETTINGS.useMenstrualCycle);
 
+  const syncFormWithSettings = () => {
+    setNickname(userSettings?.nickname || '');
+    setSelectedGoal(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
+    setNotificationTime(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
+    setUseMenstrualCycle(userSettings?.useMenstrualCycle || DEFAULT_USER_SETTINGS.useMenstrualCycle);
+  };
+
   useEffect(() => {
     if (!isEditing && userSettings) {
-      setNickname(userSettings.nickname);
-      setSelectedGoal(userSettings.goal);
-      setNotificationTime(userSettings.notificationTime);
-      setUseMenstrualCycle(userSettings.useMenstrualCycle);
+      syncFormWithSettings();
     }
   }, [isEditing, userSettings]);
 
@@ -43,9 +47,23 @@ export default function MyScreen() {
     Alert.alert('성공', '설정이 저장되었습니다.');
   };
 
+  const handleStartEditing = () => {
+    syncFormWithSettings();
+    setIsEditing(true);
+  };
+
   const handleCancel = () => {
+    syncFormWithSettings();
     setIsEditing(false);
   };
+
+  if (!isReady) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -73,7 +91,7 @@ export default function MyScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>나의 설정</Text>
             {!isEditing ? (
-              <TouchableOpacity onPress={() => setIsEditing(true)}>
+              <TouchableOpacity onPress={handleStartEditing}>
                 <Text style={styles.editButtonText}>수정</Text>
               </TouchableOpacity>
             ) : (
@@ -125,6 +143,11 @@ export default function MyScreen() {
           ) : (
             <View>
               <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>주요 목표</Text>
+                <Text style={styles.settingValue}>{userSettings?.goal || '설정 안 함'}</Text>
+              </View>
+
+              <View style={styles.settingItem}>
                 <Text style={styles.settingLabel}>알림 시간</Text>
                 <Text style={styles.settingValue}>{userSettings?.notificationTime || '설정 안 함'}</Text>
               </View>
@@ -149,6 +172,7 @@ export default function MyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   profileSection: { 
     padding: spacing.xl, 
     alignItems: 'center', 

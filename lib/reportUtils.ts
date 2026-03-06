@@ -1,4 +1,5 @@
 import { isDateWithinLastDays } from '@/lib/date';
+import { generateReportInsights } from '@/lib/reportInsights';
 import { ExerciseState, EXERCISE_STATES, SleepState, WellnessLog } from '@/types';
 
 export interface ReportStats {
@@ -19,7 +20,7 @@ export function generateReportStats(logs: WellnessLog[]): ReportStats {
       avgMood: '0.0',
       avgFatigue: '0.0',
       frequentSleep: '-',
-      insights: ['아직 기록이 충분하지 않아요. 오늘의 웰니스를 기록해 볼까요?']
+      insights: generateReportInsights(logs)
     };
   }
 
@@ -49,27 +50,7 @@ export function generateReportStats(logs: WellnessLog[]): ReportStats {
   const exerciseCount = logs.filter((log) => activeExerciseStates.has(log.exercise)).length;
   const exerciseRate = Math.round((exerciseCount / totalLogs) * 100);
 
-  // 5. 인사이트 문구 생성 로직
-  const insights: string[] = [];
-
-  const moodScore = parseFloat(avgMood);
-  if (moodScore >= 4.0) {
-    insights.push('기분 점수가 전반적으로 높고 안정적이에요. 긍정적인 에너지가 가득하네요! ✨');
-  } else if (moodScore <= 2.5) {
-    insights.push('최근 기분이 조금 다운되어 있는 것 같아요. 스스로를 위한 휴식 시간이 필요할지 몰라요. ☕️');
-  } else {
-    insights.push('무난하고 안정적인 기분 상태를 유지하고 계시네요. 😌');
-  }
-
-  if (frequentSleep === '매우 부족' || frequentSleep === '부족') {
-    insights.push('최근 수면 부족 기록이 자주 보여요. 오늘은 조금 일찍 잠자리에 들어보는 건 어떨까요? 🛌');
-  }
-
-  if (exerciseRate < 30) {
-    insights.push('규칙적인 운동 빈도가 약간 낮아요. 가벼운 스트레칭이라도 시작해보는 걸 추천해요! 🚶‍♀️');
-  } else if (exerciseRate >= 70) {
-    insights.push('꾸준히 운동을 실천하고 계시군요! 건강한 습관이 잘 자리 잡았어요. 💪');
-  }
+  const insights = generateReportInsights(logs);
 
   return {
     totalLogs,
