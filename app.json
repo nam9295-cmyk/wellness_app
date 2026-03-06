@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Wellness MVP",
+    "slug": "wellness-mvp",
+    "scheme": "wellness-mvp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
