@@ -1,13 +1,17 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { generateReportStats } from '@/lib/reportUtils';
 import { StatCard } from '@/components/StatCard';
 import { InsightCard } from '@/components/InsightCard';
 import { formatDisplayDate } from '@/lib/date';
+import { getTeaRecommendationForRecentFlow } from '@/lib/teaRecommendationEngine';
 
 export default function ReportScreen() {
-  const { logs, isReady } = useStore();
+  const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
+  const { logs, isReady, userSettings } = useStore();
 
   if (!isReady) {
     return (
@@ -18,12 +22,30 @@ export default function ReportScreen() {
   }
 
   const stats = generateReportStats(logs);
+  const teaRecommendation = getTeaRecommendationForRecentFlow({
+    logs,
+    userGoal: userSettings?.goal,
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>내 웰니스 리포트</Text>
       
       <InsightCard insights={stats.insights} />
+
+      <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
+        <View style={styles.teaCard}>
+          <Text style={styles.teaCardLabel}>이번 주 추천 티</Text>
+          <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+          <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
+          <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
+          <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
+          {teaRecommendation.secondaryContent ? (
+            <Text style={styles.secondaryTea}>보조 후보: {teaRecommendation.secondaryContent.name}</Text>
+          ) : null}
+          <Text style={styles.detailHint}>눌러서 최근 흐름 기준 추천 이유 보기</Text>
+        </View>
+      </TouchableOpacity>
       
       <View style={styles.statGrid}>
         <View style={styles.statRow}>
@@ -62,6 +84,13 @@ export default function ReportScreen() {
       {stats.totalLogs === 0 && (
         <Text style={styles.emptyText}>기록이 모이면 전체 리포트가 생성됩니다.</Text>
       )}
+
+      <TeaRecommendationDetailModal
+        visible={isTeaDetailVisible}
+        recommendation={teaRecommendation}
+        reasonTitle="최근 흐름에 잘 맞는 이유"
+        onClose={() => setIsTeaDetailVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -71,6 +100,26 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   title: { fontSize: 26, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
   subTitle: { fontSize: 18, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.md, color: colors.text, letterSpacing: -0.3 },
+  teaCard: {
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+    borderRadius: 20,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  teaCardLabel: { fontSize: 13, fontWeight: '700', color: colors.textLight, marginBottom: spacing.sm, letterSpacing: 0.2 },
+  teaName: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.4 },
+  teaSubtitle: { fontSize: 13, color: colors.primary, marginBottom: spacing.sm, fontWeight: '600' },
+  teaDescription: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },
+  teaContext: { fontSize: 13, color: colors.textLight, marginTop: spacing.sm, letterSpacing: -0.2 },
+  secondaryTea: { fontSize: 13, color: colors.text, marginTop: spacing.sm, fontWeight: '600', letterSpacing: -0.1 },
+  detailHint: { fontSize: 12, color: colors.textLight, marginTop: spacing.md, fontWeight: '600', letterSpacing: -0.1 },
   statGrid: { gap: spacing.sm, marginBottom: spacing.xl },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   historyRow: { 

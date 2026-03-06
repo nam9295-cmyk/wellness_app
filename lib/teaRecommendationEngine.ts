@@ -1,3 +1,4 @@
+import { isDateWithinLastDays } from '@/lib/date';
 import { TeaRecommendationContent, TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { UserSettings, WellnessGoal, WellnessLog } from '@/types';
 
@@ -304,6 +305,16 @@ function applyTagScores(scoreBoard: TeaScoreBoard, tags: TeaContextTag[]) {
   });
 }
 
+function scoreTeaRecommendationContext(context: TeaRecommendationContext): TeaScoreBoard {
+  const scoreBoard = createScoreBoard();
+
+  applyTimeSlotScores(scoreBoard, context.timeSlot);
+  applyGoalScores(scoreBoard, context.activeGoal);
+  applyTagScores(scoreBoard, context.tags);
+
+  return scoreBoard;
+}
+
 function getTeaReason(teaId: TeaRecommendationId, context: TeaRecommendationContext): string {
   const { tags, timeSlot } = context;
 
@@ -383,11 +394,7 @@ function getRankedTeaIds(scoreBoard: TeaScoreBoard): TeaRecommendationId[] {
 
 export function getTeaRecommendation(input: TeaRecommendationInput): TeaRecommendationResult {
   const context = deriveTeaRecommendationContext(input);
-  const scoreBoard = createScoreBoard();
-
-  applyTimeSlotScores(scoreBoard, context.timeSlot);
-  applyGoalScores(scoreBoard, context.activeGoal);
-  applyTagScores(scoreBoard, context.tags);
+  const scoreBoard = scoreTeaRecommendationContext(context);
 
   const rankedTeaIds = getRankedTeaIds(scoreBoard);
   const topTeaId = rankedTeaIds[0];
@@ -402,5 +409,159 @@ export function getTeaRecommendation(input: TeaRecommendationInput): TeaRecommen
     secondaryContent: secondaryTeaId ? teaRecommendationContent[secondaryTeaId] : undefined,
     reason: getTeaReason(topTeaId, context),
     contextLine: `잘 맞는 흐름: ${getTimeSlotLabel(context.timeSlot)} · ${situationLabel}`,
+  };
+}
+
+function getRecentFlowLogs(logs: WellnessLog[]): WellnessLog[] {
+  const recent7DaysLogs = logs.filter((log) => isDateWithinLastDays(log.date, 7));
+  return recent7DaysLogs.length > 0 ? recent7DaysLogs : logs.slice(0, 7);
+}
+
+function deriveRecentFlowTeaContext({
+  logs,
+  userGoal,
+}: TeaRecommendationInput): TeaRecommendationContext {
+  const targetLogs = getRecentFlowLogs(logs);
+  const tags = new Set<TeaContextTag>();
+
+  addGoalTags(userGoal, tags);
+
+  if (targetLogs.length === 0) {
+    return {
+      timeSlot: 'afternoon',
+      tags: Array.from(tags),
+      activeGoal: userGoal,
+    };
+  }
+
+  const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
+  const lowMoodCount = targetLogs.filter((log) => log.mood <= 2).length;
+  const lowWaterCount = targetLogs.filter((log) => log.water === '부족').length;
+  const activeDays = targetLogs.filter((log) => log.exercise !== '안 함').length;
+  const avgMood = targetLogs.reduce((sum, log) => sum + log.mood, 0) / targetLogs.length;
+  const avgFatigue = targetLogs.reduce((sum, log) => sum + log.fatigue, 0) / targetLogs.length;
+
+  if (lowSleepCount >= 2) {
+    tags.add('low_stimulation');
+    tags.add('gentle_balance');
+  }
+
+  if (avgFatigue <= 2.5) {
+    tags.add('gentle_balance');
+  }
+
+  if (avgFatigue >= 3.8 && activeDays >= 2) {
+    tags.add('focus_ready');
+  }
+
+  if (lowMoodCount >= 2 || avgMood <= 2.7) {
+    tags.add('mood_reset');
+  }
+
+  if (avgMood >= 3.5 && avgFatigue >= 3 && lowSleepCount === 0) {
+    tags.add('steady_flow');
+  }
+
+  if (lowWaterCount >= 2) {
+    tags.add('refresh_hydration');
+  }
+
+  if (activeDays <= 1) {
+    tags.add('light_refresh');
+  } else if (activeDays >= 3) {
+    tags.add('after_activity');
+  }
+
+  return {
+    timeSlot: 'afternoon',
+    tags: Array.from(tags),
+    activeGoal: userGoal,
+    latestLog: targetLogs[0],
+  };
+}
+
+function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): string {
+  const targetLogs = getRecentFlowLogs(logs);
+
+  if (targetLogs.length === 0) {
+    return '기록이 쌓이면 최근 흐름에 맞는 티를 더 정교하게 보여드릴게요.';
+  }
+
+  const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
+  const lowMoodCount = targetLogs.filter((log) => log.mood <= 2).length;
+  const lowWaterCount = targetLogs.filter((log) => log.water === '부족').length;
+  const activeDays = targetLogs.filter((log) => log.exercise !== '안 함').length;
+  const avgMood = targetLogs.reduce((sum, log) => sum + log.mood, 0) / targetLogs.length;
+  const avgFatigue = targetLogs.reduce((sum, log) => sum + log.fatigue, 0) / targetLogs.length;
+
+  if (lowSleepCount >= 2) {
+    return teaId === 'asianGold' || teaId === 'hibiscusFruit'
+      ? '최근 기록에서 수면이 가벼운 날이 이어져 보여요. 과하지 않고 부드럽게 이어지는 티가 최근 흐름과 잘 맞아요.'
+      : '최근 수면 흐름을 고려해 자극이 강하지 않은 쪽으로 균형을 맞췄어요.';
+  }
+
+  if (lowWaterCount >= 2) {
+    return '수분이 부족한 날이 반복돼서, 산뜻하게 전환되는 블렌드를 중심으로 골랐어요.';
+  }
+
+  if (lowMoodCount >= 2 || avgMood <= 2.7) {
+    return '기분이 가라앉는 날이 보여서, 최근 흐름을 가볍게 환기해줄 수 있는 무드의 티를 골랐어요.';
+  }
+
+  if (activeDays <= 1) {
+    return '운동 기록이 적은 주간에는 무겁지 않게 리듬을 다시 붙이기 좋은 티가 잘 맞아요.';
+  }
+
+  if (avgMood >= 3.5 && avgFatigue >= 3) {
+    return '전반적으로 안정적인 흐름이 보여서, 지금 리듬을 자연스럽게 이어갈 수 있는 티를 골랐어요.';
+  }
+
+  return '최근 기록 전반을 보면 한쪽으로 치우치기보다 균형감 있게 이어지는 티가 잘 맞는 흐름이에요.';
+}
+
+function getRecentFlowContextLine(teaId: TeaRecommendationId, logs: WellnessLog[]): string {
+  const targetLogs = getRecentFlowLogs(logs);
+
+  if (targetLogs.length === 0) {
+    return `최근 흐름: ${teaRecommendationContent[teaId].situations[0]}`;
+  }
+
+  const activeDays = targetLogs.filter((log) => log.exercise !== '안 함').length;
+  const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
+  const lowWaterCount = targetLogs.filter((log) => log.water === '부족').length;
+
+  if (lowSleepCount >= 2) {
+    return '최근 흐름: 부드러운 데일리 루틴';
+  }
+
+  if (lowWaterCount >= 2) {
+    return '최근 흐름: 가벼운 리셋';
+  }
+
+  if (activeDays <= 1) {
+    return '최근 흐름: 기분 환기 · 가벼운 전환';
+  }
+
+  if (activeDays >= 3) {
+    return '최근 흐름: 꾸준한 루틴 이어가기';
+  }
+
+  return `최근 흐름: ${teaRecommendationContent[teaId].situations[0]}`;
+}
+
+export function getTeaRecommendationForRecentFlow(input: TeaRecommendationInput): TeaRecommendationResult {
+  const context = deriveRecentFlowTeaContext(input);
+  const scoreBoard = scoreTeaRecommendationContext(context);
+  const rankedTeaIds = getRankedTeaIds(scoreBoard);
+  const topTeaId = rankedTeaIds[0];
+  const secondaryTeaId = rankedTeaIds[1];
+
+  return {
+    teaId: topTeaId,
+    content: teaRecommendationContent[topTeaId],
+    secondaryTeaId,
+    secondaryContent: secondaryTeaId ? teaRecommendationContent[secondaryTeaId] : undefined,
+    reason: getRecentFlowReason(input.logs, topTeaId),
+    contextLine: getRecentFlowContextLine(topTeaId, input.logs),
   };
 }
