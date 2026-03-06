@@ -41,7 +41,7 @@ export default function Onboarding() {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>웰니스 프로필 설정</Text>
-        <Text style={styles.subtitle}>나에게 딱 맞는 웰니스 관리를 시작해볼까요?</Text>
+        <Text style={styles.subtitle}>일상 기록과 티 추천이 자연스럽게 이어지도록 기본 설정을 먼저 맞춰볼게요.</Text>
         
         {/* 닉네임 입력 */}
         <View style={styles.section}>
@@ -80,7 +80,7 @@ export default function Onboarding() {
         {/* 알림 시간 설정 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>매일 기록 알림을 받을까요?</Text>
-          <Text style={styles.sectionDesc}>현재는 텍스트 입력만 가능합니다. (ex: 21:00)</Text>
+          <Text style={styles.sectionDesc}>원하는 시간을 직접 입력해둘 수 있어요. 예: 21:00</Text>
           <TextInput
             style={styles.input}
             placeholder="09:00"
@@ -94,7 +94,7 @@ export default function Onboarding() {
         <View style={[styles.section, styles.switchSection]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.sectionTitle}>생리주기 기록 활성화</Text>
-            <Text style={styles.sectionDesc}>기록 탭에서 주기를 함께 트래킹합니다.</Text>
+            <Text style={styles.sectionDesc}>필요할 때 기록 흐름과 함께 살펴볼 수 있어요.</Text>
           </View>
           <Switch
             value={useMenstrualCycle}

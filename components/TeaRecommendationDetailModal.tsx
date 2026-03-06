@@ -32,7 +32,7 @@ export function TeaRecommendationDetailModal({
 
   const handleSaveTea = async () => {
     const result = await saveTeaToBox(recommendation.teaId);
-    setFeedbackMessage(result.added ? '내 티함에 담았어요.' : '이미 담겨 있는 블렌드예요.');
+    setFeedbackMessage(result.added ? '내 티함에 담아두었어요.' : '이미 티함에 담아둔 블렌드예요.');
   };
 
   return (
@@ -75,7 +75,7 @@ export function TeaRecommendationDetailModal({
             <View style={styles.actionSection}>
               <Pressable style={[styles.saveButton, isSaved && styles.saveButtonSaved]} onPress={handleSaveTea}>
                 <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                  {isSaved ? '내 티함에 담겨 있어요' : '내 티함에 담기'}
+                  {isSaved ? '이미 티함에 담겨 있어요' : '내 티함에 담기'}
                 </Text>
               </Pressable>
               {feedbackMessage ? (

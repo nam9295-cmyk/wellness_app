@@ -17,8 +17,8 @@ export function getHomeRecommendation(logs: WellnessLog[], userSettings: UserSet
     return {
       title: '오늘의 한마디',
       message: userSettings?.goal
-        ? `${userSettings.goal} 목표에 맞춰 오늘 컨디션을 가볍게 기록해보세요.`
-        : '오늘 컨디션을 가볍게 기록하면서 흐름을 만들어보세요.',
+        ? `${userSettings.goal} 목표에 맞춰 오늘 컨디션을 가볍게 남겨보세요.`
+        : '오늘 컨디션을 가볍게 남기며 흐름을 쌓아보세요.',
     };
   }
 
@@ -28,21 +28,21 @@ export function getHomeRecommendation(logs: WellnessLog[], userSettings: UserSet
   if ((latestLog.sleep === '매우 부족' || latestLog.sleep === '부족') && latestLog.fatigue <= 2) {
     return {
       title: '오늘의 추천',
-      message: '오늘은 회복 중심 루틴이 좋아요.',
+      message: '오늘은 회복 중심으로 리듬을 가볍게 가져가보세요.',
     };
   }
 
   if (latestLog.water === '부족') {
     return {
       title: '오늘의 추천',
-      message: '수분 섭취를 조금 더 챙겨보세요.',
+      message: '물이나 따뜻한 차처럼 수분을 조금 더 챙겨보세요.',
     };
   }
 
   if (activeDays === 0) {
     return {
       title: '오늘의 추천',
-      message: '가벼운 산책이나 스트레칭부터 시작해보세요.',
+      message: '가벼운 산책이나 스트레칭처럼 작은 움직임부터 시작해보세요.',
     };
   }
 
@@ -55,6 +55,6 @@ export function getHomeRecommendation(logs: WellnessLog[], userSettings: UserSet
 
   return {
     title: '오늘의 추천',
-    message: '좋은 흐름을 유지하고 있어요.',
+    message: '지금의 좋은 흐름을 차분하게 이어가보세요.',
   };
 }

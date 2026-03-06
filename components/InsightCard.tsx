@@ -8,7 +8,7 @@ interface InsightCardProps {
 export function InsightCard({ insights }: InsightCardProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Wellness Insights</Text>
+      <Text style={styles.header}>최근 흐름 인사이트</Text>
       <View style={styles.insightList}>
         {insights.map((insight, index) => (
           <View key={index} style={styles.insightItem}>
@@ -30,11 +30,10 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
     marginBottom: spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: -0.1,
   },
   insightList: {
     gap: spacing.sm,

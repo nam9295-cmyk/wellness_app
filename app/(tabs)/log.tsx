@@ -49,8 +49,8 @@ export default function LogScreen() {
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
       isEditingTodayLog
-        ? '오늘의 웰니스 기록이 수정되었어요.\n홈 추천도 최신 기록 기준으로 반영됩니다.'
-        : '오늘의 웰니스 상태가 기록되었어요.\n홈 추천도 함께 업데이트됩니다.',
+        ? '오늘 기록을 수정했어요.\n홈 추천도 최신 내용으로 반영됐어요.'
+        : '오늘 기록을 저장했어요.\n홈 추천도 함께 업데이트됐어요.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]
@@ -68,7 +68,8 @@ export default function LogScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정하기' : '오늘 하루 남기기'}</Text>
+        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정하기' : '오늘 기록 남기기'}</Text>
+        <Text style={styles.subTitle}>지금 상태를 가볍게 남기면 홈과 리포트 추천이 함께 업데이트돼요.</Text>
         
         <SectionTitle title="수면 상태" />
         <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
@@ -99,7 +100,7 @@ export default function LogScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>{isEditingTodayLog ? '수정 내용 저장하기' : '기록 저장하기'}</Text>
+          <Text style={styles.buttonText}>{isEditingTodayLog ? '오늘 기록 업데이트' : '오늘 기록 저장'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -110,6 +111,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   mainTitle: { fontSize: 24, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
+  subTitle: { fontSize: 14, color: colors.textLight, lineHeight: 22, marginTop: -spacing.md, marginBottom: spacing.xl, letterSpacing: -0.2 },
   textInput: {
     borderWidth: 1,
     borderColor: colors.border,

@@ -31,6 +31,7 @@ export default function ReportScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>내 웰니스 리포트</Text>
+      <Text style={styles.caption}>최근 기록 흐름과 잘 맞는 티를 함께 살펴볼 수 있어요.</Text>
       
       <InsightCard insights={stats.insights} />
 
@@ -49,7 +50,7 @@ export default function ReportScreen() {
           {teaRecommendation.secondaryContent ? (
             <Text style={styles.secondaryTea}>보조 후보: {teaRecommendation.secondaryContent.name}</Text>
           ) : null}
-          <Text style={styles.detailHint}>눌러서 최근 흐름 기준 추천 이유 보기</Text>
+          <Text style={styles.detailHint}>눌러서 최근 흐름 기준 추천을 자세히 보기</Text>
         </View>
       </TouchableOpacity>
       
@@ -67,28 +68,28 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      <Text style={styles.subTitle}>최신 기록 타임라인</Text>
-      {logs.slice(0, 5).map(log => (
-        <View key={log.id} style={styles.historyRow}>
-          <View>
-            <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
-            <Text style={styles.historyMemo} numberOfLines={1}>
-              {log.memo ? log.memo : '메모 없음'}
-            </Text>
-          </View>
-          <View style={styles.historyData}>
-            <View style={styles.historyBadge}>
-              <Text style={styles.historyBadgeText}>기분 {log.mood}</Text>
+      <Text style={styles.subTitle}>최근 기록</Text>
+      {logs.length > 0 ? (
+        logs.slice(0, 5).map(log => (
+          <View key={log.id} style={styles.historyRow}>
+            <View>
+              <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
+              <Text style={styles.historyMemo} numberOfLines={1}>
+                {log.memo ? log.memo : '메모 없이 남긴 기록이에요.'}
+              </Text>
             </View>
-            <View style={styles.historyBadge}>
-              <Text style={styles.historyBadgeText}>피로 {log.fatigue}</Text>
+            <View style={styles.historyData}>
+              <View style={styles.historyBadge}>
+                <Text style={styles.historyBadgeText}>기분 {log.mood}</Text>
+              </View>
+              <View style={styles.historyBadge}>
+                <Text style={styles.historyBadgeText}>피로 {log.fatigue}</Text>
+              </View>
             </View>
           </View>
-        </View>
-      ))}
-
-      {stats.totalLogs === 0 && (
-        <Text style={styles.emptyText}>기록이 모이면 전체 리포트가 생성됩니다.</Text>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>기록이 쌓이면 최근 흐름을 더 또렷하게 볼 수 있어요.</Text>
       )}
 
       <TeaRecommendationDetailModal
@@ -105,6 +106,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   title: { fontSize: 26, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
+  caption: { fontSize: 14, color: colors.textLight, lineHeight: 22, marginTop: -spacing.md, marginBottom: spacing.lg, letterSpacing: -0.2 },
   subTitle: { fontSize: 18, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.md, color: colors.text, letterSpacing: -0.3 },
   teaCard: {
     backgroundColor: colors.card,
@@ -162,5 +164,5 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     fontWeight: '500',
   },
-  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: spacing.xxl, fontSize: 15 }
+  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: spacing.md, fontSize: 15, lineHeight: 24 }
 });

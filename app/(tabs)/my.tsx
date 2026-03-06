@@ -49,7 +49,7 @@ export default function MyScreen() {
     });
     
     setIsEditing(false);
-    Alert.alert('성공', '설정이 저장되었습니다.');
+    Alert.alert('저장 완료', '설정을 반영했어요.');
   };
 
   const handleStartEditing = () => {
@@ -121,7 +121,7 @@ export default function MyScreen() {
           ) : (
             <Text style={styles.name}>{userSettings?.nickname || '회원'} 님</Text>
           )}
-          <Text style={styles.goalText}>목표: {isEditing ? selectedGoal : userSettings?.goal || '설정 필요'}</Text>
+          <Text style={styles.goalText}>현재 목표 · {isEditing ? selectedGoal : userSettings?.goal || '설정 필요'}</Text>
         </View>
         
         <View style={styles.menuList}>
@@ -163,7 +163,7 @@ export default function MyScreen() {
                 style={styles.timeInput}
                 value={notificationTime}
                 onChangeText={setNotificationTime}
-                placeholder="시간 입력"
+                placeholder="예: 21:00"
                 keyboardType="numbers-and-punctuation"
                 placeholderTextColor={colors.textLight}
               />
@@ -200,7 +200,7 @@ export default function MyScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>내 티함</Text>
-            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 담겨 있어요</Text>
+            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 담아두었어요</Text>
           </View>
 
           {savedTeaIds.length > 0 ? (
@@ -228,7 +228,7 @@ export default function MyScreen() {
             </View>
           ) : (
             <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>마음에 드는 추천 티를 담아두면, 여기서 다시 꺼내 보며 비교할 수 있어요.</Text>
+              <Text style={styles.emptyTeaText}>마음에 드는 추천 티를 담아두면, 여기에서 다시 꺼내 보며 천천히 비교할 수 있어요.</Text>
             </View>
           )}
 

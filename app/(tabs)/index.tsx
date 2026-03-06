@@ -48,7 +48,7 @@ export default function Home() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.greeting}>안녕하세요 {nickname}님</Text>
       <Text style={styles.subtitle}>
-        {todayLog ? '오늘도 건강한 하루를 기록하셨군요.' : `아직 오늘의 기록이 없어요.\n${goalMessage}웰니스 상태를 기록해볼까요?`}
+        {todayLog ? '오늘 기록을 바탕으로 상태와 추천을 함께 살펴볼 수 있어요.' : `아직 오늘 기록이 없어요.\n${goalMessage}가볍게 컨디션을 남겨볼까요?`}
       </Text>
 
       {latestLogFeedback ? (
@@ -83,7 +83,7 @@ export default function Home() {
             ) : null}
           </View>
         ) : (
-          <Text style={styles.emptyText}>가운데 기록 탭을 눌러 작성해주세요.</Text>
+          <Text style={styles.emptyText}>기록 탭에서 오늘 컨디션을 남겨보세요.</Text>
         )}
       </Card>
 
@@ -107,11 +107,11 @@ export default function Home() {
           </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
           <Text style={styles.teaUpdateHint}>오늘 기록 기준으로 바로 반영된 추천이에요.</Text>
-          <Text style={styles.detailHint}>눌러서 추천 이유 자세히 보기</Text>
+          <Text style={styles.detailHint}>눌러서 추천 티를 자세히 보기</Text>
         </Card>
       </TouchableOpacity>
 
-      <Card title="최근 기록 타임라인">
+      <Card title="최근 기록">
         {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
           <View key={log.id} style={[styles.logItem, index === 2 && { borderBottomWidth: 0 }]}>
             <Text style={styles.logDate}>{formatDisplayDate(log.date)}</Text>
@@ -120,7 +120,7 @@ export default function Home() {
             </Text>
           </View>
         )) : (
-          <Text style={styles.emptyText}>기록이 없습니다.</Text>
+          <Text style={styles.emptyText}>아직 쌓인 기록이 없어요.</Text>
         )}
       </Card>
       
