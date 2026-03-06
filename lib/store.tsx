@@ -12,6 +12,8 @@ interface StoreContextType {
   getTodayLog: () => WellnessLog | undefined;
   userSettings: UserSettings | null;
   updateSettings: (settings: UserSettings) => Promise<void>;
+  latestLogFeedback: string | null;
+  clearLatestLogFeedback: () => void;
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
   removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
@@ -23,6 +25,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<WellnessLog[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [latestLogFeedback, setLatestLogFeedback] = useState<string | null>(null);
   const [savedTeaIds, setSavedTeaIds] = useState<TeaRecommendationId[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -46,10 +49,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addLog = async (logData: WellnessLogInput) => {
+    const hasExistingLog = logs.some((log) => log.date === logData.date);
     const newLog = createWellnessLog(logData);
     const updatedLogs = upsertLog(logs, newLog);
 
     setLogs(updatedLogs);
+    setLatestLogFeedback(
+      hasExistingLog
+        ? '오늘 기록을 수정했어요. 추천도 최신 내용으로 반영됐어요.'
+        : '오늘 기록이 저장됐어요. 추천도 함께 업데이트됐어요.'
+    );
     await saveLogs(updatedLogs);
   };
 
@@ -60,6 +69,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = async (settings: UserSettings) => {
     setUserSettings(settings);
     await saveUserSettings(settings);
+  };
+
+  const clearLatestLogFeedback = () => {
+    setLatestLogFeedback(null);
   };
 
   const saveTeaToBox = async (teaId: TeaRecommendationId) => {
@@ -87,7 +100,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, savedTeaIds, saveTeaToBox, removeTeaFromBox, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, savedTeaIds, saveTeaToBox, removeTeaFromBox, isReady }}>
       {children}
     </StoreContext.Provider>
   );

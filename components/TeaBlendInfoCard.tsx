@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { TeaRecommendationContent, TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { getTeaProfileHighlights } from '@/lib/teaProfiles';
 import { colors, spacing } from '@/lib/theme';
@@ -21,9 +22,14 @@ export function TeaBlendInfoCard({
   return (
     <View style={[styles.card, compact && styles.compactCard]}>
       <Text style={styles.cardTitle}>{title}</Text>
-      <Text style={styles.name}>{content.name}</Text>
-      <Text style={styles.subtitle}>{content.subtitle}</Text>
-      <Text style={styles.description}>{content.description}</Text>
+      <View style={styles.heroRow}>
+        <TeaThumbnail teaId={teaId} size={compact ? 'sm' : 'md'} />
+        <View style={styles.heroText}>
+          <Text style={styles.name}>{content.name}</Text>
+          <Text style={styles.subtitle}>{content.subtitle}</Text>
+          <Text style={styles.description}>{content.description}</Text>
+        </View>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>풍미 키워드</Text>
@@ -62,6 +68,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  heroText: {
+    flex: 1,
   },
   compactCard: {
     marginTop: spacing.md,

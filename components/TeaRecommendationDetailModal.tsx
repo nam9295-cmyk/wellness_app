@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TeaBlendInfoCard } from '@/components/TeaBlendInfoCard';
+import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { useStore } from '@/lib/store';
 import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { colors, spacing } from '@/lib/theme';
@@ -52,6 +53,7 @@ export function TeaRecommendationDetailModal({
             <View style={styles.handle} />
 
             <View style={styles.headerRow}>
+              <TeaThumbnail teaId={recommendation.teaId} size="md" />
               <View style={styles.headerText}>
                 <Text style={styles.title}>{recommendation.content.name}</Text>
                 <Text style={styles.subtitle}>{recommendation.content.subtitle}</Text>
@@ -138,7 +140,6 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: spacing.md,
   },

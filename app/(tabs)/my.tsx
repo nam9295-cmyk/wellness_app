@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
+import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
@@ -210,6 +211,7 @@ export default function MyScreen() {
                 return (
                   <View key={teaId} style={styles.teaItem}>
                     <TouchableOpacity style={styles.teaItemMain} activeOpacity={0.88} onPress={() => setSelectedTeaId(teaId)}>
+                      <TeaThumbnail teaId={teaId} size="sm" />
                       <View style={styles.teaItemText}>
                         <Text style={styles.teaItemBadge}>담아둔 블렌드</Text>
                         <Text style={styles.teaName}>{tea.name}</Text>
@@ -319,6 +321,9 @@ const styles = StyleSheet.create({
   },
   teaItemMain: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     padding: spacing.md,
   },
   teaItemText: {

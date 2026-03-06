@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
+import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { generateReportStats } from '@/lib/reportUtils';
@@ -36,9 +37,14 @@ export default function ReportScreen() {
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
         <View style={styles.teaCard}>
           <Text style={styles.teaCardLabel}>이번 주 추천 티</Text>
-          <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
-          <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
-          <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
+          <View style={styles.teaCardRow}>
+            <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
+            <View style={styles.teaCardText}>
+              <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+              <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
+              <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
+            </View>
+          </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
           {teaRecommendation.secondaryContent ? (
             <Text style={styles.secondaryTea}>보조 후보: {teaRecommendation.secondaryContent.name}</Text>
@@ -114,6 +120,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   teaCardLabel: { fontSize: 13, fontWeight: '700', color: colors.textLight, marginBottom: spacing.sm, letterSpacing: 0.2 },
+  teaCardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  teaCardText: { flex: 1 },
   teaName: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.4 },
   teaSubtitle: { fontSize: 13, color: colors.primary, marginBottom: spacing.sm, fontWeight: '600' },
   teaDescription: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },

@@ -49,8 +49,8 @@ export default function LogScreen() {
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
       isEditingTodayLog
-        ? '오늘의 웰니스 기록이 수정되었습니다.'
-        : '오늘의 웰니스 상태가 기록되었습니다.',
+        ? '오늘의 웰니스 기록이 수정되었어요.\n홈 추천도 최신 기록 기준으로 반영됩니다.'
+        : '오늘의 웰니스 상태가 기록되었어요.\n홈 추천도 함께 업데이트됩니다.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]

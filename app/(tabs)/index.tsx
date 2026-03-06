@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/Card';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
+import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
@@ -10,7 +11,7 @@ import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
-  const { logs, getTodayLog, isReady, userSettings } = useStore();
+  const { logs, getTodayLog, isReady, userSettings, latestLogFeedback, clearLatestLogFeedback } = useStore();
   const todayLog = getTodayLog();
 
   const recordCount = logs.length;
@@ -19,6 +20,18 @@ export default function Home() {
     logs,
     userGoal: userSettings?.goal,
   });
+
+  useEffect(() => {
+    if (!latestLogFeedback) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      clearLatestLogFeedback();
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, [latestLogFeedback, clearLatestLogFeedback]);
 
   if (!isReady) {
     return (
@@ -37,6 +50,12 @@ export default function Home() {
       <Text style={styles.subtitle}>
         {todayLog ? '오늘도 건강한 하루를 기록하셨군요.' : `아직 오늘의 기록이 없어요.\n${goalMessage}웰니스 상태를 기록해볼까요?`}
       </Text>
+
+      {latestLogFeedback ? (
+        <View style={styles.feedbackBanner}>
+          <Text style={styles.feedbackText}>{latestLogFeedback}</Text>
+        </View>
+      ) : null}
       
       <Card title="오늘의 상태 요약">
         {todayLog ? (
@@ -78,10 +97,16 @@ export default function Home() {
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
         <Card title="오늘의 티 추천">
-          <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
-          <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
-          <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
+          <View style={styles.teaCardRow}>
+            <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
+            <View style={styles.teaCardText}>
+              <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+              <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
+              <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
+            </View>
+          </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
+          <Text style={styles.teaUpdateHint}>오늘 기록 기준으로 바로 반영된 추천이에요.</Text>
           <Text style={styles.detailHint}>눌러서 추천 이유 자세히 보기</Text>
         </Card>
       </TouchableOpacity>
@@ -113,6 +138,20 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingTop: spacing.xl },
   greeting: { fontSize: 26, fontWeight: '600', color: colors.text, marginBottom: spacing.xs, letterSpacing: -0.5 },
   subtitle: { fontSize: 16, color: colors.textLight, marginBottom: spacing.xl, lineHeight: 24, letterSpacing: -0.2 },
+  feedbackBanner: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  feedbackText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+    fontWeight: '600',
+  },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   summaryLabel: { fontSize: 15, color: colors.textLight },
   summaryValue: { fontSize: 15, color: colors.text, fontWeight: '500' },
@@ -121,10 +160,13 @@ const styles = StyleSheet.create({
   memoText: { fontSize: 14, color: colors.text, lineHeight: 22 },
   statText: { fontSize: 16, color: colors.text },
   statHighlight: { fontSize: 20, fontWeight: '700', color: colors.primary },
+  teaCardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  teaCardText: { flex: 1 },
   teaName: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.3 },
   teaSubtitle: { fontSize: 13, color: colors.primary, marginBottom: spacing.sm, fontWeight: '600' },
   recommendationText: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },
   teaContext: { fontSize: 13, color: colors.textLight, marginTop: spacing.sm, letterSpacing: -0.2 },
+  teaUpdateHint: { fontSize: 12, color: colors.primary, marginTop: spacing.sm, fontWeight: '700', letterSpacing: -0.1 },
   detailHint: { fontSize: 12, color: colors.textLight, marginTop: spacing.md, fontWeight: '600', letterSpacing: -0.1 },
   logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
   logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },
