@@ -76,10 +76,11 @@ export function TeaRecommendationDetailModal({
               </View>
 
               <Text style={styles.title}>{recommendation.content.name}</Text>
+              <Text style={styles.identityLine}>{recommendation.content.identityLine}</Text>
               <Text style={[styles.subtitle, { color: asset.accentColor }]}>{recommendation.content.subtitle}</Text>
               <Text style={styles.description}>{recommendation.content.description}</Text>
 
-              <Text style={styles.keywordTitle}>핵심 무드</Text>
+              <Text style={styles.keywordTitle}>핵심 키워드</Text>
               <View style={styles.keywordWrap}>
                 {recommendation.content.flavorKeywords.slice(0, 3).map((keyword) => (
                   <View key={keyword} style={styles.keywordChip}>
@@ -87,12 +88,6 @@ export function TeaRecommendationDetailModal({
                   </View>
                 ))}
               </View>
-            </View>
-
-            <View style={styles.reasonCard}>
-              <Text style={styles.sectionLabel}>{reasonTitle}</Text>
-              <Text style={styles.bodyText}>{recommendation.reason}</Text>
-              <Text style={styles.contextText}>{recommendation.contextLine}</Text>
             </View>
 
             <TeaProfileMeter teaId={recommendation.teaId} />
@@ -118,6 +113,12 @@ export function TeaRecommendationDetailModal({
                   ))}
                 </View>
               </View>
+            </View>
+
+            <View style={styles.reasonCard}>
+              <Text style={styles.sectionLabel}>{reasonTitle}</Text>
+              <Text style={styles.bodyText}>{recommendation.reason}</Text>
+              <Text style={styles.contextText}>{recommendation.contextLine}</Text>
             </View>
 
             <View style={styles.actionSection}>
@@ -213,16 +214,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
+  identityLine: {
+    marginTop: spacing.sm,
+    fontSize: 19,
+    lineHeight: 28,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.4,
+  },
   closeText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.textLight,
   },
   description: {
-    marginTop: spacing.md,
-    fontSize: 15,
-    lineHeight: 24,
-    color: colors.text,
+    marginTop: spacing.sm,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textLight,
     letterSpacing: -0.2,
   },
   keywordTitle: {

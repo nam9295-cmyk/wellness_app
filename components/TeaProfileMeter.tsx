@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
 import { getTeaPresentationProfile } from '@/lib/teaProfiles';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { colors, spacing } from '@/lib/theme';
@@ -9,29 +10,110 @@ interface TeaProfileMeterProps {
 
 export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
   const axes = getTeaPresentationProfile(teaId);
+  const size = 240;
+  const center = size / 2;
+  const radius = 72;
+  const labelRadius = 102;
+
+  const points = axes.map((axis, index) => {
+    const angle = (-Math.PI / 2) + (Math.PI * 2 * index) / axes.length;
+    return {
+      ...axis,
+      angle,
+      x: center + Math.cos(angle) * radius,
+      y: center + Math.sin(angle) * radius,
+      labelX: center + Math.cos(angle) * labelRadius,
+      labelY: center + Math.sin(angle) * labelRadius,
+    };
+  });
+
+  const gridPolygons = Array.from({ length: 5 }).map((_, levelIndex) => {
+    const level = (levelIndex + 1) / 5;
+    return points
+      .map((point) => {
+        const x = center + Math.cos(point.angle) * radius * level;
+        const y = center + Math.sin(point.angle) * radius * level;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  });
+
+  const profilePolygon = points
+    .map((point) => {
+      const ratio = point.value / 5;
+      const x = center + Math.cos(point.angle) * radius * ratio;
+      const y = center + Math.sin(point.angle) * radius * ratio;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  const getTextAnchor = (x: number) => {
+    if (Math.abs(x - center) < 8) {
+      return 'middle';
+    }
+
+    return x > center ? 'start' : 'end';
+  };
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>티 프로파일</Text>
-      {axes.map((axis) => (
-        <View key={axis.label} style={styles.row}>
-          <View style={styles.labelWrap}>
-            <Text style={styles.label}>{axis.label}</Text>
-            <Text style={styles.labelSub}>{axis.englishLabel}</Text>
-          </View>
-          <View style={styles.meter}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <View
-                key={`${axis.label}-${index}`}
-                style={[
-                  styles.meterBar,
-                  index < axis.value && styles.meterBarActive,
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-      ))}
+      <View style={styles.chartWrap}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {gridPolygons.map((polygon, index) => (
+            <Polygon
+              key={`grid-${index}`}
+              points={polygon}
+              fill="none"
+              stroke={colors.border}
+              strokeWidth={1}
+            />
+          ))}
+
+          {points.map((point) => (
+            <Line
+              key={`axis-${point.label}`}
+              x1={center}
+              y1={center}
+              x2={point.x}
+              y2={point.y}
+              stroke={colors.border}
+              strokeWidth={1}
+            />
+          ))}
+
+          <Polygon
+            points={profilePolygon}
+            fill={colors.primary + '66'}
+            stroke={colors.primary}
+            strokeWidth={2}
+          />
+
+          {points.map((point) => (
+            <Circle
+              key={`dot-${point.label}`}
+              cx={center + Math.cos(point.angle) * radius * (point.value / 5)}
+              cy={center + Math.sin(point.angle) * radius * (point.value / 5)}
+              r={4}
+              fill={colors.primary}
+            />
+          ))}
+
+          {points.map((point) => (
+            <SvgText
+              key={`label-${point.label}`}
+              x={point.labelX}
+              y={point.labelY}
+              fontSize="11"
+              fontWeight="700"
+              fill={colors.text}
+              textAnchor={getTextAnchor(point.labelX)}
+            >
+              {point.label}
+            </SvgText>
+          ))}
+        </Svg>
+      </View>
     </View>
   );
 }
@@ -52,41 +134,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     letterSpacing: 0.1,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  labelWrap: {
-    width: 84,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.1,
-  },
-  labelSub: {
-    marginTop: 2,
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textLight,
-    letterSpacing: -0.1,
-  },
-  meter: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
-  },
-  meterBar: {
-    flex: 1,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: colors.border,
-  },
-  meterBarActive: {
-    backgroundColor: colors.primary,
+  chartWrap: {
+    alignItems: 'center',
   },
 });

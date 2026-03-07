@@ -3,6 +3,7 @@ export type TeaRecommendationId = 'britishBlack' | 'asianGold' | 'hibiscusFruit'
 export interface TeaRecommendationContent {
   id: TeaRecommendationId;
   name: string;
+  identityLine: string;
   subtitle: string;
   description: string;
   flavorKeywords: string[];
@@ -14,6 +15,7 @@ export const teaRecommendationContent: Record<TeaRecommendationId, TeaRecommenda
   britishBlack: {
     id: 'britishBlack',
     name: '브리티쉬 블랙',
+    identityLine: '클래식하게 리듬을 세워주는 블랙 티',
     subtitle: '클래식한 깊이감',
     description: '홍차의 단단한 구조감이 차분하게 이어지는 클래식 무드의 블렌드예요.',
     flavorKeywords: ['깊은 홍차감', '카카오 결', '묵직한 여운', '클래식 무드'],
@@ -23,6 +25,7 @@ export const teaRecommendationContent: Record<TeaRecommendationId, TeaRecommenda
   asianGold: {
     id: 'asianGold',
     name: '아시안 골드',
+    identityLine: '부드럽고 균형적인 데일리 티',
     subtitle: '부드러운 이국적 균형감',
     description: '부드러운 바디감과 산뜻한 마무리가 함께 오는 균형형 블렌드예요.',
     flavorKeywords: ['부드러운 이국성', '허브-시트러스', '정돈된 바디감', '깔끔한 마무리'],
@@ -32,6 +35,7 @@ export const teaRecommendationContent: Record<TeaRecommendationId, TeaRecommenda
   hibiscusFruit: {
     id: 'hibiscusFruit',
     name: '히비스커스 프룻',
+    identityLine: '산뜻하게 흐름을 정리해주는 블렌드',
     subtitle: '밝고 경쾌한 프루티 무드',
     description: '밝은 과일감과 산뜻한 전환감이 살아 있는 리프레시 타입의 블렌드예요.',
     flavorKeywords: ['선명한 과일감', '산뜻한 산미', '가벼운 바디', '클린 피니시'],
@@ -41,6 +45,7 @@ export const teaRecommendationContent: Record<TeaRecommendationId, TeaRecommenda
   mintyChocolat: {
     id: 'mintyChocolat',
     name: '민티 쇼콜라',
+    identityLine: '상쾌함과 만족감을 함께 주는 한 잔',
     subtitle: '상쾌함과 만족감의 대비',
     description: '민트의 상쾌함과 카카오의 부드러운 여운이 함께 오는 블렌드예요.',
     flavorKeywords: ['민트 리프레시', '카카오 여운', '선명한 대비', '깔끔한 마무리'],
