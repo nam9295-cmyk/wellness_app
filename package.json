@@ -8,7 +8,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
-    "serve:web": "expo serve"
+    "serve:web": "expo serve",
+    "deploy:web:preview": "eas deploy",
+    "deploy:web:prod": "eas deploy --prod",
+    "release:web:preview": "npm run build:web && npm run deploy:web:preview",
+    "release:web:prod": "npm run build:web && npm run deploy:web:prod"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
