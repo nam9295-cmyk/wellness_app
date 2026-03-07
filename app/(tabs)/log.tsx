@@ -49,8 +49,8 @@ export default function LogScreen() {
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
       isEditingTodayLog
-        ? '오늘 기록을 수정했어요.\n홈 추천도 최신 내용으로 반영됐어요.'
-        : '오늘 기록을 저장했어요.\n홈 추천도 함께 업데이트됐어요.',
+        ? '오늘 기록을 수정했어요.\n홈과 리포트 추천도 최신 내용으로 반영됐어요.'
+        : '오늘 기록을 저장했어요.\n홈과 리포트 추천도 함께 업데이트됐어요.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]
@@ -67,7 +67,7 @@ export default function LogScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정하기' : '오늘 기록 남기기'}</Text>
         <Text style={styles.subTitle}>지금 상태를 가볍게 남기면 홈과 리포트 추천이 함께 업데이트돼요.</Text>
         
@@ -92,7 +92,7 @@ export default function LogScreen() {
         <SectionTitle title="한 줄 메모" />
         <TextInput
           style={styles.textInput}
-          placeholder="오늘 하루에 대해 간단히 남겨주세요."
+          placeholder="오늘 하루를 짧게 남겨보세요."
           value={memo}
           onChangeText={setMemo}
           multiline

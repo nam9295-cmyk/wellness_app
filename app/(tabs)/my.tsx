@@ -93,7 +93,7 @@ export default function MyScreen() {
     ? {
         teaId: selectedTeaId,
         content: teaRecommendationContent[selectedTeaId],
-        reason: '다시 보고 싶은 블렌드를 내 티함에 담아두었어요. 지금의 취향과 무드에 맞는지 천천히 살펴볼 수 있어요.',
+        reason: '다시 보고 싶은 블렌드를 담아두었어요. 지금 무드와 잘 맞는지 천천히 살펴보세요.',
         contextLine: `저장한 블렌드 · ${teaRecommendationContent[selectedTeaId].timings[0]}`,
       }
     : null;
@@ -109,7 +109,7 @@ export default function MyScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{isEditing ? nickname?.[0] || '?' : userSettings?.nickname?.[0] || '?'}</Text>
@@ -163,7 +163,7 @@ export default function MyScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.label, { marginTop: spacing.xl }]}>알림 설정 (ex: 21:00)</Text>
+              <Text style={[styles.label, { marginTop: spacing.xl }]}>알림 시간</Text>
               <TextInput
                 style={styles.timeInput}
                 value={notificationTime}
@@ -276,7 +276,7 @@ export default function MyScreen() {
             </View>
           ) : (
             <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>마음에 드는 추천 티를 담아두면, 여기에서 다시 꺼내 보며 천천히 비교할 수 있어요.</Text>
+              <Text style={styles.emptyTeaText}>저장한 티가 아직 없어요. 마음에 드는 추천 티를 담아두면 여기에서 다시 볼 수 있어요.</Text>
             </View>
           )}
 
@@ -302,6 +302,7 @@ export default function MyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  content: { paddingBottom: spacing.xxl },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   profileSection: { 
     padding: spacing.xl, 
@@ -443,6 +444,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   teaItemText: {
+    flex: 1,
     gap: 4,
   },
   teaItemBadge: {
@@ -474,7 +476,7 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     fontSize: 13,
-    color: colors.textLight,
+    color: colors.error,
     fontWeight: '700',
     letterSpacing: -0.1,
   },

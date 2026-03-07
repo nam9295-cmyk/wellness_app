@@ -101,13 +101,14 @@ export default function Home() {
             <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
             <View style={styles.teaCardText}>
               <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+              <Text style={styles.teaIdentity}>{teaRecommendation.content.identityLine}</Text>
               <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
               <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
             </View>
           </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
           <Text style={styles.teaUpdateHint}>오늘 기록 기준으로 바로 반영된 추천이에요.</Text>
-          <Text style={styles.detailHint}>눌러서 추천 티를 자세히 보기</Text>
+          <Text style={styles.detailHint}>추천 상세 보기</Text>
         </Card>
       </TouchableOpacity>
 
@@ -160,9 +161,10 @@ const styles = StyleSheet.create({
   memoText: { fontSize: 14, color: colors.text, lineHeight: 22 },
   statText: { fontSize: 16, color: colors.text },
   statHighlight: { fontSize: 20, fontWeight: '700', color: colors.primary },
-  teaCardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   teaCardText: { flex: 1 },
   teaName: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.3 },
+  teaIdentity: { fontSize: 14, color: colors.text, marginBottom: 4, fontWeight: '600', letterSpacing: -0.2 },
   teaSubtitle: { fontSize: 13, color: colors.primary, marginBottom: spacing.sm, fontWeight: '600' },
   recommendationText: { fontSize: 15, color: colors.text, lineHeight: 24, letterSpacing: -0.2 },
   teaContext: { fontSize: 13, color: colors.textLight, marginTop: spacing.sm, letterSpacing: -0.2 },

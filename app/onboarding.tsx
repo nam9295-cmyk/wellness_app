@@ -41,7 +41,7 @@ export default function Onboarding() {
       style={{ flex: 1 }} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>웰니스 프로필 설정</Text>
         <Text style={styles.subtitle}>일상 기록과 티 추천이 자연스럽게 이어지도록 기본 설정을 먼저 맞춰볼게요.</Text>
         
@@ -54,6 +54,7 @@ export default function Onboarding() {
             value={nickname}
             onChangeText={setNickname}
             maxLength={10}
+            placeholderTextColor={colors.textLight}
           />
         </View>
 
@@ -81,20 +82,21 @@ export default function Onboarding() {
 
         {/* 알림 시간 설정 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>매일 기록 알림을 받을까요?</Text>
-          <Text style={styles.sectionDesc}>원하는 시간을 직접 입력해둘 수 있어요. 예: 21:00</Text>
+          <Text style={styles.sectionTitle}>알림 시간을 정해둘까요?</Text>
+          <Text style={styles.sectionDesc}>원하는 시간을 미리 정해둘 수 있어요. 예: 21:00</Text>
           <TextInput
             style={styles.input}
             placeholder="09:00"
             value={notificationTime}
             onChangeText={setNotificationTime}
             keyboardType="numbers-and-punctuation"
+            placeholderTextColor={colors.textLight}
           />
         </View>
 
         <View style={[styles.section, styles.switchSection]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>알림 준비 켜기</Text>
+            <Text style={styles.sectionTitle}>알림 준비</Text>
             <Text style={styles.sectionDesc}>실제 발송은 아직 준비 중이지만, 시간과 흐름을 먼저 연결해둘 수 있어요.</Text>
           </View>
           <Switch

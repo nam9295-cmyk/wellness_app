@@ -12,7 +12,7 @@ const thumbnailSizes = {
   sm: 64,
   md: 88,
   lg: 112,
-  xl: 220,
+  xl: 192,
 } as const;
 
 export function TeaThumbnail({ teaId, size = 'md' }: TeaThumbnailProps) {
