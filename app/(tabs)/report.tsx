@@ -37,7 +37,7 @@ export default function ReportScreen() {
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
         <View style={styles.teaCard}>
-          <Text style={styles.teaCardLabel}>이번 주 추천 티</Text>
+          <Text style={styles.teaCardLabel}>이번 주 추천 블렌드</Text>
           <View style={styles.teaCardRow}>
             <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
             <View style={styles.teaCardText}>

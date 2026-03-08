@@ -27,8 +27,8 @@ export const notificationScenarios: NotificationScenarioDefinition[] = [
   },
   {
     id: 'dailyTeaRecommendation',
-    title: '오늘의 추천 티 확인',
-    description: '기록 후 추천 티로 자연스럽게 이어져요.',
+    title: '오늘의 추천 블렌드 확인',
+    description: '기록 후 추천 블렌드로 자연스럽게 이어져요.',
     cadence: 'contextual',
   },
   {

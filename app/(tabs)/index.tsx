@@ -96,7 +96,7 @@ export default function Home() {
       </Card>
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
-        <Card title="오늘의 추천 티">
+        <Card title="오늘의 추천 블렌드">
           <View style={styles.teaCardRow}>
             <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
             <View style={styles.teaCardText}>

@@ -70,8 +70,8 @@ export default function MyScreen() {
     const tea = teaRecommendationContent[teaId];
 
     Alert.alert(
-      '티함에서 삭제',
-      `${tea.name}을(를) 티함에서 뺄까요?`,
+      '블렌드함에서 삭제',
+      `${tea.name}을(를) 블렌드함에서 뺄까요?`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -183,7 +183,7 @@ export default function MyScreen() {
               </View>
 
               <View style={[styles.settingItem, styles.inlineSettingItem]}>
-                <Text style={[styles.label, { marginBottom: 0 }]}>생리주기 트래킹</Text>
+                <Text style={[styles.label, { marginBottom: 0 }]}>바이오리듬 트래킹</Text>
                 <Switch
                   value={useMenstrualCycle}
                   onValueChange={setUseMenstrualCycle}
@@ -209,7 +209,7 @@ export default function MyScreen() {
               </View>
 
               <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>생리주기 트래킹</Text>
+                <Text style={styles.settingLabel}>바이오리듬 트래킹</Text>
                 <Text style={styles.settingValue}>{userSettings?.useMenstrualCycle ? '사용 중' : '사용 안 함'}</Text>
               </View>
             </View>
@@ -247,7 +247,7 @@ export default function MyScreen() {
           <View style={styles.divider} />
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>티함</Text>
+            <Text style={styles.sectionTitle}>블렌드함</Text>
             <Text style={styles.sectionMeta}>{savedTeaIds.length}개 저장됨</Text>
           </View>
 
@@ -276,7 +276,7 @@ export default function MyScreen() {
             </View>
           ) : (
             <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>아직 담아둔 티가 없어요. 추천 티를 담아두면 여기서 다시 볼 수 있어요.</Text>
+              <Text style={styles.emptyTeaText}>아직 담아둔 블렌드가 없어요. 추천 블렌드를 담아두면 여기서 다시 볼 수 있어요.</Text>
             </View>
           )}
 

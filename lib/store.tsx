@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
+import { syncTodayLogToFirestore } from './firestoreLogs';
 import { loadLogs, saveLogs } from './storage';
 import { loadTeaBox, saveTeaBox } from './teaBoxStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
@@ -60,6 +61,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         : '저장 완료. 추천도 업데이트됐어요.'
     );
     await saveLogs(updatedLogs);
+
+    // Firestore 동기화는 로컬 저장 이후 best-effort 로 동작한다.
+    try {
+      await syncTodayLogToFirestore({
+        log: newLog,
+        settings: userSettings,
+      });
+    } catch (error) {
+      console.warn('Failed to sync today log to Firestore', error);
+    }
   };
 
   const getTodayLog = () => {

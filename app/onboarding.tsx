@@ -109,7 +109,7 @@ export default function Onboarding() {
         {/* 추가 기능 설정 */}
         <View style={[styles.section, styles.switchSection]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>생리주기 기록</Text>
+            <Text style={styles.sectionTitle}>바이오리듬 기록</Text>
             <Text style={styles.sectionDesc}>필요할 때 기록과 함께 살펴볼 수 있어요.</Text>
           </View>
           <Switch

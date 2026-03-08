@@ -39,7 +39,7 @@ export function TeaRecommendationDetailModal({
     }
 
     const result = await saveTeaToBox(recommendation.teaId);
-    setFeedbackMessage(result.added ? '티함에 담았어요' : '이미 담아둔 티예요');
+    setFeedbackMessage(result.added ? '블렌드함에 담았어요' : '이미 담아둔 블렌드예요');
   };
 
   return (
@@ -132,7 +132,7 @@ export function TeaRecommendationDetailModal({
                 disabled={isSaved}
               >
                 <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                  {isSaved ? '이미 담아둔 티예요' : '티함에 담기'}
+                  {isSaved ? '이미 담아둔 블렌드예요' : '블렌드함에 담기'}
                 </Text>
               </Pressable>
               {feedbackMessage ? (
