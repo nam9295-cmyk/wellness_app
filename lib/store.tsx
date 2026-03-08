@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
 import { syncTodayLogToFirestore } from './firestoreLogs';
+import { loadUserSettingsFromFirestore, syncUserSettingsToFirestore } from './firestoreSettings';
+import {
+  loadTeaBoxFromFirestore,
+  syncRemovedTeaFromFirestore,
+  syncSavedTeaToFirestore,
+} from './firestoreTeaBox';
 import { loadLogs, saveLogs } from './storage';
 import { loadTeaBox, saveTeaBox } from './teaBoxStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
@@ -44,6 +50,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSavedTeaIds(storedTeaBox);
         setIsReady(true);
       }
+
+      try {
+        const [remoteSettings, remoteTeaBox] = await Promise.all([
+          loadUserSettingsFromFirestore(),
+          loadTeaBoxFromFirestore(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (remoteSettings) {
+          setUserSettings(remoteSettings);
+          await saveUserSettings(remoteSettings);
+        }
+
+        if (remoteTeaBox) {
+          setSavedTeaIds(remoteTeaBox);
+          await saveTeaBox(remoteTeaBox);
+        }
+      } catch (error) {
+        console.warn('Failed to load synced Firestore data', error);
+      }
     };
     initializeStore();
     return () => { isMounted = false; };
@@ -80,6 +109,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = async (settings: UserSettings) => {
     setUserSettings(settings);
     await saveUserSettings(settings);
+
+    // Firestore 동기화는 로컬 저장 이후 best-effort 로 동작한다.
+    try {
+      await syncUserSettingsToFirestore({ settings });
+    } catch (error) {
+      console.warn('Failed to sync user settings to Firestore', error);
+    }
   };
 
   const clearLatestLogFeedback = () => {
@@ -95,6 +131,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSavedTeaIds(updatedTeaBox);
     await saveTeaBox(updatedTeaBox);
 
+    try {
+      await syncSavedTeaToFirestore({ teaId });
+    } catch (error) {
+      console.warn('Failed to sync saved tea to Firestore', error);
+    }
+
     return { added: true };
   };
 
@@ -106,6 +148,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const updatedTeaBox = savedTeaIds.filter((savedTeaId) => savedTeaId !== teaId);
     setSavedTeaIds(updatedTeaBox);
     await saveTeaBox(updatedTeaBox);
+
+    try {
+      await syncRemovedTeaFromFirestore({ teaId });
+    } catch (error) {
+      console.warn('Failed to sync removed tea to Firestore', error);
+    }
 
     return { removed: true };
   };

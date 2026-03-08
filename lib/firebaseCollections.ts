@@ -8,6 +8,8 @@ export const COLLECTIONS = {
 export const SUBCOLLECTIONS = {
   dailySummaries: (memberId: string) =>
     `${COLLECTIONS.members}/${memberId}/dailySummaries`,
+  savedTeas: (memberId: string) =>
+    `${COLLECTIONS.members}/${memberId}/savedTeas`,
   conditionNotes: (memberId: string) =>
     `${COLLECTIONS.members}/${memberId}/conditionNotes`,
   conditionNotesPrivate: (memberId: string) =>
