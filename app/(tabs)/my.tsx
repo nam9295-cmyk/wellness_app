@@ -4,6 +4,7 @@ import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDeta
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { getNotificationScenarioPreviews } from '@/lib/notificationScenarios';
 import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
+import { SavedBlendItem } from '@/lib/teaBoxStorage';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
@@ -14,8 +15,9 @@ export default function MyScreen() {
     isReady,
     userSettings,
     updateSettings,
+    savedBlendItems,
     savedTeaIds,
-    removeTeaFromBox,
+    removeSavedBlendFromBox,
     syncStatus,
     syncStatusMessage,
     clearSyncStatusMessage,
@@ -87,21 +89,21 @@ export default function MyScreen() {
     setIsEditing(false);
   };
 
-  const handleRemoveTea = (teaId: TeaRecommendationId) => {
-    const tea = teaRecommendationContent[teaId];
+  const handleRemoveBlend = (item: SavedBlendItem) => {
+    const itemName = item.type === 'preset' ? item.name : item.title;
 
     Alert.alert(
       '블렌드함에서 삭제',
-      `${tea.name}을(를) 블렌드함에서 뺄까요?`,
+      `${itemName}을(를) 블렌드함에서 뺄까요?`,
       [
         { text: '취소', style: 'cancel' },
         {
           text: '삭제',
           style: 'destructive',
           onPress: async () => {
-            await removeTeaFromBox(teaId);
+            await removeSavedBlendFromBox(item.id);
 
-            if (selectedTeaId === teaId) {
+            if (item.type === 'preset' && selectedTeaId === item.teaId) {
               setSelectedTeaId(null);
             }
           },
@@ -277,26 +279,53 @@ export default function MyScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>블렌드함</Text>
-            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 저장됨</Text>
+            <Text style={styles.sectionMeta}>{savedBlendItems.length}개 저장됨</Text>
           </View>
 
-          {savedTeaIds.length > 0 ? (
+          {savedBlendItems.length > 0 ? (
             <View>
-              {savedTeaIds.map((teaId) => {
-                const tea = teaRecommendationContent[teaId];
+              {savedBlendItems.map((item) => {
+                if (item.type === 'preset') {
+                  const tea = teaRecommendationContent[item.teaId];
+
+                  return (
+                    <View key={item.id} style={styles.teaItem}>
+                      <TouchableOpacity style={styles.teaItemMain} activeOpacity={0.88} onPress={() => setSelectedTeaId(item.teaId)}>
+                        <TeaThumbnail teaId={item.teaId} size="sm" />
+                        <View style={styles.teaItemText}>
+                          <Text style={styles.teaItemBadge}>대표 블렌드</Text>
+                          <Text style={styles.teaName}>{tea.name}</Text>
+                          <Text style={styles.teaSubtitle}>{tea.subtitle}</Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity onPress={() => handleRemoveBlend(item)} style={styles.removeButton}>
+                        <Text style={styles.removeButtonText}>삭제</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
 
                 return (
-                  <View key={teaId} style={styles.teaItem}>
-                    <TouchableOpacity style={styles.teaItemMain} activeOpacity={0.88} onPress={() => setSelectedTeaId(teaId)}>
-                      <TeaThumbnail teaId={teaId} size="sm" />
-                      <View style={styles.teaItemText}>
-                        <Text style={styles.teaItemBadge}>담아둔 블렌드</Text>
-                        <Text style={styles.teaName}>{tea.name}</Text>
-                        <Text style={styles.teaSubtitle}>{tea.subtitle}</Text>
+                  <View key={item.id} style={styles.teaItem}>
+                    <View style={styles.teaItemMain}>
+                      <View style={styles.customBlendBadge}>
+                        <Text style={styles.customBlendBadgeText}>AI</Text>
                       </View>
-                    </TouchableOpacity>
+                      <View style={styles.teaItemText}>
+                        <Text style={styles.teaItemBadge}>{item.toneLabel}</Text>
+                        <Text style={styles.teaName}>{item.displayName || item.title}</Text>
+                        <Text style={styles.teaSubtitle} numberOfLines={2}>
+                          {item.summary || item.shortDescription}
+                        </Text>
+                        <Text style={styles.teaItemMeta} numberOfLines={1}>
+                          {item.ingredientNames.join(' · ')}
+                        </Text>
+                        <Text style={styles.customBlendContext}>{item.contextLine}</Text>
+                      </View>
+                    </View>
 
-                    <TouchableOpacity onPress={() => handleRemoveTea(teaId)} style={styles.removeButton}>
+                    <TouchableOpacity onPress={() => handleRemoveBlend(item)} style={styles.removeButton}>
                       <Text style={styles.removeButtonText}>삭제</Text>
                     </TouchableOpacity>
                   </View>
@@ -506,6 +535,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     letterSpacing: -0.1,
   },
+  customBlendBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customBlendBadgeText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: -0.1,
+  },
   teaName: {
     fontSize: 16,
     fontWeight: '700',
@@ -516,6 +559,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textLight,
     letterSpacing: -0.2,
+  },
+  teaItemMeta: {
+    fontSize: 12,
+    color: colors.primary,
+    letterSpacing: -0.1,
+  },
+  customBlendContext: {
+    fontSize: 12,
+    color: colors.textLight,
+    letterSpacing: -0.1,
   },
   removeButton: {
     paddingHorizontal: spacing.md,

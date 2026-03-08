@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/Card';
+import { CustomBlendDetailModal } from '@/components/CustomBlendDetailModal';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
-import { CustomBlendOption, getCustomBlendRecommendations } from '@/lib/customBlendEngine';
+import {
+  CustomBlendOption,
+  getCustomBlendRecommendations,
+  getCustomBlendVisualProfile,
+} from '@/lib/customBlendEngine';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
+  const [selectedCustomBlend, setSelectedCustomBlend] = useState<CustomBlendOption | null>(null);
   const {
     logs,
     getTodayLog,
@@ -155,18 +161,52 @@ export default function Home() {
       <Card title="AI 블렌딩 제안">
         <Text style={styles.aiBlendIntro}>카카오닙 베이스 위에 오늘 흐름에 맞는 조합 3가지를 골랐어요.</Text>
         {customBlendCards.map((blend, index) => (
-          <View
-            key={blend.label}
-            style={[styles.aiBlendItem, index === customBlendCards.length - 1 && styles.aiBlendItemLast]}
-          >
-            <View style={styles.aiBlendHeader}>
-              <Text style={styles.aiBlendLabel}>{blend.toneLabel}</Text>
-              <Text style={styles.aiBlendContext}>{blend.contextLine}</Text>
-            </View>
-            <Text style={styles.aiBlendTitle}>{blend.title}</Text>
-            <Text style={styles.aiBlendIngredients}>{blend.ingredientNames.join(' · ')}</Text>
-            <Text style={styles.aiBlendReason} numberOfLines={2}>{blend.reason}</Text>
-          </View>
+          (() => {
+            const visualProfile = getCustomBlendVisualProfile(blend);
+            const ingredientPreview = blend.ingredientNames.slice(0, 3).join(' · ');
+            const extraIngredientCount = blend.ingredientNames.length - 3;
+
+            return (
+              <TouchableOpacity
+                key={blend.label}
+                activeOpacity={0.9}
+                style={[styles.aiBlendItem, index === customBlendCards.length - 1 && styles.aiBlendItemLast]}
+                onPress={() => setSelectedCustomBlend(blend)}
+              >
+                <View style={styles.aiBlendHeader}>
+                  <Text style={styles.aiBlendLabel}>{blend.toneLabel}</Text>
+                  <Text style={styles.aiBlendContext}>{blend.contextLine}</Text>
+                </View>
+                <Text style={styles.aiBlendTitle}>{blend.displayName}</Text>
+                <Text style={styles.aiBlendSummary} numberOfLines={2}>{blend.summary}</Text>
+                <Text style={styles.aiBlendIngredients} numberOfLines={1}>
+                  {ingredientPreview}
+                  {extraIngredientCount > 0 ? ` 외 ${extraIngredientCount}가지` : ''}
+                </Text>
+
+                <View style={styles.aiBlendChipWrap}>
+                  {visualProfile.chips.slice(0, 3).map((chip) => (
+                    <View key={chip} style={styles.aiBlendChip}>
+                      <Text style={styles.aiBlendChipText}>{chip}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.aiBlendBars}>
+                  {visualProfile.bars.map((bar) => (
+                    <View key={bar.key} style={styles.aiBlendBarRow}>
+                      <Text style={styles.aiBlendBarLabel}>{bar.label}</Text>
+                      <View style={styles.aiBlendBarTrack}>
+                        <View style={[styles.aiBlendBarFill, { width: `${(bar.value / 5) * 100}%` }]} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={styles.aiBlendDetailHint}>탭해서 전체 재료와 저장 옵션 보기</Text>
+              </TouchableOpacity>
+            );
+          })()
         ))}
       </Card>
 
@@ -187,6 +227,11 @@ export default function Home() {
         visible={isTeaDetailVisible}
         recommendation={teaRecommendation}
         onClose={() => setIsTeaDetailVisible(false)}
+      />
+      <CustomBlendDetailModal
+        visible={Boolean(selectedCustomBlend)}
+        option={selectedCustomBlend}
+        onClose={() => setSelectedCustomBlend(null)}
       />
     </ScrollView>
   );
@@ -295,6 +340,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: -0.2,
   },
+  aiBlendSummary: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+    marginBottom: spacing.xs,
+  },
   aiBlendIngredients: {
     fontSize: 13,
     color: colors.primary,
@@ -302,11 +354,59 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: -0.1,
   },
-  aiBlendReason: {
-    fontSize: 14,
+  aiBlendChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  aiBlendChip: {
+    backgroundColor: colors.background,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  aiBlendChipText: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  aiBlendBars: {
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  aiBlendBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  aiBlendBarLabel: {
+    width: 54,
+    fontSize: 12,
     color: colors.textLight,
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  aiBlendBarTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  aiBlendBarFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+  },
+  aiBlendDetailHint: {
+    fontSize: 12,
+    color: colors.textLight,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
   logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },

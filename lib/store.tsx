@@ -1,16 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
+import { CustomBlendOption } from './customBlendEngine';
 import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
 import { isFirebaseConfigured } from './firebase';
 import { loadLogsFromFirestore, syncTodayLogToFirestore } from './firestoreLogs';
 import { loadUserSettingsFromFirestore, syncUserSettingsToFirestore } from './firestoreSettings';
 import {
   loadTeaBoxFromFirestore,
-  syncRemovedTeaFromFirestore,
+  syncRemovedBlendFromFirestore,
+  syncSavedCustomBlendToFirestore,
   syncSavedTeaToFirestore,
 } from './firestoreTeaBox';
 import { loadLogs, saveLogs } from './storage';
-import { loadTeaBox, saveTeaBox } from './teaBoxStorage';
+import {
+  createCustomBlendItemId,
+  createCustomSavedBlendItem,
+  createPresetSavedBlendItem,
+  loadTeaBox,
+  SavedBlendItem,
+  saveTeaBox,
+} from './teaBoxStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
 import { createWellnessLog, findTodayLog, upsertLog } from './logUtils';
 
@@ -22,8 +31,11 @@ interface StoreContextType {
   updateSettings: (settings: UserSettings) => Promise<void>;
   latestLogFeedback: string | null;
   clearLatestLogFeedback: () => void;
+  savedBlendItems: SavedBlendItem[];
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
+  saveCustomBlendToBox: (option: CustomBlendOption) => Promise<{ added: boolean }>;
+  removeSavedBlendFromBox: (itemId: string) => Promise<{ removed: boolean }>;
   removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'fallback';
   syncStatusMessage: string | null;
@@ -37,10 +49,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<WellnessLog[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [latestLogFeedback, setLatestLogFeedback] = useState<string | null>(null);
-  const [savedTeaIds, setSavedTeaIds] = useState<TeaRecommendationId[]>([]);
+  const [savedBlendItems, setSavedBlendItems] = useState<SavedBlendItem[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'fallback'>('idle');
   const [syncStatusMessage, setSyncStatusMessage] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const savedTeaIds = savedBlendItems
+    .filter((item): item is Extract<SavedBlendItem, { type: 'preset' }> => item.type === 'preset')
+    .map((item) => item.teaId);
 
   // 앱 로드시 저장된 데이터 불러오기
   useEffect(() => {
@@ -53,7 +68,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (isMounted) {
         setLogs(storedLogs);
         setUserSettings(storedSettings);
-        setSavedTeaIds(storedTeaBox);
+        setSavedBlendItems(storedTeaBox);
         setIsReady(true);
       }
 
@@ -88,7 +103,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (remoteTeaBox) {
-          setSavedTeaIds(remoteTeaBox);
+          setSavedBlendItems(remoteTeaBox);
           await saveTeaBox(remoteTeaBox);
         }
 
@@ -162,8 +177,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { added: false };
     }
 
-    const updatedTeaBox = [teaId, ...savedTeaIds];
-    setSavedTeaIds(updatedTeaBox);
+    const nextItem = createPresetSavedBlendItem(teaId);
+    const updatedTeaBox = [nextItem, ...savedBlendItems];
+    setSavedBlendItems(updatedTeaBox);
     await saveTeaBox(updatedTeaBox);
 
     try {
@@ -175,26 +191,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { added: true };
   };
 
-  const removeTeaFromBox = async (teaId: TeaRecommendationId) => {
-    if (!savedTeaIds.includes(teaId)) {
-      return { removed: false };
+  const saveCustomBlendToBox = async (option: CustomBlendOption) => {
+    const itemId = createCustomBlendItemId(option);
+
+    if (savedBlendItems.some((item) => item.id === itemId)) {
+      return { added: false };
     }
 
-    const updatedTeaBox = savedTeaIds.filter((savedTeaId) => savedTeaId !== teaId);
-    setSavedTeaIds(updatedTeaBox);
+    const nextItem = createCustomSavedBlendItem(option);
+    const updatedTeaBox = [nextItem, ...savedBlendItems];
+    setSavedBlendItems(updatedTeaBox);
     await saveTeaBox(updatedTeaBox);
 
     try {
-      await syncRemovedTeaFromFirestore({ teaId });
+      await syncSavedCustomBlendToFirestore({ option });
     } catch (error) {
-      console.warn('Failed to sync removed tea to Firestore', error);
+      console.warn('Failed to sync saved custom blend to Firestore', error);
+    }
+
+    return { added: true };
+  };
+
+  const removeSavedBlendFromBox = async (itemId: string) => {
+    if (!savedBlendItems.some((item) => item.id === itemId)) {
+      return { removed: false };
+    }
+
+    const updatedTeaBox = savedBlendItems.filter((item) => item.id !== itemId);
+    setSavedBlendItems(updatedTeaBox);
+    await saveTeaBox(updatedTeaBox);
+
+    try {
+      await syncRemovedBlendFromFirestore({ itemId });
+    } catch (error) {
+      console.warn('Failed to sync removed blend to Firestore', error);
     }
 
     return { removed: true };
   };
 
+  const removeTeaFromBox = async (teaId: TeaRecommendationId) => {
+    return removeSavedBlendFromBox(teaId);
+  };
+
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, savedTeaIds, saveTeaToBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, savedBlendItems, savedTeaIds, saveTeaToBox, saveCustomBlendToBox, removeSavedBlendFromBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
       {children}
     </StoreContext.Provider>
   );
