@@ -42,8 +42,8 @@ export default function Onboarding() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>웰니스 프로필 설정</Text>
-        <Text style={styles.subtitle}>일상 기록과 티 추천이 자연스럽게 이어지도록 기본 설정을 먼저 맞춰볼게요.</Text>
+        <Text style={styles.title}>나만의 웰니스 설정</Text>
+        <Text style={styles.subtitle}>기록과 추천이 잘 맞도록 기본 설정을 먼저 맞춰볼게요.</Text>
         
         {/* 닉네임 입력 */}
         <View style={styles.section}>
@@ -60,7 +60,7 @@ export default function Onboarding() {
 
         {/* 주요 목표 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>앱을 사용하는 가장 큰 목적은 무엇인가요?</Text>
+          <Text style={styles.sectionTitle}>가장 중요한 목표는 무엇인가요?</Text>
           <View style={styles.chipContainer}>
             {WELLNESS_GOALS.map((goal) => (
               <TouchableOpacity
@@ -97,7 +97,7 @@ export default function Onboarding() {
         <View style={[styles.section, styles.switchSection]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.sectionTitle}>알림 준비</Text>
-            <Text style={styles.sectionDesc}>실제 발송은 아직 준비 중이지만, 시간과 흐름을 먼저 연결해둘 수 있어요.</Text>
+            <Text style={styles.sectionDesc}>실제 발송 전이지만, 시간을 먼저 정해둘 수 있어요.</Text>
           </View>
           <Switch
             value={notificationEnabled}
@@ -109,8 +109,8 @@ export default function Onboarding() {
         {/* 추가 기능 설정 */}
         <View style={[styles.section, styles.switchSection]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>생리주기 기록 활성화</Text>
-            <Text style={styles.sectionDesc}>필요할 때 기록 흐름과 함께 살펴볼 수 있어요.</Text>
+            <Text style={styles.sectionTitle}>생리주기 기록</Text>
+            <Text style={styles.sectionDesc}>필요할 때 기록과 함께 살펴볼 수 있어요.</Text>
           </View>
           <Switch
             value={useMenstrualCycle}

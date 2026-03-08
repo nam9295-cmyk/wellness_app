@@ -30,8 +30,8 @@ export default function ReportScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>내 웰니스 리포트</Text>
-      <Text style={styles.caption}>최근 기록 흐름과 잘 맞는 티를 함께 살펴볼 수 있어요.</Text>
+      <Text style={styles.title}>웰니스 리포트</Text>
+      <Text style={styles.caption}>최근 기록을 바탕으로 흐름과 추천을 정리했어요.</Text>
       
       <InsightCard insights={stats.insights} />
 
@@ -48,9 +48,9 @@ export default function ReportScreen() {
             </View>
           </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
-          <Text style={styles.teaUpdateHint}>최근 기록 기준으로 정리한 추천이에요.</Text>
+          <Text style={styles.teaUpdateHint}>최근 기록 기반 추천</Text>
           {teaRecommendation.secondaryContent ? (
-            <Text style={styles.secondaryTea}>보조 후보: {teaRecommendation.secondaryContent.name}</Text>
+            <Text style={styles.secondaryTea}>함께 추천: {teaRecommendation.secondaryContent.name}</Text>
           ) : null}
           <Text style={styles.detailHint}>추천 상세 보기</Text>
         </View>
@@ -66,7 +66,7 @@ export default function ReportScreen() {
           <StatCard label="평균 피로도" value={stats.avgFatigue} suffix="/ 5" />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="자주 겪은 수면" value={stats.frequentSleep} />
+          <StatCard label="주요 수면 패턴" value={stats.frequentSleep} />
         </View>
       </View>
 
@@ -77,7 +77,7 @@ export default function ReportScreen() {
             <View>
               <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
               <Text style={styles.historyMemo} numberOfLines={1}>
-                {log.memo ? log.memo : '메모 없이 남긴 기록이에요.'}
+                {log.memo ? log.memo : '메모 없는 기록'}
               </Text>
             </View>
             <View style={styles.historyData}>
@@ -91,13 +91,13 @@ export default function ReportScreen() {
           </View>
         ))
       ) : (
-        <Text style={styles.emptyText}>기록이 쌓이면 최근 흐름을 더 또렷하게 볼 수 있어요.</Text>
+        <Text style={styles.emptyText}>기록이 쌍이면 흐름이 더 또렷해져요.</Text>
       )}
 
       <TeaRecommendationDetailModal
         visible={isTeaDetailVisible}
         recommendation={teaRecommendation}
-        reasonTitle="최근 흐름에 잘 맞는 이유"
+        reasonTitle="오늘의 추천 이유"
         onClose={() => setIsTeaDetailVisible(false)}
       />
     </ScrollView>

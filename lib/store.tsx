@@ -56,8 +56,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLogs(updatedLogs);
     setLatestLogFeedback(
       hasExistingLog
-        ? '오늘 기록을 수정했어요. 추천도 최신 내용으로 반영됐어요.'
-        : '오늘 기록이 저장됐어요. 추천도 함께 업데이트됐어요.'
+        ? '수정 완료. 추천도 반영됐어요.'
+        : '저장 완료. 추천도 업데이트됐어요.'
     );
     await saveLogs(updatedLogs);
   };

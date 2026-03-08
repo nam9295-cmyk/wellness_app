@@ -57,7 +57,7 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>티 프로파일</Text>
+      <Text style={styles.title}>티 프로필</Text>
       <View style={styles.chartWrap}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {gridPolygons.map((polygon, index) => (

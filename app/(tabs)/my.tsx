@@ -53,7 +53,7 @@ export default function MyScreen() {
     });
     
     setIsEditing(false);
-    Alert.alert('저장 완료', '설정을 반영했어요.');
+    Alert.alert('저장 완료', '설정이 저장됐어요.');
   };
 
   const handleStartEditing = () => {
@@ -70,8 +70,8 @@ export default function MyScreen() {
     const tea = teaRecommendationContent[teaId];
 
     Alert.alert(
-      '내 티함에서 삭제',
-      `${tea.name}을(를) 내 티함에서 뺄까요?`,
+      '티함에서 삭제',
+      `${tea.name}을(를) 티함에서 뺄까요?`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -93,7 +93,7 @@ export default function MyScreen() {
     ? {
         teaId: selectedTeaId,
         content: teaRecommendationContent[selectedTeaId],
-        reason: '다시 보고 싶은 블렌드를 담아두었어요. 지금 무드와 잘 맞는지 천천히 살펴보세요.',
+        reason: '담아둔 블렌드예요. 지금 무드와 맞는지 살펴보세요.',
         contextLine: `저장한 블렌드 · ${teaRecommendationContent[selectedTeaId].timings[0]}`,
       }
     : null;
@@ -224,7 +224,7 @@ export default function MyScreen() {
 
           <View style={styles.notificationCard}>
             <Text style={styles.notificationIntro}>
-              실제 푸시 발송은 아직 연결하지 않았지만, 아래 흐름을 기준으로 바로 확장할 수 있게 준비해두었어요.
+              실제 발송 전이지만, 아래 흐름으로 바로 확장할 수 있어요.
             </Text>
 
             {notificationPreviews.map((scenario, index) => (
@@ -247,8 +247,8 @@ export default function MyScreen() {
           <View style={styles.divider} />
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>내 티함</Text>
-            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 담아두었어요</Text>
+            <Text style={styles.sectionTitle}>티함</Text>
+            <Text style={styles.sectionMeta}>{savedTeaIds.length}개 저장됨</Text>
           </View>
 
           {savedTeaIds.length > 0 ? (
@@ -276,7 +276,7 @@ export default function MyScreen() {
             </View>
           ) : (
             <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>저장한 티가 아직 없어요. 마음에 드는 추천 티를 담아두면 여기에서 다시 볼 수 있어요.</Text>
+              <Text style={styles.emptyTeaText}>아직 담아둔 티가 없어요. 추천 티를 담아두면 여기서 다시 볼 수 있어요.</Text>
             </View>
           )}
 
@@ -292,7 +292,7 @@ export default function MyScreen() {
         <TeaRecommendationDetailModal
           visible={Boolean(selectedTeaRecommendation)}
           recommendation={selectedTeaRecommendation}
-          reasonTitle="저장해둔 블렌드"
+          reasonTitle="담아둔 블렌드"
           onClose={() => setSelectedTeaId(null)}
         />
       ) : null}

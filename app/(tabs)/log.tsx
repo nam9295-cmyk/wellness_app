@@ -49,8 +49,8 @@ export default function LogScreen() {
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
       isEditingTodayLog
-        ? '오늘 기록을 수정했어요.\n홈과 리포트 추천도 최신 내용으로 반영됐어요.'
-        : '오늘 기록을 저장했어요.\n홈과 리포트 추천도 함께 업데이트됐어요.',
+        ? '추천도 반영됐어요.'
+        : '추천도 업데이트됐어요.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]
@@ -68,16 +68,16 @@ export default function LogScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정하기' : '오늘 기록 남기기'}</Text>
-        <Text style={styles.subTitle}>지금 상태를 가볍게 남기면 홈과 리포트 추천이 함께 업데이트돼요.</Text>
+        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정' : '오늘 컨디션 남기기'}</Text>
+        <Text style={styles.subTitle}>상태를 남기면 추천이 함께 업데이트돼요.</Text>
         
         <SectionTitle title="수면 상태" />
         <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
 
-        <SectionTitle title="피로도 (1: 피곤 ~ 5: 활기참)" />
+        <SectionTitle title="피로도 (1 피곤 – 5 활기참)" />
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={fatigue} onSelect={setFatigue} />
 
-        <SectionTitle title="현재 기분 (1: 우울 ~ 5: 편안함)" />
+        <SectionTitle title="기분 (1 우울 – 5 편안함)" />
         <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={mood} onSelect={setMood} />
 
         <SectionTitle title="식사 상태" />
@@ -100,7 +100,7 @@ export default function LogScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>{isEditingTodayLog ? '오늘 기록 업데이트' : '오늘 기록 저장'}</Text>
+          <Text style={styles.buttonText}>{isEditingTodayLog ? '기록 수정하기' : '기록 저장하기'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

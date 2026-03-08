@@ -14,7 +14,7 @@ interface TeaBlendInfoCardProps {
 export function TeaBlendInfoCard({
   teaId,
   content,
-  title = '이 블렌드 더 보기',
+  title = '블렌드 상세 보기',
   compact = false,
 }: TeaBlendInfoCardProps) {
   const profileHighlights = getTeaProfileHighlights(teaId);
@@ -50,18 +50,18 @@ export function TeaBlendInfoCard({
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>잘 맞는 시간대</Text>
+            <Text style={styles.sectionLabel}>추천 시간대</Text>
             <Text style={styles.metaText}>{content.timings.join(' · ')}</Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>잘 맞는 상황</Text>
+            <Text style={styles.sectionLabel}>이럴 때 좋아요</Text>
             <Text style={styles.metaText}>{content.situations.join(' · ')}</Text>
           </View>
         </>
       ) : (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>잘 맞는 흐름</Text>
+          <Text style={styles.sectionLabel}>오늘의 흐름</Text>
           <Text style={styles.metaText}>{content.timings[0]} · {content.situations[0]}</Text>
         </View>
       )}

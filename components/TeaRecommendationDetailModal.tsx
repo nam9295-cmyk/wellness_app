@@ -19,7 +19,7 @@ export function TeaRecommendationDetailModal({
   visible,
   recommendation,
   onClose,
-  reasonTitle = '오늘 잘 맞는 이유',
+  reasonTitle = '오늘의 추천 이유',
 }: TeaRecommendationDetailModalProps) {
   const { savedTeaIds, saveTeaToBox } = useStore();
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -39,7 +39,7 @@ export function TeaRecommendationDetailModal({
     }
 
     const result = await saveTeaToBox(recommendation.teaId);
-    setFeedbackMessage(result.added ? '내 티함에 담아두었어요.' : '이미 티함에 담아둔 블렌드예요.');
+    setFeedbackMessage(result.added ? '티함에 담았어요' : '이미 담아둔 티예요');
   };
 
   return (
@@ -98,7 +98,7 @@ export function TeaRecommendationDetailModal({
 
             <View style={styles.metaGrid}>
               <View style={styles.metaCard}>
-                <Text style={styles.metaLabel}>잘 맞는 시간대</Text>
+                <Text style={styles.metaLabel}>추천 시간대</Text>
                 <View style={styles.metaChipWrap}>
                   {recommendation.content.timings.map((timing) => (
                     <View key={timing} style={styles.metaChip}>
@@ -108,7 +108,7 @@ export function TeaRecommendationDetailModal({
                 </View>
               </View>
               <View style={styles.metaCard}>
-                <Text style={styles.metaLabel}>잘 맞는 상황</Text>
+                <Text style={styles.metaLabel}>이럴 때 좋아요</Text>
                 <View style={styles.metaChipWrap}>
                   {recommendation.content.situations.map((situation) => (
                     <View key={situation} style={styles.metaChip}>
@@ -132,7 +132,7 @@ export function TeaRecommendationDetailModal({
                 disabled={isSaved}
               >
                 <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                  {isSaved ? '이미 티함에 담겨 있어요' : '내 티함에 담기'}
+                  {isSaved ? '이미 담아둔 티예요' : '티함에 담기'}
                 </Text>
               </Pressable>
               {feedbackMessage ? (
@@ -144,7 +144,7 @@ export function TeaRecommendationDetailModal({
               <TeaBlendInfoCard
                 teaId={recommendation.secondaryTeaId}
                 content={recommendation.secondaryContent}
-                title="함께 볼 블렌드"
+                title="함께 추천하는 블렌드"
                 compact
               />
             ) : null}

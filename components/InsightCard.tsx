@@ -8,7 +8,7 @@ interface InsightCardProps {
 export function InsightCard({ insights }: InsightCardProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>최근 흐름 인사이트</Text>
+      <Text style={styles.header}>이번 주 인사이트</Text>
       <View style={styles.insightList}>
         {insights.map((insight, index) => (
           <View key={index} style={styles.insightItem}>

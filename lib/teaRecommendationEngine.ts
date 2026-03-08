@@ -321,13 +321,13 @@ function getTeaReason(teaId: TeaRecommendationId, context: TeaRecommendationCont
   switch (teaId) {
     case 'britishBlack':
       if (tags.includes('focus_ready')) {
-        return '또렷한 흐름이 필요한 오늘, 단정한 구조감이 잘 맞아요.';
+        return '또렷한 흐름이 필요한 오늘, 구조감이 잘 맞아요.';
       }
 
       return '리듬을 또렷하게 잡아줄 한 잔으로 잘 어울려요.';
     case 'asianGold':
       if (tags.includes('low_stimulation') || tags.includes('gentle_balance')) {
-        return '부드럽고 과하지 않은 리듬이 오늘과 잘 맞아요.';
+        return '부드러운 리듬이 오늘과 잘 어울려요.';
       }
 
       if (tags.includes('steady_flow')) {
@@ -337,17 +337,17 @@ function getTeaReason(teaId: TeaRecommendationId, context: TeaRecommendationCont
       return '균형감 있게 정돈되는 한 잔이 잘 어울려요.';
     case 'hibiscusFruit':
       if (tags.includes('refresh_hydration') || tags.includes('mood_reset')) {
-        return '산뜻하게 기분을 전환하고 싶을 때 잘 맞아요.';
+        return '분위기를 가볍게 바꾸고 싶을 때 잘 맞아요.';
       }
 
       if (timeSlot === 'late_night') {
-        return '늦은 시간에도 비교적 가볍게 즐기기 좋아요.';
+        return '늦은 시간에도 가볍게 즐기기 좋아요.';
       }
 
       return '밝고 경쾌한 무드가 필요한 순간에 어울려요.';
     case 'mintyChocolat':
       if (tags.includes('clean_finish')) {
-        return '식후에 깔끔하게 전환하기 좋아요.';
+        return '식후 전환이 필요할 때 잘 맞아요.';
       }
 
       if (tags.includes('mood_reset')) {
@@ -408,7 +408,7 @@ export function getTeaRecommendation(input: TeaRecommendationInput): TeaRecommen
     secondaryTeaId,
     secondaryContent: secondaryTeaId ? teaRecommendationContent[secondaryTeaId] : undefined,
     reason: getTeaReason(topTeaId, context),
-    contextLine: `잘 맞는 흐름: ${getTimeSlotLabel(context.timeSlot)} · ${situationLabel}`,
+    contextLine: `오늘의 흐름: ${getTimeSlotLabel(context.timeSlot)} · ${situationLabel}`,
   };
 }
 
@@ -484,7 +484,7 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
   const targetLogs = getRecentFlowLogs(logs);
 
   if (targetLogs.length === 0) {
-    return '기록이 쌓이면 최근 흐름에 맞춘 추천이 더 또렷해져요.';
+    return '기록이 쌍이면 추천이 더 또렷해져요.';
   }
 
   const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
@@ -496,16 +496,16 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
 
   if (lowSleepCount >= 2) {
     return teaId === 'asianGold' || teaId === 'hibiscusFruit'
-      ? '최근엔 부드럽고 자극이 적은 흐름이 더 잘 어울려요.'
-      : '최근 수면 흐름을 고려해 자극이 강하지 않은 쪽으로 골랐어요.';
+      ? '부드럽고 자극이 적은 흐름이 잘 어울려요.'
+      : '수면 흐름을 고려해 자극이 적은 쪽으로 골랐어요.';
   }
 
   if (lowWaterCount >= 2) {
-    return '산뜻하게 리듬을 환기해줄 블렌드를 골랐어요.';
+    return '리듬을 산뜻하게 환기해줄 블렌드예요.';
   }
 
   if (lowMoodCount >= 2 || avgMood <= 2.7) {
-    return '가볍게 분위기를 전환해줄 무드가 잘 맞아요.';
+    return '분위기를 가볝게 바꿔줄 무드가 잘 맞아요.';
   }
 
   if (activeDays <= 1) {
@@ -513,10 +513,10 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
   }
 
   if (avgMood >= 3.5 && avgFatigue >= 3) {
-    return '지금의 안정적인 흐름을 자연스럽게 이어가기 좋아요.';
+    return '안정적인 흐름을 이어가기 좋아요.';
   }
 
-  return '최근 흐름엔 한쪽으로 치우치지 않는 균형감이 잘 맞아요.';
+  return '균형감 있는 블렌드가 잘 맞는 흐름이에요.';
 }
 
 function getRecentFlowContextLine(teaId: TeaRecommendationId, logs: WellnessLog[]): string {

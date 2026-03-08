@@ -46,9 +46,9 @@ export default function Home() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>안녕하세요 {nickname}님</Text>
+      <Text style={styles.greeting}>{nickname}님, 안녕하세요 👋</Text>
       <Text style={styles.subtitle}>
-        {todayLog ? '오늘 기록을 바탕으로 상태와 추천을 함께 살펴볼 수 있어요.' : `아직 오늘 기록이 없어요.\n${goalMessage}가볍게 컨디션을 남겨볼까요?`}
+        {todayLog ? '오늘 하루도 잘 기록했어요' : `아직 오늘 기록이 없어요.\n${goalMessage}가볍게 컨디션을 남겨볼까요?`}
       </Text>
 
       {latestLogFeedback ? (
@@ -57,7 +57,7 @@ export default function Home() {
         </View>
       ) : null}
       
-      <Card title="오늘의 상태 요약">
+      <Card title="오늘의 컨디션">
         {todayLog ? (
           <View>
             <View style={styles.summaryRow}>
@@ -87,8 +87,8 @@ export default function Home() {
         )}
       </Card>
 
-      <Card title="나의 웰니스 현황">
-        <Text style={styles.statText}>지금까지 총 <Text style={styles.statHighlight}>{recordCount}</Text>일 기록했어요.</Text>
+      <Card title="나의 웰니스">
+        <Text style={styles.statText}><Text style={styles.statHighlight}>{recordCount}</Text>일째 기록 중</Text>
       </Card>
 
       <Card title={recommendation.title}>
@@ -96,7 +96,7 @@ export default function Home() {
       </Card>
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
-        <Card title="오늘의 티 추천">
+        <Card title="오늘의 추천 티">
           <View style={styles.teaCardRow}>
             <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
             <View style={styles.teaCardText}>
@@ -107,7 +107,7 @@ export default function Home() {
             </View>
           </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
-          <Text style={styles.teaUpdateHint}>오늘 기록 기준으로 바로 반영된 추천이에요.</Text>
+          <Text style={styles.teaUpdateHint}>오늘 기록을 바탕으로 추천했어요</Text>
           <Text style={styles.detailHint}>추천 상세 보기</Text>
         </Card>
       </TouchableOpacity>
