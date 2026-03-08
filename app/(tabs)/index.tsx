@@ -163,8 +163,8 @@ export default function Home() {
         {customBlendCards.map((blend, index) => (
           (() => {
             const visualProfile = getCustomBlendVisualProfile(blend);
-            const ingredientPreview = blend.ingredientNames.slice(0, 3).join(' · ');
-            const extraIngredientCount = blend.ingredientNames.length - 3;
+            const extraIngredients = blend.ingredientNames.slice(1);
+            const ingredientPreview = extraIngredients.join(' · ');
 
             return (
               <TouchableOpacity
@@ -181,7 +181,6 @@ export default function Home() {
                 <Text style={styles.aiBlendSummary} numberOfLines={2}>{blend.summary}</Text>
                 <Text style={styles.aiBlendIngredients} numberOfLines={1}>
                   {ingredientPreview}
-                  {extraIngredientCount > 0 ? ` 외 ${extraIngredientCount}가지` : ''}
                 </Text>
 
                 <View style={styles.aiBlendChipWrap}>

@@ -99,7 +99,17 @@ export function CustomBlendDetailModal({
               disabled={isSaved}
               onPress={async () => {
                 const result = await saveCustomBlendToBox(option);
-                setFeedbackMessage(result.added ? '블렌드함에 담았어요' : '이미 담아둔 블렌드예요');
+                if (!result.added) {
+                  setFeedbackMessage('이미 담아둔 블렌드예요');
+                  return;
+                }
+
+                if (__DEV__ && !result.synced) {
+                  setFeedbackMessage('블렌드함에 담았어요. Firestore 동기화는 보류됐어요.');
+                  return;
+                }
+
+                setFeedbackMessage('블렌드함에 담았어요');
               }}
             >
               <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>

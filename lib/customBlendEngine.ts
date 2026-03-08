@@ -278,7 +278,7 @@ function scoreCombo(
   } else if (combo.length === 2) {
     score += 3;
   } else if (combo.length === 3) {
-    score -= 1;
+    score += 1;
   }
 
   return {
@@ -286,11 +286,6 @@ function scoreCombo(
     score,
     notes: Array.from(new Set(notes)).slice(0, 3),
   };
-}
-
-function getContextLine(context: TeaRecommendationContext, combo: CustomBlendIngredientId[]) {
-  const firstIngredient = customBlendIngredients[combo[0]];
-  return `${getTimeSlotLabel(context.timeSlot)} · ${firstIngredient.notes[0] || firstIngredient.name} 중심`;
 }
 
 function getDominantTags(ingredientIds: CustomBlendIngredientId[]) {
@@ -373,23 +368,23 @@ const trioDisplayNameMap: Record<string, string> = {
 };
 
 const moodLeadsByTag: Partial<Record<CustomBlendToneTag, string[]>> = {
-  refresh: ['클리어', '브라이트', '프레시'],
-  citrus: ['시트러스', '썬릿', '골든'],
-  soft: ['소프트', '벨벳', '코지'],
-  cozy: ['웜', '앰버', '허쉬'],
-  focus: ['크리스프', '노블', '스틸'],
-  structure: ['클래식', '딥', '밸런스'],
-  fruit: ['루비', '프루트', '라이트'],
-  floral: ['플로럴', '미스트', '페탈'],
-  mint: ['쿨', '민트', '에어리'],
-  chocolaty: ['코코아', '브라운', '실키'],
-  daily: ['데일리', '이지', '소프트'],
+  refresh: ['클리어', '브라이트', '프레시', '에어리', '라이트'],
+  citrus: ['시트러스', '썬릿', '골든', '듀', '리프'],
+  soft: ['소프트', '벨벳', '코지', '젠틀', '실키'],
+  cozy: ['웜', '앰버', '허쉬', '멜로우', '누크'],
+  focus: ['크리스프', '노블', '스틸', '샤프', '퀘트'],
+  structure: ['클래식', '딥', '밸런스', '코어', '리듬'],
+  fruit: ['루비', '프루트', '라이트', '글로우', '브리즈'],
+  floral: ['플로럴', '미스트', '페탈', '블룸', '에어'],
+  mint: ['쿨', '민트', '에어리', '브리즈', '리프'],
+  chocolaty: ['코코아', '브라운', '실키', '누아', '벨벳'],
+  daily: ['데일리', '이지', '소프트', '밸런스', '플로우'],
 };
 
 const senseWordsByLength: Record<number, string[]> = {
-  1: ['듀', '베일', '노트', '톤', '웨이브'],
-  2: ['브리즈', '플로우', '리듬', '무드', '스플래시'],
-  3: ['밸런스', '레이어', '오라', '실루엣', '클래식'],
+  1: ['듀', '베일', '노트', '톤', '웨이브', '터치', '힌트'],
+  2: ['브리즈', '플로우', '리듬', '무드', '스플래시', '라인', '밸런스'],
+  3: ['밸런스', '레이어', '오라', '실루엣', '클래식', '하모니', '플로우'],
 };
 
 const aromaPhraseByTag: Partial<Record<CustomBlendToneTag, string>> = {
@@ -417,6 +412,21 @@ const moodPhraseByTag: Partial<Record<CustomBlendToneTag, string>> = {
   floral: '은은하게 번지는 분위기',
   mint: '깨끗하게 환기되는 인상',
   chocolaty: '깊이감 있게 이어지는 결',
+};
+
+const contextLabelByTag: Partial<Record<CustomBlendToneTag, string>> = {
+  refresh: '산뜻한 전환',
+  citrus: '맑은 시트러스',
+  soft: '부드러운 흐름',
+  cozy: '포근한 여운',
+  focus: '또렷한 집중감',
+  structure: '정돈된 밸런스',
+  fruit: '밝은 과일감',
+  floral: '은은한 꽃결',
+  mint: '쿨한 환기감',
+  chocolaty: '카카오 깊이감',
+  clean: '깔끔한 마무리',
+  daily: '가벼운 데일리 무드',
 };
 
 function getCoreIngredientKey(ingredientIds: CustomBlendIngredientId[]) {
@@ -495,6 +505,22 @@ function getMoodPhrase(tags: CustomBlendToneTag[]) {
   return moodPhraseByTag[dominantTag] || '무난하고 편안한 흐름';
 }
 
+function getContextLine(
+  context: TeaRecommendationContext,
+  ingredientIds: CustomBlendIngredientId[],
+  tags: CustomBlendToneTag[]
+) {
+  const dominantTag = tags[0] || 'daily';
+  const dominantLabel = contextLabelByTag[dominantTag] || '가벼운 균형감';
+  const noteCandidates = ingredientIds.flatMap((ingredientId) => customBlendIngredients[ingredientId].notes);
+  const noteLabel = pickByHash(
+    noteCandidates.length > 0 ? noteCandidates : ['정돈감'],
+    `${ingredientIds.join('|')}|context|${dominantTag}`
+  );
+
+  return `${getTimeSlotLabel(context.timeSlot)} · ${dominantLabel} · ${noteLabel}`;
+}
+
 function formatCoreNames(ingredientIds: CustomBlendIngredientId[]) {
   const coreNames = ingredientIds.map((ingredientId) => customBlendIngredients[ingredientId].name);
 
@@ -566,7 +592,7 @@ function toOption(
   const dominantTags = getDominantTags(ingredientCore);
   const recommendationType = label === 'refreshing' ? 'fresh' : label;
   const displayName = getDisplayName(ingredientCore, dominantTags, recommendationType);
-  const contextLine = getContextLine(context, ingredientCore);
+  const contextLine = getContextLine(context, ingredientCore, dominantTags);
 
   return {
     label,
@@ -604,9 +630,9 @@ function getPreferredLengths(
   usedLengths: Set<number> = new Set()
 ) {
   const weightedLengthsByType: Record<typeof recommendationType, number[]> = {
-    best: [1, 2, 2, 1, 2, 3],
-    refreshing: [2, 1, 2, 3, 2, 1],
-    soft: [1, 2, 1, 2, 1, 3],
+    best: [1, 2, 2, 3, 2, 3],
+    refreshing: [2, 1, 2, 3, 2, 3],
+    soft: [1, 2, 1, 3, 2, 1],
   };
   const weightedLengths = weightedLengthsByType[recommendationType];
   const seed = getStableHash(`${getSeedBase(context)}|${recommendationType}`);
@@ -653,7 +679,7 @@ function pickDistinctCombo(
     } else if (comboLength === 2) {
       diversityScore += 3;
     } else {
-      diversityScore -= 3;
+      diversityScore += 1;
     }
 
     diversityScore -= overlapCount * 4;

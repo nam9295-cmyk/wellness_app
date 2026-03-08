@@ -34,7 +34,7 @@ interface StoreContextType {
   savedBlendItems: SavedBlendItem[];
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
-  saveCustomBlendToBox: (option: CustomBlendOption) => Promise<{ added: boolean }>;
+  saveCustomBlendToBox: (option: CustomBlendOption) => Promise<{ added: boolean; synced: boolean }>;
   removeSavedBlendFromBox: (itemId: string) => Promise<{ removed: boolean }>;
   removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'fallback';
@@ -195,7 +195,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const itemId = createCustomBlendItemId(option);
 
     if (savedBlendItems.some((item) => item.id === itemId)) {
-      return { added: false };
+      return { added: false, synced: true };
     }
 
     const nextItem = createCustomSavedBlendItem(option);
@@ -205,11 +205,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await syncSavedCustomBlendToFirestore({ option });
+      return { added: true, synced: true };
     } catch (error) {
       console.warn('Failed to sync saved custom blend to Firestore', error);
+      return { added: true, synced: false };
     }
-
-    return { added: true };
   };
 
   const removeSavedBlendFromBox = async (itemId: string) => {
