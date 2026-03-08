@@ -10,7 +10,16 @@ import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function MyScreen() {
-  const { isReady, userSettings, updateSettings, savedTeaIds, removeTeaFromBox } = useStore();
+  const {
+    isReady,
+    userSettings,
+    updateSettings,
+    savedTeaIds,
+    removeTeaFromBox,
+    syncStatus,
+    syncStatusMessage,
+    clearSyncStatusMessage,
+  } = useStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [selectedTeaId, setSelectedTeaId] = useState<TeaRecommendationId | null>(null);
@@ -33,6 +42,18 @@ export default function MyScreen() {
       syncFormWithSettings();
     }
   }, [isEditing, userSettings]);
+
+  useEffect(() => {
+    if (!syncStatusMessage || syncStatus === 'syncing') {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      clearSyncStatusMessage();
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [syncStatus, syncStatusMessage, clearSyncStatusMessage]);
 
   const handleSave = async () => {
     if (!nickname.trim()) {
@@ -130,6 +151,14 @@ export default function MyScreen() {
         </View>
         
         <View style={styles.menuList}>
+          {syncStatusMessage ? (
+            <View style={[styles.syncBanner, syncStatus === 'fallback' && styles.syncBannerFallback]}>
+              <Text style={[styles.syncText, syncStatus === 'fallback' && styles.syncTextFallback]}>
+                {syncStatusMessage}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>나의 설정</Text>
             {!isEditing ? (
@@ -330,6 +359,29 @@ const styles = StyleSheet.create({
   nameInput: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 4, minWidth: 120, textAlign: 'center', letterSpacing: -0.5 },
   goalText: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 },
   menuList: { padding: spacing.lg, paddingTop: spacing.xl },
+  syncBanner: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  syncBannerFallback: {
+    backgroundColor: colors.primaryLight + '1A',
+    borderColor: colors.primaryLight,
+  },
+  syncText: {
+    fontSize: 13,
+    color: colors.textLight,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    fontWeight: '600',
+  },
+  syncTextFallback: {
+    color: colors.text,
+  },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, letterSpacing: -0.3 },
   sectionMeta: { fontSize: 13, color: colors.textLight, fontWeight: '600', letterSpacing: -0.2 },

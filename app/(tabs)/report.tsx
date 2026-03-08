@@ -4,11 +4,12 @@ import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDeta
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-import { generateReportStats } from '@/lib/reportUtils';
+import { generateReportOverview } from '@/lib/reportUtils';
 import { StatCard } from '@/components/StatCard';
 import { InsightCard } from '@/components/InsightCard';
 import { formatDisplayDate } from '@/lib/date';
 import { getTeaRecommendationForRecentFlow } from '@/lib/teaRecommendationEngine';
+import { normalizeLogsForReport } from '@/lib/reportLogUtils';
 
 export default function ReportScreen() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
@@ -22,7 +23,8 @@ export default function ReportScreen() {
     );
   }
 
-  const stats = generateReportStats(logs);
+  const report = generateReportOverview(logs);
+  const normalizedLogs = normalizeLogsForReport(logs);
   const teaRecommendation = getTeaRecommendationForRecentFlow({
     logs,
     userGoal: userSettings?.goal,
@@ -31,9 +33,10 @@ export default function ReportScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>웰니스 리포트</Text>
-      <Text style={styles.caption}>최근 기록을 바탕으로 흐름과 추천을 정리했어요.</Text>
+      <Text style={styles.caption}>이번 주 흐름과 전체 누적 기록을 나눠서 정리했어요.</Text>
       
-      <InsightCard insights={stats.insights} />
+      <Text style={styles.sectionCaption}>이번 주 흐름</Text>
+      <InsightCard insights={report.weekly.insights} />
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
         <View style={styles.teaCard}>
@@ -58,21 +61,34 @@ export default function ReportScreen() {
       
       <View style={styles.statGrid}>
         <View style={styles.statRow}>
-          <StatCard label="총 기록 일수" value={stats.totalLogs} suffix="일" />
-          <StatCard label="최근 7일 기록" value={stats.recent7DaysLogs} suffix="일" />
+          <StatCard label="이번 주 기록" value={report.weekly.logCount} suffix="일" />
+          <StatCard label="전체 누적 기록" value={report.overall.logCount} suffix="일" />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="평균 기분" value={stats.avgMood} suffix="/ 5" />
-          <StatCard label="평균 피로도" value={stats.avgFatigue} suffix="/ 5" />
+          <StatCard label="주간 평균 기분" value={report.weekly.avgMood} suffix="/ 5" />
+          <StatCard label="주간 평균 피로" value={report.weekly.avgFatigue} suffix="/ 5" />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="주요 수면 패턴" value={stats.frequentSleep} />
+          <StatCard label="이번 주 수면 흐름" value={report.weekly.frequentSleep} />
+        </View>
+      </View>
+
+      <Text style={styles.sectionCaption}>전체 누적 흐름</Text>
+      <InsightCard insights={report.overall.insights} />
+
+      <View style={styles.statGrid}>
+        <View style={styles.statRow}>
+          <StatCard label="전체 평균 기분" value={report.overall.avgMood} suffix="/ 5" />
+          <StatCard label="전체 평균 피로" value={report.overall.avgFatigue} suffix="/ 5" />
+        </View>
+        <View style={styles.statRow}>
+          <StatCard label="전체 수면 패턴" value={report.overall.frequentSleep} />
         </View>
       </View>
 
       <Text style={styles.subTitle}>최근 기록</Text>
-      {logs.length > 0 ? (
-        logs.slice(0, 5).map(log => (
+      {normalizedLogs.length > 0 ? (
+        normalizedLogs.slice(0, 5).map(log => (
           <View key={log.id} style={styles.historyRow}>
             <View>
               <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
@@ -108,7 +124,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   title: { fontSize: 26, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
-  caption: { fontSize: 14, color: colors.textLight, lineHeight: 22, marginTop: -spacing.md, marginBottom: spacing.lg, letterSpacing: -0.2 },
+      caption: { fontSize: 14, color: colors.textLight, lineHeight: 22, marginTop: -spacing.md, marginBottom: spacing.lg, letterSpacing: -0.2 },
+  sectionCaption: { fontSize: 14, color: colors.textLight, marginBottom: spacing.sm, fontWeight: '700', letterSpacing: -0.2 },
   subTitle: { fontSize: 18, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.md, color: colors.text, letterSpacing: -0.3 },
   teaCard: {
     backgroundColor: colors.card,

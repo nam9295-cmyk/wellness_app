@@ -1,8 +1,17 @@
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
 import { SUBCOLLECTIONS, COLLECTIONS } from '@/lib/firebaseCollections';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { getOrCreateMemberId } from '@/lib/memberIdentity';
-import { UserSettings, WellnessLog } from '@/types';
+import {
+  EXERCISE_STATES,
+  MEAL_STATES,
+  SLEEP_STATES,
+  UserSettings,
+  WATER_STATES,
+  WellnessLog,
+} from '@/types';
+import { sortLogsByDateDesc } from './logUtils';
+import { normalizeLogsForReport } from './reportLogUtils';
 
 type MemberStatus = 'Stable' | 'Attention' | 'Check';
 
@@ -49,6 +58,45 @@ function getFocusLabel(log: WellnessLog, settings: UserSettings | null) {
   }
 
   return '오늘 컨디션 체크';
+}
+
+function parseFivePointScore(value: unknown, fallback: number) {
+  if (typeof value === 'number' && value >= 1 && value <= 5) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value.split('/')[0], 10);
+    if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 5) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function isIncludedValue<T extends string>(values: readonly T[], value: unknown, fallback: T): T {
+  return typeof value === 'string' && values.includes(value as T) ? (value as T) : fallback;
+}
+
+function toWellnessLog(data: Record<string, unknown>, fallbackId: string): WellnessLog | null {
+  const date = typeof data.date === 'string' ? data.date : null;
+
+  if (!date) {
+    return null;
+  }
+
+  return {
+    id: typeof data.id === 'string' ? data.id : fallbackId,
+    date,
+    sleep: isIncludedValue(SLEEP_STATES, data.sleep, '보통'),
+    fatigue: parseFivePointScore(data.fatigue, 3),
+    mood: parseFivePointScore(data.mood, 3),
+    meal: isIncludedValue(MEAL_STATES, data.meal, '보통'),
+    exercise: isIncludedValue(EXERCISE_STATES, data.exercise, '안 함'),
+    water: isIncludedValue(WATER_STATES, data.water, '보통'),
+    memo: typeof data.memo === 'string' ? data.memo : '',
+  };
 }
 
 export async function syncTodayLogToFirestore({
@@ -110,4 +158,25 @@ export async function syncTodayLogToFirestore({
     synced: true,
     memberId,
   };
+}
+
+export async function loadLogsFromFirestore(): Promise<WellnessLog[] | null> {
+  if (!isFirebaseConfigured() || !db) {
+    return null;
+  }
+
+  const memberId = await getOrCreateMemberId();
+  const snapshot = await getDocs(
+    query(collection(db, SUBCOLLECTIONS.dailySummaries(memberId)), orderBy('date', 'desc'))
+  );
+
+  if (snapshot.empty) {
+    return [];
+  }
+
+  const remoteLogs = snapshot.docs
+    .map((logDoc) => toWellnessLog(logDoc.data() as Record<string, unknown>, logDoc.id))
+    .filter((log): log is WellnessLog => log !== null);
+
+  return normalizeLogsForReport(sortLogsByDateDesc(remoteLogs));
 }

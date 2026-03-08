@@ -6,17 +6,32 @@ import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
+import { CustomBlendOption, getCustomBlendRecommendations } from '@/lib/customBlendEngine';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
-  const { logs, getTodayLog, isReady, userSettings, latestLogFeedback, clearLatestLogFeedback } = useStore();
+  const {
+    logs,
+    getTodayLog,
+    isReady,
+    userSettings,
+    latestLogFeedback,
+    clearLatestLogFeedback,
+    syncStatus,
+    syncStatusMessage,
+    clearSyncStatusMessage,
+  } = useStore();
   const todayLog = getTodayLog();
 
   const recordCount = logs.length;
   const recommendation = getHomeRecommendation(logs, userSettings);
   const teaRecommendation = getTeaRecommendation({
+    logs,
+    userGoal: userSettings?.goal,
+  });
+  const customBlendRecommendations = getCustomBlendRecommendations({
     logs,
     userGoal: userSettings?.goal,
   });
@@ -33,6 +48,18 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [latestLogFeedback, clearLatestLogFeedback]);
 
+  useEffect(() => {
+    if (!syncStatusMessage || syncStatus === 'syncing') {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      clearSyncStatusMessage();
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [syncStatus, syncStatusMessage, clearSyncStatusMessage]);
+
   if (!isReady) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -43,6 +70,11 @@ export default function Home() {
 
   const nickname = userSettings?.nickname || '회원';
   const goalMessage = userSettings?.goal ? `[${userSettings.goal}] 모드로 ` : '';
+  const customBlendCards: CustomBlendOption[] = [
+    customBlendRecommendations.best,
+    customBlendRecommendations.refreshingAlternative,
+    customBlendRecommendations.softAlternative,
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -54,6 +86,14 @@ export default function Home() {
       {latestLogFeedback ? (
         <View style={styles.feedbackBanner}>
           <Text style={styles.feedbackText}>{latestLogFeedback}</Text>
+        </View>
+      ) : null}
+
+      {syncStatusMessage ? (
+        <View style={[styles.syncBanner, syncStatus === 'fallback' && styles.syncBannerFallback]}>
+          <Text style={[styles.syncText, syncStatus === 'fallback' && styles.syncTextFallback]}>
+            {syncStatusMessage}
+          </Text>
         </View>
       ) : null}
       
@@ -112,6 +152,24 @@ export default function Home() {
         </Card>
       </TouchableOpacity>
 
+      <Card title="AI 블렌딩 제안">
+        <Text style={styles.aiBlendIntro}>카카오닙 베이스 위에 오늘 흐름에 맞는 조합 3가지를 골랐어요.</Text>
+        {customBlendCards.map((blend, index) => (
+          <View
+            key={blend.label}
+            style={[styles.aiBlendItem, index === customBlendCards.length - 1 && styles.aiBlendItemLast]}
+          >
+            <View style={styles.aiBlendHeader}>
+              <Text style={styles.aiBlendLabel}>{blend.toneLabel}</Text>
+              <Text style={styles.aiBlendContext}>{blend.contextLine}</Text>
+            </View>
+            <Text style={styles.aiBlendTitle}>{blend.title}</Text>
+            <Text style={styles.aiBlendIngredients}>{blend.ingredientNames.join(' · ')}</Text>
+            <Text style={styles.aiBlendReason} numberOfLines={2}>{blend.reason}</Text>
+          </View>
+        ))}
+      </Card>
+
       <Card title="최근 기록">
         {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
           <View key={log.id} style={[styles.logItem, index === 2 && { borderBottomWidth: 0 }]}>
@@ -153,6 +211,29 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     fontWeight: '600',
   },
+  syncBanner: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  syncBannerFallback: {
+    backgroundColor: colors.primaryLight + '1A',
+    borderColor: colors.primaryLight,
+  },
+  syncText: {
+    fontSize: 13,
+    color: colors.textLight,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    fontWeight: '600',
+  },
+  syncTextFallback: {
+    color: colors.text,
+  },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   summaryLabel: { fontSize: 15, color: colors.textLight },
   summaryValue: { fontSize: 15, color: colors.text, fontWeight: '500' },
@@ -170,6 +251,63 @@ const styles = StyleSheet.create({
   teaContext: { fontSize: 13, color: colors.textLight, marginTop: spacing.sm, letterSpacing: -0.2 },
   teaUpdateHint: { fontSize: 12, color: colors.primary, marginTop: spacing.sm, fontWeight: '700', letterSpacing: -0.1 },
   detailHint: { fontSize: 12, color: colors.textLight, marginTop: spacing.md, fontWeight: '600', letterSpacing: -0.1 },
+  aiBlendIntro: {
+    fontSize: 14,
+    color: colors.textLight,
+    lineHeight: 22,
+    marginBottom: spacing.md,
+    letterSpacing: -0.2,
+  },
+  aiBlendItem: {
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  aiBlendItemLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 0,
+  },
+  aiBlendHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: 6,
+  },
+  aiBlendLabel: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  aiBlendContext: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 12,
+    color: colors.textLight,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  aiBlendTitle: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '700',
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  aiBlendIngredients: {
+    fontSize: 13,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+    lineHeight: 20,
+    letterSpacing: -0.1,
+  },
+  aiBlendReason: {
+    fontSize: 14,
+    color: colors.textLight,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
   logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
   logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },
   logSummary: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 }

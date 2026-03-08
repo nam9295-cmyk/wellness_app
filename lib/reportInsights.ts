@@ -1,17 +1,11 @@
-import { isDateWithinLastDays } from '@/lib/date';
 import { WellnessLog } from '@/types';
+import { getRecentLogsForReport } from './reportLogUtils';
 
-function getInsightTargetLogs(logs: WellnessLog[]): WellnessLog[] {
-  const recent7DaysLogs = logs.filter((log) => isDateWithinLastDays(log.date, 7));
-  return recent7DaysLogs.length > 0 ? recent7DaysLogs : logs.slice(0, 7);
-}
-
-export function generateReportInsights(logs: WellnessLog[]): string[] {
-  if (logs.length === 0) {
+function buildInsights(targetLogs: WellnessLog[]): string[] {
+  if (targetLogs.length === 0) {
     return ['아직 기록이 적어요. 오늘 컨디션부터 남겨보세요.'];
   }
 
-  const targetLogs = getInsightTargetLogs(logs);
   const insights: string[] = [];
 
   const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
@@ -46,8 +40,16 @@ export function generateReportInsights(logs: WellnessLog[]): string[] {
   }
 
   if (insights.length === 0) {
-    insights.push('기록을 잘 쌍아가고 있어요.');
+    insights.push('기록을 잘 쌓아가고 있어요.');
   }
 
   return insights.slice(0, 3);
+}
+
+export function generateReportInsights(logs: WellnessLog[]): string[] {
+  return buildInsights(getRecentLogsForReport(logs));
+}
+
+export function generateOverallReportInsights(logs: WellnessLog[]): string[] {
+  return buildInsights(logs);
 }
