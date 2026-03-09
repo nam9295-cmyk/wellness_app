@@ -9,6 +9,7 @@ interface CustomBlendProfileChartProps {
   compact?: boolean;
   embedded?: boolean;
   tiny?: boolean;
+  tone?: 'default' | 'atelier';
 }
 
 export function CustomBlendProfileChart({
@@ -17,7 +18,23 @@ export function CustomBlendProfileChart({
   compact = false,
   embedded = false,
   tiny = false,
+  tone = 'default',
 }: CustomBlendProfileChartProps) {
+  const palette = tone === 'atelier'
+    ? {
+        grid: '#DDD2C7',
+        fill: '#AFC5BB44',
+        stroke: '#6E8E82',
+        text: '#3A322E',
+        title: '#6F6762',
+      }
+    : {
+        grid: colors.border,
+        fill: colors.primary + '55',
+        stroke: colors.primary,
+        text: colors.text,
+        title: colors.textLight,
+      };
   const size = tiny ? 128 : compact ? 172 : 220;
   const center = size / 2;
   const radius = tiny ? 36 : compact ? 52 : 68;
@@ -67,7 +84,7 @@ export function CustomBlendProfileChart({
 
   const content = (
     <>
-      {title ? <Text style={[styles.title, (compact || tiny) && styles.titleCompact]}>{title}</Text> : null}
+      {title ? <Text style={[styles.title, { color: palette.title }, (compact || tiny) && styles.titleCompact]}>{title}</Text> : null}
       <View style={styles.chartWrap}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {gridPolygons.map((polygon, index) => (
@@ -75,7 +92,7 @@ export function CustomBlendProfileChart({
               key={`grid-${index}`}
               points={polygon}
               fill="none"
-              stroke={colors.border}
+              stroke={palette.grid}
               strokeWidth={1}
             />
           ))}
@@ -87,15 +104,15 @@ export function CustomBlendProfileChart({
               y1={center}
               x2={point.x}
               y2={point.y}
-              stroke={colors.border}
+              stroke={palette.grid}
               strokeWidth={1}
             />
           ))}
 
           <Polygon
             points={profilePolygon}
-            fill={colors.primary + '55'}
-            stroke={colors.primary}
+            fill={palette.fill}
+            stroke={palette.stroke}
             strokeWidth={2}
           />
 
@@ -105,7 +122,7 @@ export function CustomBlendProfileChart({
               cx={center + Math.cos(point.angle) * radius * (point.value / 5)}
               cy={center + Math.sin(point.angle) * radius * (point.value / 5)}
               r={pointRadius}
-              fill={colors.primary}
+              fill={palette.stroke}
             />
           ))}
 
@@ -116,7 +133,7 @@ export function CustomBlendProfileChart({
               y={point.labelY}
               fontSize={labelFontSize}
               fontWeight="700"
-              fill={colors.text}
+              fill={palette.text}
               textAnchor={getTextAnchor(point.labelX)}
             >
               {point.label}
