@@ -8,6 +8,7 @@ interface CustomBlendProfileChartProps {
   axes: CustomBlendLabAxis[];
   compact?: boolean;
   embedded?: boolean;
+  tiny?: boolean;
 }
 
 export function CustomBlendProfileChart({
@@ -15,13 +16,14 @@ export function CustomBlendProfileChart({
   axes,
   compact = false,
   embedded = false,
+  tiny = false,
 }: CustomBlendProfileChartProps) {
-  const size = compact ? 172 : 220;
+  const size = tiny ? 128 : compact ? 172 : 220;
   const center = size / 2;
-  const radius = compact ? 52 : 68;
-  const labelRadius = compact ? 74 : 96;
-  const pointRadius = compact ? 3.2 : 4;
-  const labelFontSize = compact ? 10 : 11;
+  const radius = tiny ? 36 : compact ? 52 : 68;
+  const labelRadius = tiny ? 54 : compact ? 74 : 96;
+  const pointRadius = tiny ? 2.6 : compact ? 3.2 : 4;
+  const labelFontSize = tiny ? 8 : compact ? 10 : 11;
 
   const points = axes.map((axis, index) => {
     const angle = (-Math.PI / 2) + (Math.PI * 2 * index) / axes.length;
@@ -65,7 +67,7 @@ export function CustomBlendProfileChart({
 
   const content = (
     <>
-      {title ? <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text> : null}
+      {title ? <Text style={[styles.title, (compact || tiny) && styles.titleCompact]}>{title}</Text> : null}
       <View style={styles.chartWrap}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {gridPolygons.map((polygon, index) => (

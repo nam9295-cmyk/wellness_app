@@ -106,29 +106,33 @@ export default function CustomBlendScreen() {
         </View>
 
         <View style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
+          <View style={styles.heroHeader}>
             <View style={styles.heroTextWrap}>
-              <Text style={styles.eyebrow}>추천 조합에서 시작</Text>
+              <Text style={styles.eyebrow}>현재 블렌드</Text>
               <Text style={styles.title}>{adjustedOption.displayName}</Text>
               <Text style={styles.summary}>{reading.summary}</Text>
             </View>
+          </View>
 
-            <CustomBlendCupVisual option={adjustedOption} blendRatios={blendRatios} />
+          <View style={styles.heroVisualRow}>
+            <View style={styles.heroPotWrap}>
+              <CustomBlendCupVisual option={adjustedOption} blendRatios={blendRatios} />
+            </View>
+            <View style={styles.heroGraphWrap}>
+              <CustomBlendProfileChart
+                axes={reading.axes}
+                title="프로파일"
+                compact
+                tiny
+                embedded
+              />
+            </View>
           </View>
 
           <View style={styles.heroChipWrap}>
             {heroTags.map((tag) => (
               <View key={tag} style={styles.heroChip}>
                 <Text style={styles.heroChipText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.metricGrid}>
-            {reading.highlightMetrics.map((metric) => (
-              <View key={metric.key} style={styles.metricCard}>
-                <Text style={styles.metricLabel}>{metric.label}</Text>
-                <Text style={styles.metricValue}>{metric.value}/5</Text>
               </View>
             ))}
           </View>
@@ -139,6 +143,7 @@ export default function CustomBlendScreen() {
             <Text style={styles.sectionTitle}>비율 조절</Text>
             <Text style={styles.sectionMeta}>카카오닙 {CUSTOM_BLEND_BASE_RATIO}% 고정</Text>
           </View>
+          <Text style={styles.sectionHint}>비율을 바꾸면 위 결과가 바로 업데이트돼요.</Text>
 
           <View style={styles.fixedIngredientRow}>
             <Text style={styles.fixedIngredientName}>카카오닙</Text>
@@ -190,14 +195,6 @@ export default function CustomBlendScreen() {
         </View>
 
         <View style={styles.profileCard}>
-          <View style={styles.profileChartWrap}>
-            <CustomBlendProfileChart
-              axes={reading.axes}
-              title="블렌드 프로파일"
-              compact
-              embedded
-            />
-          </View>
 
           <View style={styles.profileSummaryWrap}>
             <Text style={styles.analysisType}>{reading.typeName}</Text>
@@ -318,17 +315,15 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: colors.card,
     borderRadius: 24,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  heroHeader: {
+    marginBottom: spacing.sm,
   },
   heroTextWrap: {
-    flex: 1,
+    gap: 0,
   },
   eyebrow: {
     fontSize: 12,
@@ -346,15 +341,32 @@ const styles = StyleSheet.create({
   summary: {
     fontSize: 15,
     color: colors.text,
-    lineHeight: 24,
-    marginTop: spacing.sm,
+    lineHeight: 22,
+    marginTop: spacing.xs,
     fontWeight: '600',
+  },
+  heroVisualRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  heroPotWrap: {
+    flex: 1.12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 136,
+  },
+  heroGraphWrap: {
+    flex: 0.88,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroChipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   heroChip: {
     paddingHorizontal: 10,
@@ -368,31 +380,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text,
     fontWeight: '600',
-  },
-  metricGrid: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  metricCard: {
-    minWidth: '47%',
-    flexGrow: 1,
-    backgroundColor: colors.primaryLight + '18',
-    borderRadius: 16,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: colors.textLight,
-    fontWeight: '700',
-  },
-  metricValue: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '700',
-    marginTop: 4,
   },
   sectionCard: {
     marginTop: spacing.lg,
@@ -418,6 +405,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.primary,
     fontWeight: '700',
+  },
+  sectionHint: {
+    fontSize: 13,
+    color: colors.textLight,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+    letterSpacing: -0.1,
   },
   fixedIngredientRow: {
     flexDirection: 'row',
@@ -504,10 +498,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.md,
-  },
-  profileChartWrap: {
-    alignItems: 'center',
+    gap: spacing.sm,
   },
   profileSummaryWrap: {
     gap: spacing.sm,
