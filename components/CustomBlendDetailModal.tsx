@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { createCustomBlendItemId } from '@/lib/teaBoxStorage';
 import { CustomBlendOption, getCustomBlendVisualProfile } from '@/lib/customBlendEngine';
 import { colors, spacing } from '@/lib/theme';
@@ -16,6 +17,7 @@ export function CustomBlendDetailModal({
   option,
   onClose,
 }: CustomBlendDetailModalProps) {
+  const router = useRouter();
   const { savedBlendItems, saveCustomBlendToBox } = useStore();
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
@@ -38,6 +40,16 @@ export function CustomBlendDetailModal({
   }
 
   const visualProfile = getCustomBlendVisualProfile(option);
+  const openCustomBlendLab = () => {
+    const serializedOption = JSON.stringify(option);
+    onClose();
+    setTimeout(() => {
+      router.push({
+        pathname: '/custom-blend' as never,
+        params: { option: serializedOption },
+      } as never);
+    }, 0);
+  };
 
   return (
     <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
@@ -115,6 +127,10 @@ export function CustomBlendDetailModal({
               <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
                 {isSaved ? '이미 블렌드함에 있어요' : '블렌드함에 담기'}
               </Text>
+            </Pressable>
+
+            <Pressable style={styles.adjustButton} onPress={openCustomBlendLab}>
+              <Text style={styles.adjustButtonText}>직접 조절하기</Text>
             </Pressable>
 
             {feedbackMessage ? <Text style={styles.feedbackText}>{feedbackMessage}</Text> : null}
@@ -296,6 +312,21 @@ const styles = StyleSheet.create({
   },
   saveButtonTextSaved: {
     color: colors.primary,
+  },
+  adjustButton: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  adjustButtonText: {
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   feedbackText: {
     marginTop: spacing.sm,

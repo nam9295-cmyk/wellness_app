@@ -10,6 +10,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="custom-blend" options={{ animation: 'slide_from_right' }} />
       </Stack>
     </StoreProvider>
   );

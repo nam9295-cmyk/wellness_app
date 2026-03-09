@@ -21,6 +21,8 @@ export interface CustomSavedBlendItem {
   recommendationType: 'best' | 'fresh' | 'soft';
   displayName: string;
   baseIngredientId: string;
+  baseRatio?: number;
+  blendRatios?: Record<string, number>;
   selectedIngredientIds: string[];
   ingredientNames: string[];
   toneLabel: string;
@@ -40,7 +42,16 @@ function toTimestampString(date: Date) {
 }
 
 export function createCustomBlendItemId(option: CustomBlendOption): string {
-  return `custom:${option.ingredientIds.join('-')}`;
+  if (!option.blendRatios) {
+    return `custom:${option.ingredientIds.join('-')}`;
+  }
+
+  const ratioKey = Object.entries(option.blendRatios)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([ingredientId, ratio]) => `${ingredientId}-${ratio}`)
+    .join('_');
+
+  return `custom:${option.ingredientIds.join('-')}:${ratioKey || 'default'}`;
 }
 
 export function createPresetSavedBlendItem(teaId: TeaRecommendationId): PresetSavedBlendItem {
@@ -67,6 +78,8 @@ export function createCustomSavedBlendItem(option: CustomBlendOption): CustomSav
     recommendationType: option.recommendationType,
     displayName: option.displayName,
     baseIngredientId: customBlendBaseIngredientId,
+    baseRatio: option.baseRatio,
+    blendRatios: option.blendRatios ? Object.fromEntries(Object.entries(option.blendRatios)) : undefined,
     selectedIngredientIds: option.ingredientIds.filter((ingredientId) => ingredientId !== customBlendBaseIngredientId),
     ingredientNames: option.ingredientNames,
     toneLabel: option.toneLabel,
@@ -82,6 +95,20 @@ export function createCustomSavedBlendItem(option: CustomBlendOption): CustomSav
 
 function isTeaRecommendationId(value: unknown): value is TeaRecommendationId {
   return typeof value === 'string' && value in teaRecommendationContent;
+}
+
+function normalizeBlendRatios(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const ratioEntries = Object.entries(value).filter(([, entryValue]) => typeof entryValue === 'number');
+
+  if (ratioEntries.length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(ratioEntries) as Record<string, number>;
 }
 
 function normalizeSavedBlendItem(item: unknown): SavedBlendItem | null {
@@ -125,6 +152,8 @@ function normalizeSavedBlendItem(item: unknown): SavedBlendItem | null {
             : '커스텀 블렌드',
       baseIngredientId:
         typeof record.baseIngredientId === 'string' ? record.baseIngredientId : customBlendBaseIngredientId,
+      baseRatio: typeof record.baseRatio === 'number' ? record.baseRatio : undefined,
+      blendRatios: normalizeBlendRatios(record.blendRatios),
       selectedIngredientIds: Array.isArray(record.selectedIngredientIds)
         ? record.selectedIngredientIds.filter((value): value is string => typeof value === 'string')
         : [],

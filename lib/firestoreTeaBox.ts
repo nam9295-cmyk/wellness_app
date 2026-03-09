@@ -31,6 +31,20 @@ function isTeaRecommendationId(value: unknown): value is TeaRecommendationId {
   return typeof value === 'string' && value in teaRecommendationContent;
 }
 
+function normalizeBlendRatios(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const ratioEntries = Object.entries(value).filter(([, entryValue]) => typeof entryValue === 'number');
+
+  if (ratioEntries.length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(ratioEntries) as Record<string, number>;
+}
+
 function toSavedBlendItem(data: Record<string, unknown>, docId: string): SavedBlendItem | null {
   if (data.type === 'custom') {
     return {
@@ -48,6 +62,8 @@ function toSavedBlendItem(data: Record<string, unknown>, docId: string): SavedBl
             : '커스텀 블렌드',
       baseIngredientId:
         typeof data.baseIngredientId === 'string' ? data.baseIngredientId : 'cacaoNib',
+      baseRatio: typeof data.baseRatio === 'number' ? data.baseRatio : undefined,
+      blendRatios: normalizeBlendRatios(data.blendRatios),
       selectedIngredientIds: Array.isArray(data.selectedIngredientIds)
         ? data.selectedIngredientIds.filter((value): value is string => typeof value === 'string')
         : [],
@@ -156,6 +172,8 @@ export async function syncSavedCustomBlendToFirestore({
       recommendationType: customItem.recommendationType,
       displayName: customItem.displayName,
       baseIngredientId: customItem.baseIngredientId,
+      baseRatio: customItem.baseRatio,
+      blendRatios: customItem.blendRatios,
       selectedIngredientIds: customItem.selectedIngredientIds,
       ingredientNames: customItem.ingredientNames,
       toneLabel: customItem.toneLabel,

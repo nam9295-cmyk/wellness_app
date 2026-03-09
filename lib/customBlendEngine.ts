@@ -32,6 +32,8 @@ export interface CustomBlendOption {
   reason: string;
   contextLine: string;
   keyNotes: string[];
+  baseRatio?: number;
+  blendRatios?: Partial<Record<CustomBlendIngredientId, number>>;
 }
 
 export interface CustomBlendRecommendationSet {
