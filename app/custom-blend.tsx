@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CustomBlendCupVisual } from '@/components/CustomBlendCupVisual';
 import { CustomBlendProfileChart } from '@/components/CustomBlendProfileChart';
 import {
   createAdjustedCustomBlendOption,
@@ -10,7 +11,12 @@ import {
   redistributeCustomBlendRatios,
 } from '@/lib/customBlendLab';
 import { CustomBlendOption } from '@/lib/customBlendEngine';
-import { customBlendBaseIngredientId, customBlendIngredients, CustomBlendIngredientId } from '@/lib/customBlendIngredients';
+import {
+  customBlendBaseIngredientId,
+  customBlendIngredients,
+  CustomBlendIngredientId,
+} from '@/lib/customBlendIngredients';
+import { createCustomBlendItemId } from '@/lib/teaBoxStorage';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
@@ -32,7 +38,7 @@ function parseOption(rawOption: string | string[] | undefined): CustomBlendOptio
 export default function CustomBlendScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ option?: string }>();
-  const { saveCustomBlendToBox } = useStore();
+  const { saveCustomBlendToBox, savedBlendItems } = useStore();
   const option = useMemo(() => parseOption(params.option), [params.option]);
   const extraIngredientIds = useMemo(
     () => option?.ingredientIds.filter((ingredientId) => ingredientId !== customBlendBaseIngredientId) || [],
@@ -59,6 +65,18 @@ export default function CustomBlendScreen() {
     return createAdjustedCustomBlendOption(option, blendRatios);
   }, [option, blendRatios]);
 
+  const isAlreadySaved = useMemo(() => {
+    if (!adjustedOption) {
+      return false;
+    }
+
+    return savedBlendItems.some((item) => item.id === createCustomBlendItemId(adjustedOption));
+  }, [adjustedOption, savedBlendItems]);
+
+  useEffect(() => {
+    setFeedbackMessage('');
+  }, [adjustedOption?.displayName, adjustedOption?.contextLine]);
+
   if (!option || !reading || !adjustedOption) {
     return (
       <SafeAreaView style={styles.container}>
@@ -73,22 +91,47 @@ export default function CustomBlendScreen() {
     );
   }
 
+  const heroTags = adjustedOption.tags.slice(0, 3);
+  const ingredientPreview = extraIngredientIds.map((ingredientId) => customBlendIngredients[ingredientId].name).join(' · ');
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.headerAction}>닫기</Text>
           </Pressable>
           <Text style={styles.headerTitle}>커스텀 블렌딩</Text>
-          <View style={{ width: 32 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>추천 조합에서 시작</Text>
-          <Text style={styles.title}>{adjustedOption.displayName}</Text>
-          <Text style={styles.summary}>{adjustedOption.summary}</Text>
-          <Text style={styles.detail}>{reading.detail}</Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroTextWrap}>
+              <Text style={styles.eyebrow}>추천 조합에서 시작</Text>
+              <Text style={styles.title}>{adjustedOption.displayName}</Text>
+              <Text style={styles.summary}>{reading.summary}</Text>
+            </View>
+
+            <CustomBlendCupVisual option={adjustedOption} blendRatios={blendRatios} />
+          </View>
+
+          <View style={styles.heroChipWrap}>
+            {heroTags.map((tag) => (
+              <View key={tag} style={styles.heroChip}>
+                <Text style={styles.heroChipText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.metricGrid}>
+            {reading.highlightMetrics.map((metric) => (
+              <View key={metric.key} style={styles.metricCard}>
+                <Text style={styles.metricLabel}>{metric.label}</Text>
+                <Text style={styles.metricValue}>{metric.value}/5</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         <View style={styles.sectionCard}>
@@ -146,54 +189,71 @@ export default function CustomBlendScreen() {
           })}
         </View>
 
-        <CustomBlendProfileChart axes={reading.axes} />
+        <View style={styles.profileCard}>
+          <View style={styles.profileChartWrap}>
+            <CustomBlendProfileChart
+              axes={reading.axes}
+              title="블렌드 프로파일"
+              compact
+              embedded
+            />
+          </View>
+
+          <View style={styles.profileSummaryWrap}>
+            <Text style={styles.analysisType}>{reading.typeName}</Text>
+            <Text style={styles.analysisLead}>{reading.summary}</Text>
+            <Text style={styles.analysisFlavor}>{reading.flavorMoodLine}</Text>
+
+            <View style={styles.signatureRow}>
+              <View style={styles.signatureCard}>
+                <Text style={styles.signatureLabel}>가까운 시그니처</Text>
+                <Text style={styles.signatureName}>{reading.primaryMatch.name}</Text>
+                <Text style={styles.signatureScore}>유사도 {reading.primaryMatch.similarity}%</Text>
+              </View>
+              <View style={styles.signatureCard}>
+                <Text style={styles.signatureLabel}>함께 닿는 결</Text>
+                <Text style={styles.signatureName}>{reading.secondaryMatch.name}</Text>
+                <Text style={styles.signatureScoreMuted}>유사도 {reading.secondaryMatch.similarity}%</Text>
+              </View>
+            </View>
+          </View>
+        </View>
 
         <View style={styles.analysisCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>현재 블렌드 분석</Text>
-            <Text style={styles.sectionMeta}>실시간 읽기</Text>
-          </View>
-          <Text style={styles.analysisSummary}>{reading.summary}</Text>
-
-          <View style={styles.matchGrid}>
-            <View style={styles.matchCard}>
-              <Text style={styles.matchLabel}>가장 가까운 시그니처</Text>
-              <Text style={styles.matchName}>{reading.primaryMatch.name}</Text>
-              <Text style={styles.matchScore}>유사도 {reading.primaryMatch.similarity}%</Text>
-            </View>
-            <View style={styles.matchCard}>
-              <Text style={styles.matchLabel}>함께 닿는 결</Text>
-              <Text style={styles.matchName}>{reading.secondaryMatch.name}</Text>
-              <Text style={styles.matchScoreMuted}>유사도 {reading.secondaryMatch.similarity}%</Text>
+          <View style={styles.analysisBlock}>
+            <Text style={styles.analysisBlockLabel}>잘 맞는 순간</Text>
+            <View style={styles.momentWrap}>
+              {reading.moments.map((moment) => (
+                <View key={moment} style={styles.momentChip}>
+                  <Text style={styles.momentChipText}>{moment}</Text>
+                </View>
+              ))}
             </View>
           </View>
 
-          <View style={styles.featureList}>
-            {reading.features.map((feature, index) => (
-              <Text key={feature} style={styles.featureText}>
-                {index + 1}. {feature}
-              </Text>
-            ))}
-          </View>
-
-          <View style={styles.momentWrap}>
-            {reading.moments.map((moment) => (
-              <View key={moment} style={styles.momentChip}>
-                <Text style={styles.momentChipText}>{moment}</Text>
-              </View>
-            ))}
+          <View style={styles.analysisBlock}>
+            <Text style={styles.analysisBlockLabel}>이 조합의 포인트</Text>
+            <View style={styles.featureList}>
+              {reading.features.map((feature) => (
+                <Text key={feature} style={styles.featureText}>
+                  • {feature}
+                </Text>
+              ))}
+            </View>
           </View>
         </View>
 
         <View style={styles.footerCard}>
           <Text style={styles.footerLabel}>저장될 조합</Text>
           <Text style={styles.footerTitle}>{adjustedOption.displayName}</Text>
+          <Text style={styles.footerSummary}>{adjustedOption.summary}</Text>
           <Text style={styles.footerText}>
-            {extraIngredientIds.map((ingredientId) => `${customBlendIngredients[ingredientId].name} ${blendRatios[ingredientId] ?? 0}%`).join(' · ')}
+            {ingredientPreview}
           </Text>
 
           <Pressable
-            style={styles.saveButton}
+            style={[styles.saveButton, isAlreadySaved && styles.saveButtonSaved]}
+            disabled={isAlreadySaved}
             onPress={async () => {
               const result = await saveCustomBlendToBox(adjustedOption);
 
@@ -210,11 +270,13 @@ export default function CustomBlendScreen() {
               setFeedbackMessage('블렌드함에 담았어요.');
             }}
           >
-            <Text style={styles.saveButtonText}>이 비율로 저장하기</Text>
+            <Text style={[styles.saveButtonText, isAlreadySaved && styles.saveButtonTextSaved]}>
+              {isAlreadySaved ? '이미 같은 비율로 담겨 있어요' : '이 비율로 블렌드함에 담기'}
+            </Text>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
-            <Text style={styles.secondaryButtonText}>추천으로 돌아가기</Text>
+            <Text style={styles.secondaryButtonText}>추천 결과로 돌아가기</Text>
           </Pressable>
 
           {feedbackMessage ? <Text style={styles.feedbackText}>{feedbackMessage}</Text> : null}
@@ -250,12 +312,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
   },
+  headerSpacer: {
+    width: 32,
+  },
   heroCard: {
     backgroundColor: colors.card,
     borderRadius: 24,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  heroTextWrap: {
+    flex: 1,
   },
   eyebrow: {
     fontSize: 12,
@@ -264,7 +337,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.text,
     marginTop: spacing.sm,
@@ -277,11 +350,49 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontWeight: '600',
   },
-  detail: {
-    fontSize: 14,
+  heroChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+  },
+  heroChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  heroChipText: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  metricGrid: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  metricCard: {
+    minWidth: '47%',
+    flexGrow: 1,
+    backgroundColor: colors.primaryLight + '18',
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  metricLabel: {
+    fontSize: 12,
     color: colors.textLight,
-    lineHeight: 22,
-    marginTop: spacing.sm,
+    fontWeight: '700',
+  },
+  metricValue: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '700',
+    marginTop: 4,
   },
   sectionCard: {
     marginTop: spacing.lg,
@@ -386,25 +497,43 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginTop: spacing.xs,
   },
-  analysisCard: {
+  profileCard: {
     marginTop: spacing.lg,
     backgroundColor: colors.card,
     borderRadius: 20,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: spacing.md,
   },
-  analysisSummary: {
-    fontSize: 14,
-    lineHeight: 22,
+  profileChartWrap: {
+    alignItems: 'center',
+  },
+  profileSummaryWrap: {
+    gap: spacing.sm,
+  },
+  analysisType: {
+    fontSize: 20,
     color: colors.text,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
-  matchGrid: {
+  analysisLead: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  analysisFlavor: {
+    fontSize: 13,
+    color: colors.textLight,
+    lineHeight: 21,
+  },
+  signatureRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.md,
   },
-  matchCard: {
+  signatureCard: {
     flex: 1,
     backgroundColor: colors.background,
     borderRadius: 16,
@@ -412,41 +541,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  matchLabel: {
+  signatureLabel: {
     fontSize: 11,
     color: colors.textLight,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
-  matchName: {
-    fontSize: 17,
+  signatureName: {
+    fontSize: 16,
     color: colors.text,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
-  matchScore: {
+  signatureScore: {
     fontSize: 12,
     color: colors.primary,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
-  matchScoreMuted: {
+  signatureScoreMuted: {
     fontSize: 12,
     color: colors.textLight,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
-  featureList: {
-    marginTop: spacing.md,
-    gap: spacing.xs,
+  analysisCard: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
   },
-  featureText: {
-    fontSize: 13,
+  analysisBlock: {
+    gap: spacing.sm,
+  },
+  analysisBlockLabel: {
+    fontSize: 12,
     color: colors.textLight,
-    lineHeight: 20,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
   momentWrap: {
-    marginTop: spacing.md,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
@@ -463,6 +600,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text,
     fontWeight: '600',
+  },
+  featureList: {
+    gap: spacing.xs,
+  },
+  featureText: {
+    fontSize: 13,
+    color: colors.textLight,
+    lineHeight: 20,
   },
   footerCard: {
     marginTop: spacing.lg,
@@ -483,6 +628,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '700',
   },
+  footerSummary: {
+    marginTop: spacing.sm,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
   footerText: {
     marginTop: spacing.sm,
     fontSize: 14,
@@ -493,13 +645,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     backgroundColor: colors.text,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
+  },
+  saveButtonSaved: {
+    backgroundColor: colors.primaryLight + '20',
   },
   saveButtonText: {
     color: colors.card,
     fontSize: 15,
     fontWeight: '700',
+  },
+  saveButtonTextSaved: {
+    color: colors.primary,
   },
   secondaryButton: {
     marginTop: spacing.sm,
@@ -518,17 +676,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: 13,
     color: colors.primary,
-    fontWeight: '600',
     lineHeight: 20,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,
-    padding: spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     color: colors.text,
     fontWeight: '700',
     marginBottom: spacing.sm,
@@ -536,19 +695,19 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: colors.textLight,
-    lineHeight: 22,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    lineHeight: 22,
   },
   backButton: {
+    marginTop: spacing.lg,
     backgroundColor: colors.text,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: 14,
   },
   backButtonText: {
+    fontSize: 15,
     color: colors.card,
-    fontSize: 14,
     fontWeight: '700',
   },
 });

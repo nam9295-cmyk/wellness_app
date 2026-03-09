@@ -6,16 +6,22 @@ import { colors, spacing } from '@/lib/theme';
 interface CustomBlendProfileChartProps {
   title?: string;
   axes: CustomBlendLabAxis[];
+  compact?: boolean;
+  embedded?: boolean;
 }
 
 export function CustomBlendProfileChart({
   title = '현재 블렌드 프로파일',
   axes,
+  compact = false,
+  embedded = false,
 }: CustomBlendProfileChartProps) {
-  const size = 220;
+  const size = compact ? 172 : 220;
   const center = size / 2;
-  const radius = 68;
-  const labelRadius = 96;
+  const radius = compact ? 52 : 68;
+  const labelRadius = compact ? 74 : 96;
+  const pointRadius = compact ? 3.2 : 4;
+  const labelFontSize = compact ? 10 : 11;
 
   const points = axes.map((axis, index) => {
     const angle = (-Math.PI / 2) + (Math.PI * 2 * index) / axes.length;
@@ -57,9 +63,9 @@ export function CustomBlendProfileChart({
     return x > center ? 'start' : 'end';
   };
 
-  return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
+  const content = (
+    <>
+      {title ? <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text> : null}
       <View style={styles.chartWrap}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {gridPolygons.map((polygon, index) => (
@@ -96,7 +102,7 @@ export function CustomBlendProfileChart({
               key={`dot-${point.label}`}
               cx={center + Math.cos(point.angle) * radius * (point.value / 5)}
               cy={center + Math.sin(point.angle) * radius * (point.value / 5)}
-              r={4}
+              r={pointRadius}
               fill={colors.primary}
             />
           ))}
@@ -106,7 +112,7 @@ export function CustomBlendProfileChart({
               key={`label-${point.label}`}
               x={point.labelX}
               y={point.labelY}
-              fontSize="11"
+              fontSize={labelFontSize}
               fontWeight="700"
               fill={colors.text}
               textAnchor={getTextAnchor(point.labelX)}
@@ -116,8 +122,14 @@ export function CustomBlendProfileChart({
           ))}
         </Svg>
       </View>
-    </View>
+    </>
   );
+
+  if (embedded) {
+    return <View>{content}</View>;
+  }
+
+  return <View style={styles.card}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -134,6 +146,9 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginBottom: spacing.md,
     letterSpacing: 0.1,
+  },
+  titleCompact: {
+    marginBottom: spacing.sm,
   },
   chartWrap: {
     alignItems: 'center',
