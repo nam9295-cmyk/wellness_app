@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/Card';
 import { CustomBlendDetailModal } from '@/components/CustomBlendDetailModal';
+import { EmptyStateBlock } from '@/components/EmptyStateBlock';
+import { FallbackPill } from '@/components/FallbackPill';
+import { StatusBanner } from '@/components/StatusBanner';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
+import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
@@ -14,20 +18,6 @@ import {
 } from '@/lib/customBlendEngine';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
-
-const atelierBlendColors = {
-  surface: '#FFFDF9',
-  surfaceMuted: '#F8F3ED',
-  title: '#2F2824',
-  text: '#473D37',
-  textMuted: '#6F6560',
-  textSoft: '#8B817A',
-  border: '#E3D8CD',
-  borderStrong: '#D4C5B8',
-  deepGreen: '#6E8E82',
-  deepGreenSoft: '#8FA89D',
-  deepGreenMuted: '#E1EAE5',
-};
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
@@ -95,6 +85,7 @@ export default function Home() {
     customBlendRecommendations.refreshingAlternative,
     customBlendRecommendations.softAlternative,
   ];
+  const isRecommendationFallback = logs.length === 0;
   const toneMetaByType = {
     best: { badge: 'BEST', label: '가장 잘 맞는 조합' },
     fresh: { badge: 'FRESH', label: '더 산뜻한 대안' },
@@ -112,17 +103,11 @@ export default function Home() {
       </View>
 
       {latestLogFeedback ? (
-        <View style={styles.feedbackBanner}>
-          <Text style={styles.feedbackText}>{latestLogFeedback}</Text>
-        </View>
+        <StatusBanner message={latestLogFeedback} tone="success" />
       ) : null}
 
       {syncStatusMessage ? (
-        <View style={[styles.syncBanner, syncStatus === 'fallback' && styles.syncBannerFallback]}>
-          <Text style={[styles.syncText, syncStatus === 'fallback' && styles.syncTextFallback]}>
-            {syncStatusMessage}
-          </Text>
-        </View>
+        <StatusBanner message={syncStatusMessage} tone={syncStatus === 'fallback' ? 'muted' : 'default'} />
       ) : null}
 
       <View style={styles.sectionWrap}>
@@ -152,10 +137,10 @@ export default function Home() {
             ) : null}
           </View>
         ) : (
-          <View style={styles.emptyStateWrap}>
-            <Text style={styles.emptyText}>기록 탭에서 오늘 컨디션을 남겨보세요.</Text>
-            <Text style={styles.emptyCtaText}>기록이 쌓이면 추천과 리포트가 더 정교해져요.</Text>
-          </View>
+          <EmptyStateBlock
+            text="기록 탭에서 오늘 컨디션을 남겨보세요."
+            ctaText="기록이 쌓이면 추천과 리포트가 더 정교해져요."
+          />
         )}
         </Card>
       </View>
@@ -168,6 +153,9 @@ export default function Home() {
 
       <View style={styles.sectionWrap}>
         <Card title={recommendation.title}>
+        {isRecommendationFallback ? (
+          <FallbackPill label="기록 전 추천" />
+        ) : null}
         <Text style={styles.recommendationText}>{recommendation.message}</Text>
         </Card>
       </View>
@@ -176,8 +164,13 @@ export default function Home() {
         <Text style={styles.atelierSectionLabel}>TODAY&apos;S SIGNATURE</Text>
         <TouchableOpacity activeOpacity={0.9} onPress={() => setIsTeaDetailVisible(true)} style={styles.signatureCard}>
           <View style={styles.signatureHeader}>
-            <View style={styles.signatureBadge}>
-              <Text style={styles.signatureBadgeText}>SIGNATURE</Text>
+            <View style={styles.signatureBadgeRow}>
+              <View style={styles.signatureBadge}>
+                <Text style={styles.signatureBadgeText}>SIGNATURE</Text>
+              </View>
+              {isRecommendationFallback ? (
+                <FallbackPill label="기본 추천" inline />
+              ) : null}
             </View>
             <Text style={styles.signatureContext} numberOfLines={1}>{teaRecommendation.contextLine}</Text>
           </View>
@@ -203,6 +196,9 @@ export default function Home() {
 
       <View style={styles.aiSectionWrap}>
         <Card title="AI 블렌딩 제안">
+        {isRecommendationFallback ? (
+          <FallbackPill label="기록 전 추천" />
+        ) : null}
         <Text style={styles.aiBlendIntro}>카카오닙 베이스 위에 오늘 흐름에 맞는 조합 3가지를 골랐어요.</Text>
         {customBlendCards.map((blend, index) => (
           (() => {
@@ -278,10 +274,10 @@ export default function Home() {
             </Text>
           </View>
         )) : (
-          <View style={styles.emptyStateWrap}>
-            <Text style={styles.emptyText}>아직 쌓인 기록이 없어요.</Text>
-            <Text style={styles.emptyCtaText}>오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요.</Text>
-          </View>
+          <EmptyStateBlock
+            text="아직 쌓인 기록이 없어요."
+            ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
+          />
         )}
         </Card>
       </View>
@@ -307,26 +303,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   eyebrow: {
+    ...atelierText.helper,
     fontSize: 11,
-    color: atelierBlendColors.textSoft,
-    fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: spacing.sm,
   },
   greeting: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: atelierBlendColors.title,
+    ...atelierText.heroTitle,
     marginBottom: spacing.sm,
-    letterSpacing: -0.8,
-    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 16,
-    color: atelierBlendColors.textMuted,
+    ...atelierText.summary,
+    color: atelierColors.textMuted,
     marginBottom: spacing.sm,
     lineHeight: 25,
-    letterSpacing: -0.2,
   },
   sectionWrap: {
     marginBottom: spacing.lg,
@@ -335,74 +325,22 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   atelierSectionLabel: {
+    ...atelierText.helper,
     fontSize: 11,
-    color: atelierBlendColors.textSoft,
-    fontWeight: '700',
     letterSpacing: 1.1,
     marginBottom: spacing.sm,
-  },
-  feedbackBanner: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: 16,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  feedbackText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 22,
-    letterSpacing: -0.2,
-    fontWeight: '600',
-  },
-  syncBanner: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  syncBannerFallback: {
-    backgroundColor: colors.primaryLight + '1A',
-    borderColor: colors.primaryLight,
-  },
-  syncText: {
-    fontSize: 13,
-    color: colors.textLight,
-    lineHeight: 20,
-    letterSpacing: -0.2,
-    fontWeight: '600',
-  },
-  syncTextFallback: {
-    color: colors.text,
-  },
-  emptyStateWrap: {
-    marginTop: spacing.xs,
-    gap: spacing.xs,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   summaryLabel: { fontSize: 15, color: colors.textLight },
   summaryValue: { fontSize: 15, color: colors.text, fontWeight: '500' },
-  emptyText: { fontSize: 15, color: atelierBlendColors.textMuted, lineHeight: 22, letterSpacing: -0.2 },
-  emptyCtaText: { fontSize: 13, color: atelierBlendColors.deepGreen, fontWeight: '600', letterSpacing: -0.1 },
   memoContainer: { marginTop: spacing.md, backgroundColor: colors.primaryLight + '15', padding: spacing.md, borderRadius: 12 },
   memoText: { fontSize: 14, color: colors.text, lineHeight: 22 },
   statText: { fontSize: 16, color: colors.text },
   statHighlight: { fontSize: 20, fontWeight: '700', color: colors.primary },
   signatureCard: {
-    backgroundColor: atelierBlendColors.surface,
-    borderRadius: 24,
+    ...atelierCards.hero,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: atelierBlendColors.borderStrong,
-    shadowColor: '#432D23',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-    elevation: 2,
   },
   signatureHeader: {
     flexDirection: 'row',
@@ -411,36 +349,38 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.md,
   },
+  signatureBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   signatureBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: atelierBlendColors.deepGreenMuted,
+    backgroundColor: atelierColors.deepGreenMuted,
     borderWidth: 1,
     borderColor: '#CEDCD5',
   },
   signatureBadgeText: {
-    fontSize: 11,
-    color: atelierBlendColors.deepGreen,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    ...atelierText.pill,
   },
   signatureContext: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 12,
-    color: atelierBlendColors.textSoft,
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   teaCardText: { flex: 1 },
-  teaName: { fontSize: 20, fontWeight: '700', color: atelierBlendColors.title, marginBottom: 4, letterSpacing: -0.4 },
-  teaIdentity: { fontSize: 15, color: atelierBlendColors.text, marginBottom: 4, fontWeight: '600', letterSpacing: -0.2, lineHeight: 22 },
-  teaSubtitle: { fontSize: 13, color: atelierBlendColors.deepGreen, marginBottom: spacing.sm, fontWeight: '700', letterSpacing: -0.1 },
-  recommendationText: { fontSize: 15, color: atelierBlendColors.text, lineHeight: 24, letterSpacing: -0.2 },
-  teaUpdateHint: { fontSize: 12, color: atelierBlendColors.deepGreen, marginTop: spacing.md, fontWeight: '700', letterSpacing: -0.1 },
+  teaName: { ...atelierText.cardTitleLg, marginBottom: 4 },
+  teaIdentity: { ...atelierText.summary, fontSize: 15, marginBottom: 4, fontWeight: '600', lineHeight: 22 },
+  teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.sm, letterSpacing: -0.1 },
+  recommendationText: { ...atelierText.summary, fontSize: 15 },
+  teaUpdateHint: { ...atelierText.helper, color: atelierColors.deepGreen, marginTop: spacing.md, letterSpacing: -0.1 },
   signatureFooter: {
     marginTop: spacing.sm,
     flexDirection: 'row',
@@ -448,12 +388,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: atelierBlendColors.border,
+    borderTopColor: atelierColors.border,
   },
-  detailHint: { fontSize: 12, color: atelierBlendColors.textMuted, fontWeight: '600', letterSpacing: -0.1 },
+  detailHint: { ...atelierText.helper, color: atelierColors.textMuted, fontWeight: '600', letterSpacing: -0.1 },
   signatureFooterArrow: {
     fontSize: 20,
-    color: atelierBlendColors.deepGreen,
+    color: atelierColors.deepGreen,
     fontWeight: '500',
     lineHeight: 20,
   },
@@ -465,17 +405,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   aiBlendItem: {
-    backgroundColor: atelierBlendColors.surface,
+    ...atelierCards.section,
     borderRadius: 22,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: atelierBlendColors.border,
-    shadowColor: '#432D23',
-    shadowOpacity: 0.035,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 1,
     marginBottom: spacing.md,
   },
   aiBlendItemLast: {
@@ -497,73 +430,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: atelierBlendColors.deepGreenMuted,
+    backgroundColor: atelierColors.deepGreenMuted,
     borderBottomWidth: 1,
     borderColor: '#CEDCD5',
   },
   aiBlendToneBadgeText: {
-    fontSize: 11,
-    color: atelierBlendColors.deepGreen,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    ...atelierText.pill,
   },
   aiBlendLabel: {
-    fontSize: 12,
-    color: atelierBlendColors.textSoft,
-    fontWeight: '700',
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
     letterSpacing: -0.1,
   },
   aiBlendContext: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 12,
-    color: atelierBlendColors.textSoft,
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   aiBlendTitle: {
-    fontSize: 20,
-    color: atelierBlendColors.title,
-    fontWeight: '700',
+    ...atelierText.cardTitleLg,
     marginBottom: spacing.xs,
-    letterSpacing: -0.4,
   },
   aiBlendSummary: {
+    ...atelierText.summary,
     fontSize: 15,
-    color: atelierBlendColors.text,
-    lineHeight: 24,
-    letterSpacing: -0.2,
     marginBottom: spacing.xs,
     fontWeight: '600',
   },
   aiBlendDetail: {
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: atelierBlendColors.textMuted,
     lineHeight: 21,
     letterSpacing: -0.1,
     marginBottom: spacing.md,
   },
   aiBlendMetaCard: {
-    backgroundColor: atelierBlendColors.surfaceMuted,
-    borderRadius: 16,
+    ...atelierCards.meta,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: atelierBlendColors.border,
     marginBottom: spacing.sm,
   },
   aiBlendMetaLabel: {
+    ...atelierText.helper,
     fontSize: 11,
-    color: atelierBlendColors.textSoft,
-    fontWeight: '700',
     letterSpacing: 0.1,
     marginBottom: 4,
   },
   aiBlendIngredients: {
+    ...atelierText.body,
     fontSize: 13,
-    color: atelierBlendColors.deepGreen,
+    color: atelierColors.deepGreen,
     lineHeight: 20,
-    letterSpacing: -0.1,
     fontWeight: '600',
   },
   aiBlendChipWrap: {
@@ -573,16 +493,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   aiBlendChip: {
-    backgroundColor: atelierBlendColors.surfaceMuted,
+    backgroundColor: atelierColors.surfaceMuted,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: atelierBlendColors.border,
+    borderColor: atelierColors.border,
   },
   aiBlendChipText: {
+    ...atelierText.helper,
     fontSize: 12,
-    color: atelierBlendColors.text,
+    color: atelierColors.text,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
@@ -597,22 +518,22 @@ const styles = StyleSheet.create({
   },
   aiBlendBarLabel: {
     width: 54,
-    fontSize: 12,
-    color: atelierBlendColors.textSoft,
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   aiBlendBarTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: atelierBlendColors.border,
+    backgroundColor: atelierColors.border,
     borderRadius: 999,
     overflow: 'hidden',
   },
   aiBlendBarFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: atelierBlendColors.deepGreen,
+    backgroundColor: atelierColors.deepGreen,
   },
   aiBlendFooter: {
     marginTop: spacing.xs,
@@ -621,17 +542,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: atelierBlendColors.border,
+    borderTopColor: atelierColors.border,
   },
   aiBlendDetailHint: {
-    fontSize: 12,
-    color: atelierBlendColors.textMuted,
+    ...atelierText.helper,
+    color: atelierColors.textMuted,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   aiBlendFooterArrow: {
     fontSize: 20,
-    color: atelierBlendColors.deepGreen,
+    color: atelierColors.deepGreen,
     fontWeight: '500',
     lineHeight: 20,
   },

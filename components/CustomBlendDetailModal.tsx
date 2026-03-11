@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { StatusBanner } from '@/components/StatusBanner';
+import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { createCustomBlendItemId } from '@/lib/teaBoxStorage';
 import { CustomBlendOption, getCustomBlendVisualProfile } from '@/lib/customBlendEngine';
 import { colors, spacing } from '@/lib/theme';
@@ -11,20 +13,6 @@ interface CustomBlendDetailModalProps {
   option: CustomBlendOption | null;
   onClose: () => void;
 }
-
-const atelierColors = {
-  surface: '#FFFDF9',
-  surfaceMuted: '#F8F3ED',
-  title: '#2F2824',
-  text: '#473D37',
-  textMuted: '#6F6560',
-  textSoft: '#8B817A',
-  border: '#E3D8CD',
-  borderStrong: '#D4C5B8',
-  deepGreen: '#6E8E82',
-  deepGreenSoft: '#8FA89D',
-  deepGreenMuted: '#E1EAE5',
-};
 
 export function CustomBlendDetailModal({
   visible,
@@ -126,12 +114,12 @@ export function CustomBlendDetailModal({
               onPress={async () => {
                 const result = await saveCustomBlendToBox(option);
                 if (!result.added) {
-                  setFeedbackMessage('이미 담아둔 블렌드예요');
+                  setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
                   return;
                 }
 
                 if (__DEV__ && !result.synced) {
-                  setFeedbackMessage('블렌드함에 담았어요. Firestore 동기화는 보류됐어요.');
+                  setFeedbackMessage('로컬에는 저장됐고, 동기화는 보류됐어요.');
                   return;
                 }
 
@@ -149,7 +137,12 @@ export function CustomBlendDetailModal({
               <Text style={styles.adjustButtonText}>직접 조절하기</Text>
             </Pressable>
 
-            {feedbackMessage ? <Text style={styles.feedbackText}>{feedbackMessage}</Text> : null}
+            {feedbackMessage ? (
+              <StatusBanner
+                message={feedbackMessage}
+                tone={feedbackMessage.includes('동기화는 보류') ? 'muted' : 'success'}
+              />
+            ) : null}
           </ScrollView>
         </View>
       </View>
@@ -187,12 +180,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   heroCard: {
+    ...atelierCards.hero,
     backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 24,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
   },
   headerRow: {
     flexDirection: 'row',
@@ -200,15 +191,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eyebrow: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: atelierColors.textSoft,
+    ...atelierText.helper,
     letterSpacing: 0.2,
   },
   closeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: atelierColors.textMuted,
+    ...atelierButtons.inlineText,
   },
   toneLabel: {
     marginTop: spacing.md,
@@ -226,48 +213,35 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: spacing.md,
+    ...atelierText.heroTitle,
     fontSize: 28,
-    fontWeight: '700',
-    color: atelierColors.title,
-    letterSpacing: -0.7,
     lineHeight: 34,
   },
   summary: {
     marginTop: spacing.md,
+    ...atelierText.summary,
     fontSize: 17,
-    color: atelierColors.text,
     lineHeight: 26,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
   detail: {
     marginTop: spacing.md,
-    fontSize: 14,
-    color: atelierColors.textMuted,
+    ...atelierText.bodyMuted,
     lineHeight: 23,
-    letterSpacing: -0.2,
   },
   metaCard: {
     marginTop: spacing.md,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 20,
+    ...atelierCards.section,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: atelierColors.textSoft,
+    ...atelierText.helper,
     marginBottom: spacing.sm,
     letterSpacing: 0.1,
   },
   ingredientText: {
-    fontSize: 14,
-    color: atelierColors.text,
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    ...atelierText.body,
   },
   chipWrap: {
     flexDirection: 'row',
@@ -283,15 +257,14 @@ const styles = StyleSheet.create({
     borderColor: atelierColors.border,
   },
   chipText: {
+    ...atelierText.helper,
     fontSize: 12,
     color: atelierColors.text,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   contextText: {
-    fontSize: 14,
-    color: atelierColors.text,
-    letterSpacing: -0.2,
+    ...atelierText.body,
   },
   barGroup: {
     marginTop: spacing.md,
@@ -304,7 +277,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     width: 54,
-    fontSize: 12,
+    ...atelierText.helper,
     color: atelierColors.textSoft,
     fontWeight: '600',
   },
@@ -322,58 +295,38 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 16,
+    ...atelierButtons.secondaryMuted,
     paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
   },
   saveButtonSaved: {
     backgroundColor: atelierColors.deepGreenMuted,
     borderColor: '#CEDCD5',
   },
   saveButtonText: {
-    color: atelierColors.text,
+    ...atelierText.summary,
     fontSize: 15,
+    color: atelierColors.text,
     fontWeight: '700',
-    letterSpacing: -0.1,
   },
   saveButtonTextSaved: {
     color: atelierColors.deepGreen,
   },
   adjustGuide: {
     marginTop: spacing.lg,
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: atelierColors.textMuted,
     lineHeight: 20,
     letterSpacing: -0.1,
     textAlign: 'center',
   },
   adjustButton: {
     marginTop: spacing.sm,
-    backgroundColor: atelierColors.deepGreen,
-    borderRadius: 18,
+    ...atelierButtons.primarySolid,
     paddingVertical: 17,
-    alignItems: 'center',
-    shadowColor: atelierColors.deepGreen,
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-    elevation: 3,
   },
   adjustButtonText: {
-    fontSize: 16,
+    ...atelierText.summary,
     color: atelierColors.surface,
     fontWeight: '700',
-    letterSpacing: -0.15,
-  },
-  feedbackText: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    fontSize: 13,
-    color: atelierColors.textSoft,
-    fontWeight: '600',
-    letterSpacing: -0.1,
   },
 });

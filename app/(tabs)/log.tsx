@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { colors, spacing } from '@/lib/theme';
 import { OptionChips } from '@/components/OptionChips';
 import { SectionTitle } from '@/components/SectionTitle';
@@ -49,8 +50,8 @@ export default function LogScreen() {
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
       isEditingTodayLog
-        ? '추천도 반영됐어요.'
-        : '추천도 업데이트됐어요.',
+        ? '기록이 저장됐고, 추천도 함께 반영됐어요.'
+        : '기록이 저장됐고, 추천도 함께 반영됐어요.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]
@@ -68,8 +69,11 @@ export default function LogScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정' : '오늘 컨디션 남기기'}</Text>
-        <Text style={styles.subTitle}>상태를 남기면 추천이 함께 업데이트돼요.</Text>
+        <View style={styles.heroCard}>
+          <Text style={styles.eyebrow}>TODAY&apos;S CHECK-IN</Text>
+          <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정' : '오늘 컨디션 남기기'}</Text>
+          <Text style={styles.subTitle}>상태를 남기면 추천이 함께 업데이트돼요.</Text>
+        </View>
         
         <SectionTitle title="수면 상태" />
         <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
@@ -90,14 +94,16 @@ export default function LogScreen() {
         <OptionChips<WaterState> options={WATER_STATES} selectedValue={water} onSelect={setWater} />
 
         <SectionTitle title="한 줄 메모" />
-        <TextInput
-          style={styles.textInput}
-          placeholder="오늘 하루를 짧게 남겨보세요."
-          value={memo}
-          onChangeText={setMemo}
-          multiline
-          placeholderTextColor={colors.textLight}
-        />
+        <View style={styles.memoCard}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="오늘 하루를 짧게 남겨보세요."
+            value={memo}
+            onChangeText={setMemo}
+            multiline
+            placeholderTextColor={atelierColors.textSoft}
+          />
+        </View>
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
           <Text style={styles.buttonText}>{isEditingTodayLog ? '기록 수정하기' : '기록 저장하기'}</Text>
@@ -108,23 +114,61 @@ export default function LogScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: atelierColors.background },
   scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  mainTitle: { fontSize: 24, fontWeight: '600', marginBottom: spacing.xl, color: colors.text, letterSpacing: -0.5 },
-  subTitle: { fontSize: 14, color: colors.textLight, lineHeight: 22, marginTop: -spacing.md, marginBottom: spacing.xl, letterSpacing: -0.2 },
+  heroCard: {
+    ...atelierCards.hero,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    marginBottom: spacing.xl,
+  },
+  eyebrow: {
+    ...atelierText.helper,
+    fontSize: 11,
+    letterSpacing: 1.1,
+    marginBottom: spacing.sm,
+  },
+  mainTitle: {
+    ...atelierText.heroTitle,
+    fontSize: 28,
+    lineHeight: 34,
+    marginBottom: spacing.sm,
+  },
+  subTitle: {
+    ...atelierText.summary,
+    color: atelierColors.textMuted,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  memoCard: {
+    ...atelierCards.section,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xl,
+  },
   textInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0,
     borderRadius: 16,
-    padding: spacing.md,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
     minHeight: 120,
     textAlignVertical: 'top',
     fontSize: 15,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-    backgroundColor: colors.card,
-    color: colors.text,
+    backgroundColor: 'transparent',
+    color: atelierColors.text,
   },
-  button: { backgroundColor: colors.text, padding: spacing.md, borderRadius: 16, alignItems: 'center', marginTop: spacing.sm },
-  buttonText: { color: colors.card, fontSize: 16, fontWeight: '600', letterSpacing: 0.5 }
+  button: {
+    ...atelierButtons.primarySolid,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  buttonText: {
+    ...atelierText.summary,
+    color: atelierColors.surface,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  }
 });

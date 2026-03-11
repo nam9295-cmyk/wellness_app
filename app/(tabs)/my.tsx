@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
+import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { getNotificationScenarioPreviews } from '@/lib/notificationScenarios';
 import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { SavedBlendItem } from '@/lib/teaBoxStorage';
@@ -125,7 +126,7 @@ export default function MyScreen() {
   if (!isReady) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={atelierColors.deepGreen} />
       </View>
     );
   }
@@ -144,7 +145,7 @@ export default function MyScreen() {
               onChangeText={setNickname}
               placeholder="닉네임"
               maxLength={10}
-              placeholderTextColor={colors.textLight}
+              placeholderTextColor={atelierColors.textSoft}
             />
           ) : (
             <Text style={styles.name}>{userSettings?.nickname || '회원'} 님</Text>
@@ -201,7 +202,7 @@ export default function MyScreen() {
                 onChangeText={setNotificationTime}
                 placeholder="예: 21:00"
                 keyboardType="numbers-and-punctuation"
-                placeholderTextColor={colors.textLight}
+                placeholderTextColor={atelierColors.textSoft}
               />
 
               <View style={[styles.settingItem, styles.inlineSettingItem]}>
@@ -359,22 +360,22 @@ export default function MyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: atelierColors.background },
   content: { paddingBottom: spacing.xxl },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   profileSection: { 
+    ...atelierCards.hero,
     padding: spacing.xl, 
     alignItems: 'center', 
-    backgroundColor: colors.card,
-    borderBottomWidth: 1, 
-    borderBottomColor: 'rgba(0,0,0,0.02)',
     paddingTop: spacing.xxl,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
   },
   avatar: { 
     width: 80, 
     height: 80, 
     borderRadius: 40, 
-    backgroundColor: '#F3F4F6', 
+    backgroundColor: atelierColors.deepGreenMuted, 
     marginBottom: spacing.md,
     justifyContent: 'center',
     alignItems: 'center'
@@ -382,57 +383,60 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 28,
     fontWeight: '600',
-    color: colors.text
+    color: atelierColors.deepGreen
   },
-  name: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 4, letterSpacing: -0.5 },
-  nameInput: { fontSize: 24, fontWeight: '600', color: colors.text, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 4, minWidth: 120, textAlign: 'center', letterSpacing: -0.5 },
-  goalText: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 },
+  name: { ...atelierText.heroTitle, fontSize: 24, lineHeight: 30, marginBottom: 4 },
+  nameInput: {
+    ...atelierText.heroTitle,
+    fontSize: 24,
+    lineHeight: 30,
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: atelierColors.deepGreenSoft,
+    paddingBottom: 4,
+    minWidth: 120,
+    textAlign: 'center',
+  },
+  goalText: { ...atelierText.bodyMuted, fontSize: 15 },
   menuList: { padding: spacing.lg, paddingTop: spacing.xl },
   syncBanner: {
-    backgroundColor: colors.card,
+    backgroundColor: atelierColors.surface,
     borderRadius: 16,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: atelierColors.border,
   },
   syncBannerFallback: {
-    backgroundColor: colors.primaryLight + '1A',
-    borderColor: colors.primaryLight,
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderColor: atelierColors.deepGreenSoft,
   },
   syncText: {
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: colors.textLight,
     lineHeight: 20,
     letterSpacing: -0.2,
     fontWeight: '600',
   },
   syncTextFallback: {
-    color: colors.text,
+    color: atelierColors.text,
   },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, letterSpacing: -0.3 },
-  sectionMeta: { fontSize: 13, color: colors.textLight, fontWeight: '600', letterSpacing: -0.2 },
-  editButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
-  cancelButtonText: { fontSize: 15, color: colors.textLight, fontWeight: '600' },
-  saveButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
+  sectionTitle: { ...atelierText.cardTitleMd },
+  sectionMeta: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, fontWeight: '600', letterSpacing: -0.2 },
+  editButtonText: { ...atelierButtons.inlineText, color: atelierColors.deepGreen },
+  cancelButtonText: { ...atelierButtons.inlineText, color: atelierColors.textSoft },
+  saveButtonText: { ...atelierButtons.inlineText, color: atelierColors.deepGreen },
   settingItem: { 
+    ...atelierCards.section,
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
     paddingVertical: spacing.md,
-    backgroundColor: colors.card,
     paddingHorizontal: spacing.md,
-    borderRadius: 16,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 1,
+    borderRadius: 16,
   },
   inlineSettingItem: {
     marginTop: spacing.xl,
@@ -442,30 +446,26 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0,
   },
-  settingLabel: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
-  settingValue: { fontSize: 15, fontWeight: '500', color: colors.textLight },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xl },
-  menuItem: { paddingVertical: spacing.md, backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-  menuText: { fontSize: 15, color: colors.text, fontWeight: '500', letterSpacing: -0.2 },
+  settingLabel: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
+  settingValue: { ...atelierText.bodyMuted, fontSize: 15, fontWeight: '500' },
+  divider: { height: 1, backgroundColor: atelierColors.border, marginVertical: spacing.xl },
+  menuItem: { ...atelierCards.section, paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 16 },
+  menuText: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
   notificationCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
+    ...atelierCards.section,
     padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 20,
   },
   notificationIntro: {
-    fontSize: 14,
+    ...atelierText.bodyMuted,
     lineHeight: 22,
-    color: colors.textLight,
     marginBottom: spacing.lg,
-    letterSpacing: -0.2,
   },
   notificationItem: {
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: atelierColors.border,
   },
   notificationItemFirst: {
     paddingTop: 0,
@@ -479,40 +479,36 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     flex: 1,
+    ...atelierText.body,
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
-    letterSpacing: -0.2,
   },
   notificationStatus: {
+    ...atelierText.helper,
     fontSize: 12,
     fontWeight: '700',
-    color: colors.textLight,
     letterSpacing: -0.1,
   },
   notificationStatusReady: {
-    color: colors.primary,
+    color: atelierColors.deepGreen,
   },
   notificationDesc: {
     marginTop: spacing.xs,
-    fontSize: 14,
+    ...atelierText.bodyMuted,
     lineHeight: 22,
-    color: colors.textLight,
-    letterSpacing: -0.2,
   },
   notificationMeta: {
     marginTop: spacing.xs,
+    ...atelierText.helper,
     fontSize: 12,
     fontWeight: '600',
-    color: colors.text,
+    color: atelierColors.text,
     letterSpacing: -0.1,
   },
   teaItem: {
-    backgroundColor: colors.card,
+    ...atelierCards.section,
     borderRadius: 16,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
@@ -529,9 +525,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   teaItemBadge: {
+    ...atelierText.pill,
     fontSize: 12,
-    color: colors.primary,
-    fontWeight: '700',
+    color: atelierColors.deepGreen,
     marginBottom: 2,
     letterSpacing: -0.1,
   },
@@ -539,35 +535,31 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: atelierColors.deepGreenMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   customBlendBadgeText: {
     fontSize: 14,
     fontWeight: '800',
-    color: colors.primary,
+    color: atelierColors.deepGreen,
     letterSpacing: -0.1,
   },
   teaName: {
+    ...atelierText.cardTitleMd,
     fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.2,
   },
   teaSubtitle: {
-    fontSize: 14,
-    color: colors.textLight,
-    letterSpacing: -0.2,
+    ...atelierText.bodyMuted,
   },
   teaItemMeta: {
-    fontSize: 12,
-    color: colors.primary,
+    ...atelierText.helper,
+    color: atelierColors.deepGreen,
     letterSpacing: -0.1,
   },
   customBlendContext: {
-    fontSize: 12,
-    color: colors.textLight,
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
     letterSpacing: -0.1,
   },
   removeButton: {
@@ -576,36 +568,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderLeftWidth: 1,
-    borderLeftColor: colors.border,
+    borderLeftColor: atelierColors.border,
     alignSelf: 'stretch',
   },
   removeButtonText: {
+    ...atelierText.helper,
     fontSize: 13,
     color: colors.error,
     fontWeight: '700',
     letterSpacing: -0.1,
   },
   emptyTeaBox: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
+    ...atelierCards.section,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 16,
   },
   emptyTeaText: {
-    fontSize: 14,
+    ...atelierText.bodyMuted,
     lineHeight: 22,
-    color: colors.textLight,
-    letterSpacing: -0.2,
   },
   
   // Edit Form Styles
-  editForm: { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: spacing.md, letterSpacing: -0.2 },
+  editForm: { ...atelierCards.section, padding: spacing.lg, borderRadius: 20 },
+  label: { ...atelierText.body, fontSize: 14, fontWeight: '600', marginBottom: spacing.md },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
-  chipSelected: { backgroundColor: colors.text, borderColor: colors.text },
-  chipText: { fontSize: 14, color: colors.textLight, fontWeight: '500' },
-  chipTextSelected: { color: colors.background, fontWeight: '600' },
-  timeInput: { backgroundColor: colors.background, borderRadius: 12, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, width: 140, color: colors.text }
+  chip: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border },
+  chipSelected: { backgroundColor: atelierColors.deepGreen, borderColor: atelierColors.deepGreen },
+  chipText: { ...atelierText.bodyMuted, fontSize: 14, fontWeight: '500' },
+  chipTextSelected: { color: atelierColors.surface, fontWeight: '600' },
+  timeInput: { backgroundColor: atelierColors.surfaceMuted, borderRadius: 12, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: atelierColors.border, width: 140, color: atelierColors.text }
 });

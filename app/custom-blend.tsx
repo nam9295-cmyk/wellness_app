@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomBlendCupVisual } from '@/components/CustomBlendCupVisual';
+import { EmptyStateBlock } from '@/components/EmptyStateBlock';
 import { CustomBlendProfileChart } from '@/components/CustomBlendProfileChart';
+import { StatusBanner } from '@/components/StatusBanner';
+import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import {
   createAdjustedCustomBlendOption,
   createInitialCustomBlendRatios,
@@ -19,28 +22,6 @@ import {
 import { createCustomBlendItemId } from '@/lib/teaBoxStorage';
 import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-
-const atelierColors = {
-  background: '#F5F1EA',
-  surface: '#FFFDF9',
-  surfaceMuted: '#F8F3ED',
-  title: '#2F2824',
-  text: '#473D37',
-  textMuted: '#6F6560',
-  textSoft: '#8B817A',
-  border: '#E3D8CD',
-  borderStrong: '#D4C5B8',
-  deepGreen: '#6E8E82',
-  deepGreenSoft: '#8FA89D',
-  deepGreenMuted: '#E1EAE5',
-  dustyRoseSoft: '#E6D9D4',
-  cocoa: '#5A4034',
-  cocoaStrong: '#432D23',
-  cocoaSoft: '#7A5A4A',
-  chipBg: '#F3ECE5',
-  track: '#DDD2C7',
-  chartGrid: '#DDD2C7',
-};
 
 function parseOption(rawOption: string | string[] | undefined): CustomBlendOption | null {
   const source = Array.isArray(rawOption) ? rawOption[0] : rawOption;
@@ -102,9 +83,13 @@ export default function CustomBlendScreen() {
   if (!option || !reading || !adjustedOption) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>불러올 블렌드가 없어요</Text>
-          <Text style={styles.emptyText}>AI 블렌딩 제안에서 다시 들어와 주세요.</Text>
+        <View style={styles.emptyStateWrap}>
+          <EmptyStateBlock
+            centered
+            title="불러올 블렌드가 없어요"
+            text="AI 블렌딩 제안에서 다시 들어와 주세요."
+            ctaText="추천 카드에서 다시 선택하면 바로 이어서 조절할 수 있어요."
+          />
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>이전으로</Text>
           </Pressable>
@@ -281,12 +266,12 @@ export default function CustomBlendScreen() {
               const result = await saveCustomBlendToBox(adjustedOption);
 
               if (!result.added) {
-                setFeedbackMessage('이미 같은 비율로 담아둔 블렌드예요.');
+                setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
                 return;
               }
 
               if (__DEV__ && !result.synced) {
-                setFeedbackMessage('블렌드함에 담았어요. Firestore 동기화는 보류됐어요.');
+                setFeedbackMessage('로컬에는 저장됐고, 동기화는 보류됐어요.');
                 return;
               }
 
@@ -302,7 +287,12 @@ export default function CustomBlendScreen() {
             <Text style={styles.secondaryButtonText}>추천 결과로 돌아가기</Text>
           </Pressable>
 
-          {feedbackMessage ? <Text style={styles.feedbackText}>{feedbackMessage}</Text> : null}
+          {feedbackMessage ? (
+            <StatusBanner
+              message={feedbackMessage}
+              tone={feedbackMessage.includes('동기화는 보류') ? 'muted' : 'success'}
+            />
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -325,31 +315,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   headerAction: {
-    fontSize: 14,
-    color: atelierColors.textMuted,
-    fontWeight: '600',
+    ...atelierButtons.inlineText,
   },
   headerTitle: {
-    fontSize: 16,
-    color: atelierColors.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    ...atelierText.screenTitle,
   },
   headerSpacer: {
     width: 32,
   },
   heroCard: {
-    backgroundColor: atelierColors.surface,
-    borderRadius: 24,
+    ...atelierCards.hero,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
-    shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 14 },
-    shadowRadius: 22,
-    elevation: 2,
   },
   heroHeader: {
     marginBottom: spacing.md,
@@ -358,23 +335,18 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   eyebrow: {
-    fontSize: 12,
-    color: atelierColors.textSoft,
-    fontWeight: '700',
+    ...atelierText.helper,
     letterSpacing: 0.1,
     textTransform: 'uppercase',
   },
   title: {
+    ...atelierText.heroTitle,
     fontSize: 28,
-    fontWeight: '700',
-    color: atelierColors.title,
     marginTop: spacing.sm,
-    letterSpacing: -0.7,
     lineHeight: 34,
   },
   summary: {
-    fontSize: 16,
-    color: atelierColors.text,
+    ...atelierText.summary,
     lineHeight: 25,
     marginTop: spacing.sm,
     fontWeight: '500',
@@ -412,23 +384,16 @@ const styles = StyleSheet.create({
     borderColor: '#CEDCD5',
   },
   heroChipText: {
+    ...atelierText.helper,
     fontSize: 12,
     color: atelierColors.deepGreen,
     fontWeight: '600',
   },
   sectionCard: {
+    ...atelierCards.section,
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 20,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
-    shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -437,9 +402,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
+    ...atelierText.helper,
     fontSize: 13,
-    fontWeight: '700',
-    color: atelierColors.textSoft,
     letterSpacing: 0.1,
     textTransform: 'uppercase',
   },
@@ -449,16 +413,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sectionLead: {
-    fontSize: 14,
-    color: atelierColors.text,
+    ...atelierText.body,
     lineHeight: 21,
     marginBottom: spacing.xs,
-    letterSpacing: -0.1,
     fontWeight: '600',
   },
   sectionHint: {
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: atelierColors.textMuted,
     lineHeight: 20,
     marginBottom: spacing.lg,
     letterSpacing: -0.1,
@@ -503,15 +465,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sliderLabel: {
-    fontSize: 14,
+    ...atelierText.body,
     color: atelierColors.title,
     fontWeight: '600',
   },
   sliderValue: {
-    fontSize: 18,
+    ...atelierText.cardTitleMd,
     color: atelierColors.deepGreen,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
   sliderControlRow: {
     flexDirection: 'row',
@@ -549,45 +509,33 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   sliderHint: {
-    fontSize: 12,
+    ...atelierText.helper,
     color: atelierColors.textMuted,
     marginTop: spacing.sm,
     lineHeight: 19,
     letterSpacing: -0.05,
   },
   profileCard: {
+    ...atelierCards.section,
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 20,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
     gap: spacing.md,
-    shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 12,
-    elevation: 1,
   },
   profileSummaryWrap: {
     gap: spacing.sm,
   },
   analysisType: {
-    fontSize: 20,
-    color: atelierColors.title,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    ...atelierText.cardTitleLg,
   },
   analysisLead: {
-    fontSize: 14,
-    color: atelierColors.text,
+    ...atelierText.body,
     lineHeight: 22,
     fontWeight: '500',
   },
   analysisFlavor: {
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: atelierColors.textMuted,
     lineHeight: 21,
   },
   signatureRow: {
@@ -595,12 +543,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   signatureCard: {
+    ...atelierCards.meta,
     flex: 1,
-    backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 16,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
   },
   signatureLabel: {
     fontSize: 11,
@@ -628,19 +573,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   analysisCard: {
+    ...atelierCards.section,
     marginTop: spacing.sm,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 20,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
     gap: spacing.md,
-    shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.022,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 1,
   },
   analysisBlock: {
     gap: spacing.sm,
@@ -679,17 +616,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footerCard: {
+    ...atelierCards.hero,
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 20,
     padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
-    shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 18,
-    elevation: 1,
+    borderRadius: 20,
   },
   footerLabel: {
     fontSize: 12,
@@ -698,43 +628,31 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   footerTitle: {
+    ...atelierText.cardTitleMd,
     marginTop: spacing.xs,
-    fontSize: 18,
-    color: atelierColors.title,
-    fontWeight: '700',
   },
   footerSummary: {
+    ...atelierText.body,
     marginTop: spacing.sm,
-    fontSize: 14,
-    color: atelierColors.text,
     lineHeight: 22,
     fontWeight: '500',
   },
   footerGuide: {
-    marginTop: spacing.md,
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: atelierColors.textMuted,
+    marginTop: spacing.md,
     lineHeight: 20,
     letterSpacing: -0.1,
   },
   footerText: {
+    ...atelierText.bodyMuted,
     marginTop: spacing.sm,
-    fontSize: 14,
-    color: atelierColors.textMuted,
     lineHeight: 22,
   },
   saveButton: {
+    ...atelierButtons.primarySolid,
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.deepGreen,
-    borderRadius: 18,
     paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: atelierColors.deepGreen,
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-    elevation: 3,
   },
   saveButtonSaved: {
     backgroundColor: atelierColors.surfaceMuted,
@@ -744,62 +662,38 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   saveButtonText: {
+    ...atelierText.summary,
     color: atelierColors.surface,
-    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: -0.15,
   },
   saveButtonTextSaved: {
     color: atelierColors.deepGreen,
   },
   secondaryButton: {
+    ...atelierButtons.secondaryMuted,
     marginTop: spacing.sm,
-    borderRadius: 16,
     paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
-    backgroundColor: atelierColors.surfaceMuted,
   },
   secondaryButtonText: {
+    ...atelierButtons.inlineText,
     color: atelierColors.text,
-    fontSize: 14,
-    fontWeight: '600',
   },
-  feedbackText: {
-    marginTop: spacing.sm,
-    fontSize: 13,
-    color: atelierColors.deepGreenSoft,
-    lineHeight: 20,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  emptyState: {
+  emptyStateWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
-  emptyTitle: {
-    fontSize: 22,
-    color: atelierColors.title,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: atelierColors.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
   backButton: {
     marginTop: spacing.lg,
-    backgroundColor: atelierColors.deepGreen,
-    borderRadius: 16,
+    ...atelierButtons.primarySolid,
+    shadowOpacity: 0,
+    elevation: 0,
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
   },
   backButtonText: {
+    ...atelierText.summary,
     fontSize: 15,
     color: atelierColors.surface,
     fontWeight: '700',
