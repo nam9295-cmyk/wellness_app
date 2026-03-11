@@ -3,6 +3,7 @@
     "name": "Wellness MVP",
     "slug": "wellness-mvp",
     "scheme": "wellness-mvp",
+    "icon": "./assets/images/app-icon.png",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -20,6 +21,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
+      "favicon": "./assets/images/app-icon.png",
       "name": "Wellness MVP",
       "shortName": "Wellness",
       "themeColor": "#EDC5C4",
