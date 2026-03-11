@@ -1,8 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
+import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { TeaRecommendationContent, TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { getTeaProfileHighlights } from '@/lib/teaProfiles';
-import { colors, spacing } from '@/lib/theme';
+import { spacing } from '@/lib/theme';
 
 interface TeaBlendInfoCardProps {
   teaId: TeaRecommendationId;
@@ -71,12 +72,10 @@ export function TeaBlendInfoCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...atelierCards.section,
     marginTop: spacing.lg,
-    backgroundColor: colors.background,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   heroRow: {
     flexDirection: 'row',
@@ -90,38 +89,28 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   cardTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textLight,
+    ...atelierText.helper,
     marginBottom: spacing.sm,
     letterSpacing: 0.2,
   },
   name: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.3,
+    ...atelierText.cardTitleMd,
   },
   subtitle: {
     marginTop: 4,
+    ...atelierText.helper,
     fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
+    color: atelierColors.deepGreen,
   },
   description: {
     marginTop: spacing.sm,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.text,
-    letterSpacing: -0.2,
+    ...atelierText.body,
   },
   section: {
     marginTop: spacing.md,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textLight,
+    ...atelierText.helper,
     marginBottom: spacing.xs,
     letterSpacing: 0.2,
   },
@@ -131,23 +120,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   keywordChip: {
-    backgroundColor: colors.card,
+    ...atelierCards.meta,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   keywordText: {
+    ...atelierText.helper,
     fontSize: 12,
+    color: atelierColors.text,
     fontWeight: '600',
-    color: colors.text,
     letterSpacing: -0.1,
   },
   metaText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.text,
-    letterSpacing: -0.2,
+    ...atelierText.body,
   },
 });

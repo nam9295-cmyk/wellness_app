@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing } from '@/lib/theme';
+import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
+import { spacing } from '@/lib/theme';
 import { ReactNode } from 'react';
 
 interface CardProps {
@@ -19,23 +20,15 @@ export function Card({ title, children, style }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.card,
+    ...atelierCards.section,
     padding: spacing.lg,
-    borderRadius: 20,
+    borderRadius: 24,
     marginBottom: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
   },
   title: { 
-    fontSize: 16, 
-    fontWeight: '600', 
+    ...atelierText.cardTitleMd,
+    fontSize: 17,
     marginBottom: spacing.md, 
-    color: colors.text,
-    letterSpacing: -0.3,
+    color: atelierColors.title,
   }
 });

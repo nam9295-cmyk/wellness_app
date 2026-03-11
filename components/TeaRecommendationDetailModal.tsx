@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StatusBanner } from '@/components/StatusBanner';
 import { TeaBlendInfoCard } from '@/components/TeaBlendInfoCard';
 import { TeaProfileMeter } from '@/components/TeaProfileMeter';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { teaAssets } from '@/lib/teaAssets';
+import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { useStore } from '@/lib/store';
 import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
-import { colors, spacing } from '@/lib/theme';
+import { spacing } from '@/lib/theme';
 
 interface TeaRecommendationDetailModalProps {
   visible: boolean;
@@ -131,12 +133,12 @@ export function TeaRecommendationDetailModal({
                 onPress={handleSaveTea}
                 disabled={isSaved}
               >
-                <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+              <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
                   {isSaved ? '이미 담아둔 블렌드예요' : '블렌드함에 담기'}
-                </Text>
-              </Pressable>
+              </Text>
+            </Pressable>
               {feedbackMessage ? (
-                <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+                <StatusBanner message={feedbackMessage} tone={feedbackMessage.includes('이미') ? 'muted' : 'success'} />
               ) : null}
             </View>
 
@@ -162,20 +164,20 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(48, 42, 41, 0.28)',
+    backgroundColor: atelierColors.overlay,
   },
   sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: atelierColors.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     maxHeight: '84%',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
+    shadowColor: atelierColors.cocoaStrong,
+    shadowOpacity: 0.14,
     shadowOffset: { width: 0, height: -4 },
-    shadowRadius: 16,
+    shadowRadius: 22,
     elevation: 12,
   },
   sheetContent: {
@@ -186,13 +188,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 4,
     borderRadius: 999,
-    backgroundColor: colors.border,
+    backgroundColor: atelierColors.border,
     marginBottom: spacing.md,
   },
   heroCard: {
+    ...atelierCards.hero,
     borderRadius: 28,
-    borderWidth: 1,
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -200,9 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroEyebrow: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textLight,
+    ...atelierText.helper,
     letterSpacing: 0.2,
   },
   heroImageWrap: {
@@ -211,42 +211,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.5,
+    ...atelierText.cardTitleLg,
+    fontSize: 26,
+    letterSpacing: -0.55,
   },
   subtitle: {
     marginTop: 4,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.deepGreen,
   },
   identityLine: {
     marginTop: spacing.sm,
+    ...atelierText.summary,
     fontSize: 19,
     lineHeight: 28,
     fontWeight: '700',
-    color: colors.text,
     letterSpacing: -0.4,
   },
   closeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textLight,
+    ...atelierButtons.inlineText,
   },
   description: {
     marginTop: spacing.sm,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.textLight,
-    letterSpacing: -0.2,
+    ...atelierText.bodyMuted,
   },
   keywordTitle: {
     marginTop: spacing.md,
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textLight,
+    ...atelierText.helper,
     letterSpacing: 0.1,
   },
   keywordWrap: {
@@ -256,42 +248,35 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   keywordChip: {
-    backgroundColor: colors.card,
+    ...atelierCards.meta,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   keywordText: {
+    ...atelierText.helper,
     fontSize: 12,
+    color: atelierColors.text,
     fontWeight: '600',
-    color: colors.text,
     letterSpacing: -0.1,
   },
   reasonCard: {
     marginTop: spacing.lg,
-    backgroundColor: colors.background,
-    borderRadius: 20,
+    ...atelierCards.section,
+    borderRadius: 24,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   metaGrid: {
     marginTop: spacing.lg,
     gap: spacing.sm,
   },
   metaCard: {
-    backgroundColor: colors.background,
-    borderRadius: 18,
+    ...atelierCards.section,
+    borderRadius: 20,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   metaLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textLight,
+    ...atelierText.helper,
     marginBottom: spacing.xs,
     letterSpacing: 0.1,
   },
@@ -301,63 +286,54 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   metaChip: {
-    backgroundColor: colors.card,
+    ...atelierCards.meta,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   metaChipText: {
+    ...atelierText.helper,
     fontSize: 12,
+    color: atelierColors.text,
     fontWeight: '600',
-    color: colors.text,
     letterSpacing: -0.1,
   },
   actionSection: {
     marginTop: spacing.lg,
   },
   sectionLabel: {
+    ...atelierText.helper,
     fontSize: 13,
-    fontWeight: '700',
-    color: colors.textLight,
     marginBottom: spacing.xs,
     letterSpacing: 0.2,
   },
   bodyText: {
+    ...atelierText.summary,
     fontSize: 15,
-    lineHeight: 24,
-    color: colors.text,
-    letterSpacing: -0.2,
   },
   contextText: {
     marginTop: spacing.xs,
+    ...atelierText.bodyMuted,
     fontSize: 13,
-    color: colors.textLight,
-    letterSpacing: -0.2,
   },
   saveButton: {
-    backgroundColor: colors.text,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
+    ...atelierButtons.primarySolid,
+    paddingVertical: 15,
   },
   saveButtonSaved: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.deepGreenSoft,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveButtonText: {
+    ...atelierText.summary,
     fontSize: 15,
     fontWeight: '700',
-    color: colors.card,
-    letterSpacing: -0.1,
+    color: atelierColors.surface,
   },
   saveButtonTextSaved: {
-    color: colors.text,
-  },
-  feedbackText: {
-    marginTop: spacing.sm,
-    fontSize: 13,
-    color: colors.textLight,
-    letterSpacing: -0.2,
+    color: atelierColors.deepGreen,
   },
 });

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { atelierText } from '@/lib/atelierTheme';
 import { spacing } from '@/lib/theme';
 
 interface EmptyStateBlockProps {
@@ -43,23 +44,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyTitle: {
+    ...atelierText.cardTitleLg,
     fontSize: 22,
-    color: '#2F2824',
-    fontWeight: '700',
     textAlign: 'center',
     marginBottom: spacing.sm,
-    letterSpacing: -0.3,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#6F6560',
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    ...atelierText.bodyMuted,
     textAlign: 'center',
   },
   emptyCtaText: {
-    fontSize: 13,
-    color: '#6E8E82',
+    ...atelierText.helper,
+    color: atelierText.pill.color,
     fontWeight: '600',
     letterSpacing: -0.1,
     textAlign: 'center',

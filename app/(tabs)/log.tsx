@@ -61,7 +61,7 @@ export default function LogScreen() {
   if (!isReady) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={atelierColors.deepGreen} />
       </View>
     );
   }
@@ -115,12 +115,12 @@ export default function LogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
-  scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  scrollContent: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.sm },
   heroCard: {
     ...atelierCards.hero,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl + spacing.xs,
   },
   eyebrow: {
     ...atelierText.helper,
@@ -142,8 +142,8 @@ const styles = StyleSheet.create({
   },
   memoCard: {
     ...atelierCards.section,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     marginTop: spacing.xs,
     marginBottom: spacing.xl,
   },
@@ -160,9 +160,9 @@ const styles = StyleSheet.create({
   },
   button: {
     ...atelierButtons.primarySolid,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   buttonText: {
     ...atelierText.summary,

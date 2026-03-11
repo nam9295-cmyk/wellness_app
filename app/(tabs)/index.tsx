@@ -73,7 +73,7 @@ export default function Home() {
   if (!isReady) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={atelierColors.deepGreen} />
       </View>
     );
   }
@@ -297,10 +297,11 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxl },
+  container: { flex: 1, backgroundColor: atelierColors.background },
+  content: { padding: spacing.lg, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.sm },
   heroIntro: {
     marginBottom: spacing.xl,
+    paddingRight: spacing.md,
   },
   eyebrow: {
     ...atelierText.helper,
@@ -315,14 +316,14 @@ const styles = StyleSheet.create({
   subtitle: {
     ...atelierText.summary,
     color: atelierColors.textMuted,
-    marginBottom: spacing.sm,
-    lineHeight: 25,
+    marginBottom: spacing.md,
+    lineHeight: 26,
   },
   sectionWrap: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   aiSectionWrap: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   atelierSectionLabel: {
     ...atelierText.helper,
@@ -330,17 +331,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     marginBottom: spacing.sm,
   },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  summaryLabel: { fontSize: 15, color: colors.textLight },
-  summaryValue: { fontSize: 15, color: colors.text, fontWeight: '500' },
-  memoContainer: { marginTop: spacing.md, backgroundColor: colors.primaryLight + '15', padding: spacing.md, borderRadius: 12 },
-  memoText: { fontSize: 14, color: colors.text, lineHeight: 22 },
-  statText: { fontSize: 16, color: colors.text },
-  statHighlight: { fontSize: 20, fontWeight: '700', color: colors.primary },
+  summaryRow: {
+    ...atelierCards.meta,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: 16,
+  },
+  summaryLabel: { ...atelierText.bodyMuted, fontSize: 14 },
+  summaryValue: { ...atelierText.body, fontSize: 15, fontWeight: '700', color: atelierColors.title },
+  memoContainer: {
+    ...atelierCards.meta,
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 18,
+  },
+  memoText: { ...atelierText.body, lineHeight: 22 },
+  statText: { ...atelierText.summary, fontSize: 17 },
+  statHighlight: { fontSize: 24, fontWeight: '700', color: atelierColors.deepGreen },
   signatureCard: {
     ...atelierCards.hero,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   signatureHeader: {
     flexDirection: 'row',
@@ -374,19 +389,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
   },
-  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   teaCardText: { flex: 1 },
-  teaName: { ...atelierText.cardTitleLg, marginBottom: 4 },
+  teaName: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: 4 },
   teaIdentity: { ...atelierText.summary, fontSize: 15, marginBottom: 4, fontWeight: '600', lineHeight: 22 },
   teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.sm, letterSpacing: -0.1 },
-  recommendationText: { ...atelierText.summary, fontSize: 15 },
+  recommendationText: { ...atelierText.summary, fontSize: 15, lineHeight: 24 },
   teaUpdateHint: { ...atelierText.helper, color: atelierColors.deepGreen, marginTop: spacing.md, letterSpacing: -0.1 },
   signatureFooter: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: atelierColors.border,
   },
@@ -398,18 +413,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   aiBlendIntro: {
+    ...atelierText.bodyMuted,
     fontSize: 14,
-    color: colors.textLight,
     lineHeight: 22,
-    marginBottom: spacing.md,
-    letterSpacing: -0.2,
+    marginBottom: spacing.lg,
   },
   aiBlendItem: {
     ...atelierCards.section,
-    borderRadius: 22,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
+    borderRadius: 24,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.lg,
   },
   aiBlendItemLast: {
     marginBottom: 0,
@@ -450,15 +464,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
   },
-  aiBlendTitle: {
-    ...atelierText.cardTitleLg,
-    marginBottom: spacing.xs,
-  },
+  aiBlendTitle: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: spacing.xs },
   aiBlendSummary: {
     ...atelierText.summary,
     fontSize: 15,
     marginBottom: spacing.xs,
     fontWeight: '600',
+    lineHeight: 24,
   },
   aiBlendDetail: {
     ...atelierText.bodyMuted,
@@ -470,8 +482,8 @@ const styles = StyleSheet.create({
   aiBlendMetaCard: {
     ...atelierCards.meta,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
   },
   aiBlendMetaLabel: {
     ...atelierText.helper,
@@ -509,7 +521,7 @@ const styles = StyleSheet.create({
   },
   aiBlendBars: {
     gap: spacing.xs,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   aiBlendBarRow: {
     flexDirection: 'row',
@@ -556,7 +568,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
-  logItem: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md },
-  logDate: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: spacing.xs },
-  logSummary: { fontSize: 15, color: colors.textLight, letterSpacing: -0.2 }
+  logItem: {
+    ...atelierCards.meta,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: 18,
+  },
+  logDate: { ...atelierText.helper, fontSize: 12, color: atelierColors.deepGreen, marginBottom: spacing.xs },
+  logSummary: { ...atelierText.bodyMuted, fontSize: 14, lineHeight: 22 }
 });

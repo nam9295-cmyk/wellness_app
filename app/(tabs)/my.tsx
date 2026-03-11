@@ -210,7 +210,7 @@ export default function MyScreen() {
                 <Switch
                   value={notificationEnabled}
                   onValueChange={setNotificationEnabled}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: atelierColors.border, true: atelierColors.deepGreenSoft }}
                 />
               </View>
 
@@ -219,7 +219,7 @@ export default function MyScreen() {
                 <Switch
                   value={useMenstrualCycle}
                   onValueChange={setUseMenstrualCycle}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: atelierColors.border, true: atelierColors.deepGreenSoft }}
                 />
               </View>
             </View>
@@ -361,13 +361,13 @@ export default function MyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
-  content: { paddingBottom: spacing.xxl },
+  content: { paddingBottom: spacing.xxl + spacing.sm },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   profileSection: { 
     ...atelierCards.hero,
-    padding: spacing.xl, 
+    padding: spacing.xl,
     alignItems: 'center', 
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xxl + spacing.xs,
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
   },
@@ -397,8 +397,8 @@ const styles = StyleSheet.create({
     minWidth: 120,
     textAlign: 'center',
   },
-  goalText: { ...atelierText.bodyMuted, fontSize: 15 },
-  menuList: { padding: spacing.lg, paddingTop: spacing.xl },
+  goalText: { ...atelierText.bodyMuted, fontSize: 15, lineHeight: 23 },
+  menuList: { padding: spacing.lg, paddingTop: spacing.xl + spacing.xs },
   syncBanner: {
     backgroundColor: atelierColors.surface,
     borderRadius: 16,
@@ -435,8 +435,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    borderRadius: 16,
+    marginBottom: spacing.md,
+    borderRadius: 20,
   },
   inlineSettingItem: {
     marginTop: spacing.xl,
@@ -448,13 +448,13 @@ const styles = StyleSheet.create({
   },
   settingLabel: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
   settingValue: { ...atelierText.bodyMuted, fontSize: 15, fontWeight: '500' },
-  divider: { height: 1, backgroundColor: atelierColors.border, marginVertical: spacing.xl },
-  menuItem: { ...atelierCards.section, paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 16 },
+  divider: { height: 1, backgroundColor: atelierColors.border, marginVertical: spacing.xl + spacing.xs },
+  menuItem: { ...atelierCards.section, paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 20 },
   menuText: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
   notificationCard: {
     ...atelierCards.section,
-    padding: spacing.lg,
-    borderRadius: 20,
+    padding: spacing.xl,
+    borderRadius: 24,
   },
   notificationIntro: {
     ...atelierText.bodyMuted,
@@ -507,8 +507,8 @@ const styles = StyleSheet.create({
   },
   teaItem: {
     ...atelierCards.section,
-    borderRadius: 16,
-    marginBottom: spacing.sm,
+    borderRadius: 20,
+    marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   teaItemText: {
     flex: 1,
@@ -563,8 +563,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   removeButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
     borderLeftWidth: 1,
@@ -580,8 +580,8 @@ const styles = StyleSheet.create({
   },
   emptyTeaBox: {
     ...atelierCards.section,
-    padding: spacing.md,
-    borderRadius: 16,
+    padding: spacing.lg,
+    borderRadius: 20,
   },
   emptyTeaText: {
     ...atelierText.bodyMuted,
@@ -589,10 +589,10 @@ const styles = StyleSheet.create({
   },
   
   // Edit Form Styles
-  editForm: { ...atelierCards.section, padding: spacing.lg, borderRadius: 20 },
+  editForm: { ...atelierCards.section, padding: spacing.xl, borderRadius: 24 },
   label: { ...atelierText.body, fontSize: 14, fontWeight: '600', marginBottom: spacing.md },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border },
+  chip: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 22, backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border },
   chipSelected: { backgroundColor: atelierColors.deepGreen, borderColor: atelierColors.deepGreen },
   chipText: { ...atelierText.bodyMuted, fontSize: 14, fontWeight: '500' },
   chipTextSelected: { color: atelierColors.surface, fontWeight: '600' },

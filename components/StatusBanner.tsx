@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { spacing } from '@/lib/theme';
 
 type StatusBannerTone = 'default' | 'success' | 'muted';
@@ -12,19 +13,19 @@ interface StatusBannerProps {
 
 const paletteByTone: Record<StatusBannerTone, { background: string; border: string; text: string }> = {
   default: {
-    background: '#FFFDF9',
-    border: '#E3D8CD',
-    text: '#6F6560',
+    background: atelierColors.surface,
+    border: atelierColors.border,
+    text: atelierColors.textMuted,
   },
   success: {
-    background: '#E1EAE5',
-    border: '#8FA89D',
-    text: '#6E8E82',
+    background: atelierColors.deepGreenMuted,
+    border: atelierColors.deepGreenSoft,
+    text: atelierColors.deepGreen,
   },
   muted: {
-    background: '#F8F3ED',
-    border: '#D4C5B8',
-    text: '#6F6560',
+    background: atelierColors.surfaceMuted,
+    border: atelierColors.borderStrong,
+    text: atelierColors.textMuted,
   },
 };
 
@@ -50,12 +51,13 @@ export function StatusBanner({
 
 const styles = StyleSheet.create({
   banner: {
-    borderRadius: 14,
+    ...atelierCards.meta,
+    borderRadius: 16,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
   },
   message: {
+    ...atelierText.bodyMuted,
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
@@ -65,6 +67,7 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: spacing.xs,
     textAlign: 'center',
+    ...atelierText.helper,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.1,

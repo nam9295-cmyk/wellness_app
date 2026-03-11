@@ -306,13 +306,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl + spacing.sm,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl + spacing.xs,
   },
   headerAction: {
     ...atelierButtons.inlineText,
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     ...atelierCards.hero,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
   },
   heroHeader: {
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     ...atelierText.summary,
-    lineHeight: 25,
+    lineHeight: 26,
     marginTop: spacing.sm,
     fontWeight: '500',
   },
@@ -355,19 +356,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
-    marginTop: spacing.md,
+    gap: spacing.lg,
+    marginTop: spacing.lg,
   },
   heroPotWrap: {
     flex: 1.18,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 156,
+    minHeight: 176,
   },
   heroGraphWrap: {
     flex: 0.82,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: spacing.xs,
   },
   heroChipWrap: {
     flexDirection: 'row',
@@ -391,9 +393,9 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     ...atelierCards.section,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -422,20 +424,18 @@ const styles = StyleSheet.create({
     ...atelierText.bodyMuted,
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     letterSpacing: -0.1,
   },
   fixedIngredientRow: {
+    ...atelierCards.meta,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: atelierColors.surfaceMuted,
     borderRadius: 14,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
   },
   fixedIngredientName: {
     fontSize: 14,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sliderRow: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: atelierColors.border + '80',
@@ -476,12 +476,12 @@ const styles = StyleSheet.create({
   sliderControlRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   stepButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: atelierColors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   sliderTrack: {
     flex: 1,
-    height: 12,
+    height: 13,
     borderRadius: 999,
     backgroundColor: atelierColors.track,
     overflow: 'hidden',
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     ...atelierCards.section,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.md,
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   },
   analysisCard: {
     ...atelierCards.section,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.md,
@@ -617,9 +617,9 @@ const styles = StyleSheet.create({
   },
   footerCard: {
     ...atelierCards.hero,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     padding: spacing.lg,
-    borderRadius: 20,
+    borderRadius: 24,
   },
   footerLabel: {
     fontSize: 12,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     ...atelierButtons.primarySolid,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     paddingVertical: 18,
   },
   saveButtonSaved: {
@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     ...atelierButtons.secondaryMuted,
-    marginTop: spacing.sm,
-    paddingVertical: 14,
+    marginTop: spacing.md,
+    paddingVertical: 15,
   },
   secondaryButtonText: {
     ...atelierButtons.inlineText,

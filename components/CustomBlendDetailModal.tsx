@@ -157,14 +157,14 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(48, 42, 41, 0.28)',
+    backgroundColor: atelierColors.overlay,
   },
   sheet: {
     backgroundColor: atelierColors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     maxHeight: '82%',
   },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     ...atelierCards.hero,
     backgroundColor: atelierColors.surfaceMuted,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xl + spacing.xs,
   },
   headerRow: {
     flexDirection: 'row',
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     ...atelierText.summary,
     fontSize: 17,
-    lineHeight: 26,
+    lineHeight: 27,
     fontWeight: '600',
   },
   detail: {
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   metaCard: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     ...atelierCards.section,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: spacing.lg,
     ...atelierButtons.secondaryMuted,
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   saveButtonSaved: {
     backgroundColor: atelierColors.deepGreenMuted,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     color: atelierColors.deepGreen,
   },
   adjustGuide: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     ...atelierText.bodyMuted,
     fontSize: 13,
     lineHeight: 20,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   adjustButton: {
     marginTop: spacing.sm,
     ...atelierButtons.primarySolid,
-    paddingVertical: 17,
+    paddingVertical: 18,
   },
   adjustButtonText: {
     ...atelierText.summary,

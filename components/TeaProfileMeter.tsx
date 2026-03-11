@@ -1,8 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
+import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { getTeaPresentationProfile } from '@/lib/teaProfiles';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
-import { colors, spacing } from '@/lib/theme';
+import { spacing } from '@/lib/theme';
 
 interface TeaProfileMeterProps {
   teaId: TeaRecommendationId;
@@ -65,7 +66,7 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
               key={`grid-${index}`}
               points={polygon}
               fill="none"
-              stroke={colors.border}
+              stroke={atelierColors.chartGrid}
               strokeWidth={1}
             />
           ))}
@@ -77,15 +78,15 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
               y1={center}
               x2={point.x}
               y2={point.y}
-              stroke={colors.border}
+              stroke={atelierColors.chartGrid}
               strokeWidth={1}
             />
           ))}
 
           <Polygon
             points={profilePolygon}
-            fill={colors.primary + '66'}
-            stroke={colors.primary}
+            fill={atelierColors.deepGreen + '55'}
+            stroke={atelierColors.deepGreen}
             strokeWidth={2}
           />
 
@@ -95,7 +96,7 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
               cx={center + Math.cos(point.angle) * radius * (point.value / 5)}
               cy={center + Math.sin(point.angle) * radius * (point.value / 5)}
               r={4}
-              fill={colors.primary}
+              fill={atelierColors.deepGreen}
             />
           ))}
 
@@ -106,7 +107,7 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
               y={point.labelY}
               fontSize="11"
               fontWeight="700"
-              fill={colors.text}
+              fill={atelierColors.text}
               textAnchor={getTextAnchor(point.labelX)}
             >
               {point.label}
@@ -120,17 +121,14 @@ export function TeaProfileMeter({ teaId }: TeaProfileMeterProps) {
 
 const styles = StyleSheet.create({
   card: {
+    ...atelierCards.section,
     marginTop: spacing.lg,
-    backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   title: {
+    ...atelierText.helper,
     fontSize: 13,
-    fontWeight: '700',
-    color: colors.textLight,
     marginBottom: spacing.md,
     letterSpacing: 0.1,
   },

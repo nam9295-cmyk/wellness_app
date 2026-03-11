@@ -1,5 +1,5 @@
 import { Text, StyleSheet } from 'react-native';
-import { colors } from '@/lib/theme';
+import { atelierText } from '@/lib/atelierTheme';
 
 export function SectionTitle({ title }: { title: string }) {
   return <Text style={styles.title}>{title}</Text>;
@@ -7,9 +7,8 @@ export function SectionTitle({ title }: { title: string }) {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: 12,
+    ...atelierText.cardTitleMd,
+    fontSize: 17,
+    marginTop: 14,
   }
 });

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors } from '@/lib/theme';
+import { atelierColors, atelierText } from '@/lib/atelierTheme';
 
 interface Props<T> {
   options: readonly T[];
@@ -38,23 +38,23 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: colors.background,
+    paddingVertical: 11,
+    borderRadius: 22,
+    backgroundColor: atelierColors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: atelierColors.border,
   },
   chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
   },
   text: {
-    color: colors.textLight,
+    ...atelierText.bodyMuted,
     fontSize: 14,
     fontWeight: '500',
   },
   textSelected: {
-    color: colors.card,
-    fontWeight: 'bold',
+    color: atelierColors.surface,
+    fontWeight: '700',
   }
 });
