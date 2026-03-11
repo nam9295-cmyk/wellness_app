@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
@@ -18,33 +19,163 @@ const REPORT_TABS: Array<{ key: ReportTabKey; label: string; helper: string }> =
   { key: 'monthly', label: '한달', helper: '최근 30일' },
 ];
 
-function RhythmBand({
-  label,
-  values,
-  tone,
+function clampRhythmValue(value: string) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 3;
+  }
+
+  return Math.min(Math.max(numericValue, 1), 5);
+}
+
+function createCosineWavePoints(values: number[], xPositions: number[], baselineY: number, amplitudeScale: number) {
+  const anchors = values.map((value, index) => {
+    const normalized = (value - 3) / 2;
+
+    return {
+      x: xPositions[index],
+      y: baselineY - normalized * amplitudeScale,
+    };
+  });
+
+  const points: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index < anchors.length - 1; index += 1) {
+    const start = anchors[index];
+    const end = anchors[index + 1];
+    const steps = 24;
+
+    for (let step = 0; step <= steps; step += 1) {
+      if (index > 0 && step === 0) {
+        continue;
+      }
+
+      const t = step / steps;
+      const eased = (1 - Math.cos(Math.PI * t)) / 2;
+      points.push({
+        x: start.x + (end.x - start.x) * t,
+        y: start.y + (end.y - start.y) * eased,
+      });
+    }
+  }
+
+  return { anchors, points };
+}
+
+function pointsToPath(points: Array<{ x: number; y: number }>) {
+  if (points.length === 0) {
+    return '';
+  }
+
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+}
+
+function pointsToAreaPath(points: Array<{ x: number; y: number }>, baselineY: number) {
+  if (points.length === 0) {
+    return '';
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `${pointsToPath(points)} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
+}
+
+function BiorhythmChart({
+  physicalValues,
+  mentalValues,
 }: {
-  label: string;
-  values: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
-  tone: 'physical' | 'mental';
+  physicalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
+  mentalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
 }) {
+  const width = 320;
+  const height = 214;
+  const baselineY = 92;
+  const xPositions = [32, width / 2, width - 32];
+  const physicalWave = createCosineWavePoints(
+    physicalValues.map((entry) => clampRhythmValue(entry.value)),
+    xPositions,
+    baselineY,
+    34,
+  );
+  const mentalWave = createCosineWavePoints(
+    mentalValues.map((entry) => clampRhythmValue(entry.value)),
+    xPositions,
+    baselineY,
+    28,
+  );
+
   return (
-    <View style={styles.bandRow}>
-      <View style={styles.bandHeader}>
-        <Text style={styles.bandLabel}>{label}</Text>
+    <View style={styles.chartWrap}>
+      <View style={styles.chartLegendRow}>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.chartLegendDot, styles.chartLegendDotPhysical]} />
+          <Text style={styles.chartLegendText}>신체 리듬</Text>
+        </View>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.chartLegendDot, styles.chartLegendDotMental]} />
+          <Text style={styles.chartLegendText}>정신 리듬</Text>
+        </View>
       </View>
-      <View style={styles.bandTrack}>
-        <View style={styles.bandLine} />
-        {values.map((entry, index) => (
-          <View key={entry.key} style={[styles.bandPointWrap, { left: `${index * 50}%` }]}>
-            <View
-              style={[
-                styles.bandPoint,
-                tone === 'physical' ? styles.bandPointPhysical : styles.bandPointMental,
-              ]}
-            >
-              <Text style={styles.bandPointValue}>{entry.value}</Text>
-            </View>
-            <Text style={styles.bandPointLabel}>{entry.shortLabel}</Text>
+
+      <View style={styles.chartBox}>
+        <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+          <Line
+            x1={20}
+            y1={baselineY}
+            x2={width - 20}
+            y2={baselineY}
+            stroke={atelierColors.borderStrong}
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+          <Path d={pointsToAreaPath(physicalWave.points, baselineY)} fill={atelierColors.deepGreen} opacity={0.08} />
+          <Path d={pointsToAreaPath(mentalWave.points, baselineY)} fill={atelierColors.deepGreenSoft} opacity={0.1} />
+          <Path
+            d={pointsToPath(physicalWave.points)}
+            fill="none"
+            stroke={atelierColors.deepGreen}
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Path
+            d={pointsToPath(mentalWave.points)}
+            fill="none"
+            stroke={atelierColors.deepGreenSoft}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {physicalWave.anchors.map((point, index) => (
+            <Circle
+              key={`physical-${physicalValues[index].key}`}
+              cx={point.x}
+              cy={point.y}
+              r={7}
+              fill={atelierColors.surface}
+              stroke={atelierColors.deepGreen}
+              strokeWidth={2.5}
+            />
+          ))}
+          {mentalWave.anchors.map((point, index) => (
+            <Circle
+              key={`mental-${mentalValues[index].key}`}
+              cx={point.x}
+              cy={point.y}
+              r={6}
+              fill={atelierColors.surfaceMuted}
+              stroke={atelierColors.deepGreenSoft}
+              strokeWidth={2.5}
+            />
+          ))}
+        </Svg>
+      </View>
+
+      <View style={styles.chartLabelsRow}>
+        {physicalValues.map((entry, index) => (
+          <View key={entry.key} style={styles.chartLabelItem}>
+            <Text style={styles.chartValuePrimary}>{physicalValues[index].value}</Text>
+            <Text style={styles.chartValueSecondary}>{mentalValues[index].value}</Text>
+            <Text style={styles.chartPointLabel}>{entry.shortLabel}</Text>
           </View>
         ))}
       </View>
@@ -113,20 +244,13 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        <RhythmBand
-          label="신체 리듬"
-          tone="physical"
-          values={[
+        <BiorhythmChart
+          physicalValues={[
             { key: 'daily', value: report.daily.physicalRhythm, shortLabel: '하루' },
             { key: 'weekly', value: report.weekly.physicalRhythm, shortLabel: '일주일' },
             { key: 'monthly', value: report.monthly.physicalRhythm, shortLabel: '한달' },
           ]}
-        />
-
-        <RhythmBand
-          label="정신 리듬"
-          tone="mental"
-          values={[
+          mentalValues={[
             { key: 'daily', value: report.daily.mentalRhythm, shortLabel: '하루' },
             { key: 'weekly', value: report.weekly.mentalRhythm, shortLabel: '일주일' },
             { key: 'monthly', value: report.monthly.mentalRhythm, shortLabel: '한달' },
@@ -298,61 +422,61 @@ const styles = StyleSheet.create({
     ...atelierText.pill,
     color: atelierColors.deepGreen,
   },
-  bandRow: {
-    marginBottom: spacing.lg,
+  chartWrap: {
+    width: '100%',
   },
-  bandHeader: {
+  chartLegendRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  chartLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chartLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+  },
+  chartLegendDotPhysical: {
+    backgroundColor: atelierColors.deepGreen,
+  },
+  chartLegendDotMental: {
+    backgroundColor: atelierColors.deepGreenSoft,
+  },
+  chartLegendText: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  chartBox: {
+    width: '100%',
+    justifyContent: 'center',
     marginBottom: spacing.sm,
   },
-  bandLabel: {
-    ...atelierText.cardTitleMd,
-    fontSize: 16,
+  chartLabelsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
   },
-  bandTrack: {
-    position: 'relative',
-    minHeight: 72,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  bandLine: {
-    position: 'absolute',
-    left: 18,
-    right: 18,
-    top: 24,
-    height: 3,
-    borderRadius: 999,
-    backgroundColor: atelierColors.border,
-  },
-  bandPointWrap: {
-    position: 'absolute',
-    top: 0,
-    width: 64,
-    marginLeft: -12,
+  chartLabelItem: {
+    flex: 1,
     alignItems: 'center',
+    minWidth: 0,
   },
-  bandPoint: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: atelierColors.borderStrong,
-    backgroundColor: atelierColors.surface,
-  },
-  bandPointPhysical: {
-    backgroundColor: '#DDE9E2',
-    borderColor: '#B4CBBE',
-  },
-  bandPointMental: {
-    backgroundColor: '#E8E1D8',
-    borderColor: '#D7CBBE',
-  },
-  bandPointValue: {
+  chartValuePrimary: {
     ...atelierText.cardTitleMd,
-    fontSize: 15,
+    fontSize: 19,
   },
-  bandPointLabel: {
+  chartValueSecondary: {
+    ...atelierText.helper,
+    marginTop: 2,
+    color: atelierColors.deepGreenSoft,
+    fontSize: 12,
+  },
+  chartPointLabel: {
     ...atelierText.helper,
     marginTop: spacing.xs,
     color: atelierColors.textSoft,
