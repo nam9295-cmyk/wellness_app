@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { CustomBlendOption } from './customBlendEngine';
-import { UserSettings, WellnessLog, WellnessLogInput } from '@/types';
+import { MemberProfile, UserSettings, WellnessLog, WellnessLogInput } from '@/types';
 import { isFirebaseConfigured } from './firebase';
+import { getDefaultMemberProfile, loadMemberProfileFromFirestore } from './firestoreMember';
 import { loadLogsFromFirestore, syncTodayLogToFirestore } from './firestoreLogs';
 import { loadUserSettingsFromFirestore, syncUserSettingsToFirestore } from './firestoreSettings';
 import {
@@ -20,6 +21,7 @@ import {
   SavedBlendItem,
   saveTeaBox,
 } from './teaBoxStorage';
+import { loadMemberProfile, saveMemberProfile } from './memberProfileStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
 import { createWellnessLog, findTodayLog, upsertLog } from './logUtils';
 
@@ -31,6 +33,7 @@ interface StoreContextType {
   updateSettings: (settings: UserSettings) => Promise<void>;
   latestLogFeedback: string | null;
   clearLatestLogFeedback: () => void;
+  memberProfile: MemberProfile | null;
   savedBlendItems: SavedBlendItem[];
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
@@ -48,6 +51,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<WellnessLog[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
   const [latestLogFeedback, setLatestLogFeedback] = useState<string | null>(null);
   const [savedBlendItems, setSavedBlendItems] = useState<SavedBlendItem[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'fallback'>('idle');
@@ -64,11 +68,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const storedLogs = await loadLogs();
       const storedSettings = await loadUserSettings();
       const storedTeaBox = await loadTeaBox();
+      const storedMemberProfile = await loadMemberProfile();
+      const initialMemberProfile = storedMemberProfile ?? getDefaultMemberProfile();
+
+      if (!storedMemberProfile) {
+        await saveMemberProfile(initialMemberProfile);
+      }
       
       if (isMounted) {
         setLogs(storedLogs);
         setUserSettings(storedSettings);
         setSavedBlendItems(storedTeaBox);
+        setMemberProfile(initialMemberProfile);
         setIsReady(true);
       }
 
@@ -82,10 +93,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const [remoteLogs, remoteSettings, remoteTeaBox] = await Promise.all([
+        const [remoteLogs, remoteSettings, remoteTeaBox, remoteMemberProfile] = await Promise.all([
           loadLogsFromFirestore(),
           loadUserSettingsFromFirestore(),
           loadTeaBoxFromFirestore(),
+          loadMemberProfileFromFirestore(),
         ]);
 
         if (!isMounted) {
@@ -105,6 +117,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (remoteTeaBox) {
           setSavedBlendItems(remoteTeaBox);
           await saveTeaBox(remoteTeaBox);
+        }
+
+        if (remoteMemberProfile) {
+          setMemberProfile(remoteMemberProfile);
+          await saveMemberProfile(remoteMemberProfile);
         }
 
         if (isMounted) {
@@ -142,6 +159,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await syncTodayLogToFirestore({
         log: newLog,
         settings: userSettings,
+        memberProfile,
       });
     } catch (error) {
       console.warn('Failed to sync today log to Firestore', error);
@@ -158,7 +176,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     // Firestore 동기화는 로컬 저장 이후 best-effort 로 동작한다.
     try {
-      await syncUserSettingsToFirestore({ settings });
+      await syncUserSettingsToFirestore({ settings, memberProfile });
+      if (memberProfile) {
+        await saveMemberProfile(memberProfile);
+      }
     } catch (error) {
       console.warn('Failed to sync user settings to Firestore', error);
     }
@@ -183,7 +204,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await saveTeaBox(updatedTeaBox);
 
     try {
-      await syncSavedTeaToFirestore({ teaId });
+      await syncSavedTeaToFirestore({ teaId, memberProfile });
     } catch (error) {
       console.warn('Failed to sync saved tea to Firestore', error);
     }
@@ -204,7 +225,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await saveTeaBox(updatedTeaBox);
 
     try {
-      await syncSavedCustomBlendToFirestore({ option });
+      await syncSavedCustomBlendToFirestore({ option, memberProfile });
       return { added: true, synced: true };
     } catch (error) {
       console.warn('Failed to sync saved custom blend to Firestore', error);
@@ -222,7 +243,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await saveTeaBox(updatedTeaBox);
 
     try {
-      await syncRemovedBlendFromFirestore({ itemId });
+      await syncRemovedBlendFromFirestore({ itemId, memberProfile });
     } catch (error) {
       console.warn('Failed to sync removed blend to Firestore', error);
     }
@@ -235,7 +256,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, savedBlendItems, savedTeaIds, saveTeaToBox, saveCustomBlendToBox, removeSavedBlendFromBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, memberProfile, savedBlendItems, savedTeaIds, saveTeaToBox, saveCustomBlendToBox, removeSavedBlendFromBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
       {children}
     </StoreContext.Provider>
   );

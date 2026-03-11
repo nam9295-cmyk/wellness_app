@@ -1,10 +1,12 @@
 import { collection, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
 import { SUBCOLLECTIONS, COLLECTIONS } from '@/lib/firebaseCollections';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
+import { createMemberIdentityPayload, mergeMemberProfile } from '@/lib/firestoreMember';
 import { getOrCreateMemberId } from '@/lib/memberIdentity';
 import {
   EXERCISE_STATES,
   MEAL_STATES,
+  MemberProfile,
   SLEEP_STATES,
   UserSettings,
   WATER_STATES,
@@ -18,6 +20,7 @@ type MemberStatus = 'Stable' | 'Attention' | 'Check';
 interface SyncTodayLogToFirestoreInput {
   log: WellnessLog;
   settings: UserSettings | null;
+  memberProfile?: MemberProfile | null;
 }
 
 function toTimestampString(date: Date) {
@@ -102,6 +105,7 @@ function toWellnessLog(data: Record<string, unknown>, fallbackId: string): Welln
 export async function syncTodayLogToFirestore({
   log,
   settings,
+  memberProfile,
 }: SyncTodayLogToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
     return { synced: false };
@@ -111,8 +115,11 @@ export async function syncTodayLogToFirestore({
   const status = getMemberStatus(log);
   const now = new Date();
   const nowLabel = toTimestampString(now);
-  const facilityId = process.env.EXPO_PUBLIC_FIREBASE_FACILITY_ID?.trim() || 'wellness-app';
   const memberName = settings?.nickname?.trim() || '앱 사용자';
+  const resolvedProfile = mergeMemberProfile({
+    ...memberProfile,
+    status,
+  });
 
   await setDoc(
     doc(db, COLLECTIONS.members, memberId),
@@ -121,8 +128,7 @@ export async function syncTodayLogToFirestore({
       age: 0,
       room: '',
       group: '웰니스 앱',
-      facilityId,
-      status,
+      ...createMemberIdentityPayload(resolvedProfile, nowLabel),
       lastCheckTime: nowLabel,
       todayBlendId: '',
       todayBlendName: '',

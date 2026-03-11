@@ -1,8 +1,10 @@
 import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { SUBCOLLECTIONS, COLLECTIONS } from '@/lib/firebaseCollections';
+import { createMemberIdentityPayload, mergeMemberProfile } from '@/lib/firestoreMember';
 import { getOrCreateMemberId } from '@/lib/memberIdentity';
 import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
+import { MemberProfile } from '@/types';
 import {
   createCustomBlendItemId,
   createCustomSavedBlendItem,
@@ -13,14 +15,17 @@ import { CustomBlendOption } from './customBlendEngine';
 
 interface SyncSavedTeaToFirestoreInput {
   teaId: TeaRecommendationId;
+  memberProfile?: MemberProfile | null;
 }
 
 interface SyncSavedCustomBlendToFirestoreInput {
   option: CustomBlendOption;
+  memberProfile?: MemberProfile | null;
 }
 
 interface SyncRemovedBlendFromFirestoreInput {
   itemId: string;
+  memberProfile?: MemberProfile | null;
 }
 
 function toTimestampString(date: Date) {
@@ -115,6 +120,7 @@ function toSavedBlendItem(data: Record<string, unknown>, docId: string): SavedBl
 
 export async function syncSavedTeaToFirestore({
   teaId,
+  memberProfile,
 }: SyncSavedTeaToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
     return { synced: false };
@@ -123,6 +129,7 @@ export async function syncSavedTeaToFirestore({
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
   const presetItem = createPresetSavedBlendItem(teaId);
+  const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await setDoc(
     doc(collection(db, SUBCOLLECTIONS.savedTeas(memberId)), presetItem.id),
@@ -141,6 +148,7 @@ export async function syncSavedTeaToFirestore({
   await setDoc(
     doc(db, COLLECTIONS.members, memberId),
     {
+      ...createMemberIdentityPayload(resolvedProfile, nowLabel),
       updatedAt: nowLabel,
       lastSavedTeaId: teaId,
       lastSavedTeaName: presetItem.name,
@@ -156,6 +164,7 @@ export async function syncSavedTeaToFirestore({
 
 export async function syncSavedCustomBlendToFirestore({
   option,
+  memberProfile,
 }: SyncSavedCustomBlendToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
     return { synced: false };
@@ -164,6 +173,7 @@ export async function syncSavedCustomBlendToFirestore({
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
   const customItem = createCustomSavedBlendItem(option);
+  const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await setDoc(
     doc(collection(db, SUBCOLLECTIONS.savedTeas(memberId)), createCustomBlendItemId(option)),
@@ -192,6 +202,7 @@ export async function syncSavedCustomBlendToFirestore({
   await setDoc(
     doc(db, COLLECTIONS.members, memberId),
     {
+      ...createMemberIdentityPayload(resolvedProfile, nowLabel),
       updatedAt: nowLabel,
       lastSavedTeaId: customItem.id,
       lastSavedTeaName: customItem.title,
@@ -207,6 +218,7 @@ export async function syncSavedCustomBlendToFirestore({
 
 export async function syncRemovedBlendFromFirestore({
   itemId,
+  memberProfile,
 }: SyncRemovedBlendFromFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
     return { synced: false };
@@ -214,12 +226,14 @@ export async function syncRemovedBlendFromFirestore({
 
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
+  const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await deleteDoc(doc(collection(db, SUBCOLLECTIONS.savedTeas(memberId)), itemId));
 
   await setDoc(
     doc(db, COLLECTIONS.members, memberId),
     {
+      ...createMemberIdentityPayload(resolvedProfile, nowLabel),
       updatedAt: nowLabel,
     },
     { merge: true }

@@ -9,6 +9,27 @@ export type MealState = typeof MEAL_STATES[number];
 export type ExerciseState = typeof EXERCISE_STATES[number];
 export type WaterState = typeof WATER_STATES[number];
 export type WellnessGoal = typeof WELLNESS_GOALS[number];
+export type AppMemberRole = 'member' | 'tester' | 'parent' | 'orgAdmin' | 'superAdmin';
+
+export interface MemberProfile {
+  organizationId: string;
+  organizationName: string;
+  role: AppMemberRole;
+  isTestAccount: boolean;
+  testGroup: string | null;
+  status: string;
+  lastActiveAt: string;
+}
+
+export const DEFAULT_MEMBER_PROFILE: MemberProfile = {
+  organizationId: 'wellness-app',
+  organizationName: '웰니스 앱',
+  role: 'member',
+  isTestAccount: false,
+  testGroup: null,
+  status: 'Stable',
+  lastActiveAt: '',
+};
 
 export interface WellnessLog {
   id: string;

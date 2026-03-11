@@ -1,11 +1,13 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebaseCollections';
+import { createMemberIdentityPayload, mergeMemberProfile } from '@/lib/firestoreMember';
 import { getOrCreateMemberId } from '@/lib/memberIdentity';
-import { DEFAULT_USER_SETTINGS, UserSettings } from '@/types';
+import { DEFAULT_USER_SETTINGS, MemberProfile, UserSettings } from '@/types';
 
 interface SyncUserSettingsToFirestoreInput {
   settings: UserSettings;
+  memberProfile?: MemberProfile | null;
 }
 
 function toTimestampString(date: Date) {
@@ -14,6 +16,7 @@ function toTimestampString(date: Date) {
 
 export async function syncUserSettingsToFirestore({
   settings,
+  memberProfile,
 }: SyncUserSettingsToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
     return { synced: false };
@@ -21,14 +24,14 @@ export async function syncUserSettingsToFirestore({
 
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
-  const facilityId = process.env.EXPO_PUBLIC_FIREBASE_FACILITY_ID?.trim() || 'wellness-app';
   const memberName = settings.nickname.trim() || '앱 사용자';
+  const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await setDoc(
     doc(db, COLLECTIONS.members, memberId),
     {
       name: memberName,
-      facilityId,
+      ...createMemberIdentityPayload(resolvedProfile, nowLabel),
       updatedAt: nowLabel,
       settings: {
         nickname: memberName,

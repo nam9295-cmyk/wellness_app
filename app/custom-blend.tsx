@@ -166,6 +166,7 @@ export default function CustomBlendScreen() {
             <Text style={styles.sectionTitle}>비율 조절</Text>
             <Text style={styles.sectionMeta}>카카오닙 {CUSTOM_BLEND_BASE_RATIO}% 고정</Text>
           </View>
+          <Text style={styles.sectionLead}>끌리는 재료를 먼저 올리고, 나머지 결을 가볍게 정돈해 현재 무드를 맞춰보세요.</Text>
           <Text style={styles.sectionHint}>비율을 바꾸면 위 결과가 바로 업데이트돼요.</Text>
 
           <View style={styles.fixedIngredientRow}>
@@ -173,13 +174,14 @@ export default function CustomBlendScreen() {
             <Text style={styles.fixedIngredientValue}>{CUSTOM_BLEND_BASE_RATIO}%</Text>
           </View>
 
-          {extraIngredientIds.map((ingredientId) => {
+          {extraIngredientIds.map((ingredientId, index) => {
             const value = blendRatios[ingredientId] ?? 0;
             const ingredient = customBlendIngredients[ingredientId];
             const canAdjust = extraIngredientIds.length > 1;
+            const isLast = index === extraIngredientIds.length - 1;
 
             return (
-              <View key={ingredientId} style={styles.sliderRow}>
+              <View key={ingredientId} style={[styles.sliderRow, isLast && styles.sliderRowLast]}>
                 <View style={styles.sliderLabelRow}>
                   <Text style={styles.sliderLabel}>{ingredient.name}</Text>
                   <Text style={styles.sliderValue}>{value}%</Text>
@@ -267,6 +269,7 @@ export default function CustomBlendScreen() {
           <Text style={styles.footerLabel}>저장될 조합</Text>
           <Text style={styles.footerTitle}>{adjustedOption.displayName}</Text>
           <Text style={styles.footerSummary}>{adjustedOption.summary}</Text>
+          <Text style={styles.footerGuide}>지금 비율 그대로 블렌드함에 담아두면 다른 조합과 나중에 다시 비교하기 쉬워져요.</Text>
           <Text style={styles.footerText}>
             {ingredientPreview}
           </Text>
@@ -319,7 +322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   headerAction: {
     fontSize: 14,
@@ -338,17 +341,18 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: atelierColors.surface,
     borderRadius: 24,
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
     borderWidth: 1,
     borderColor: atelierColors.borderStrong,
     shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 18,
-    elevation: 1,
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 14 },
+    shadowRadius: 22,
+    elevation: 2,
   },
   heroHeader: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   heroTextWrap: {
     gap: 0,
@@ -361,34 +365,35 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: atelierColors.title,
     marginTop: spacing.sm,
-    letterSpacing: -0.4,
+    letterSpacing: -0.7,
+    lineHeight: 34,
   },
   summary: {
-    fontSize: 15,
+    fontSize: 16,
     color: atelierColors.text,
-    lineHeight: 23,
-    marginTop: spacing.xs,
+    lineHeight: 25,
+    marginTop: spacing.sm,
     fontWeight: '500',
   },
   heroVisualRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
   heroPotWrap: {
-    flex: 1.12,
+    flex: 1.18,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 136,
+    minHeight: 156,
   },
   heroGraphWrap: {
-    flex: 0.88,
+    flex: 0.82,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -415,14 +420,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     backgroundColor: atelierColors.surface,
     borderRadius: 20,
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderWidth: 1,
     borderColor: atelierColors.border,
     shadowColor: atelierColors.cocoaStrong,
-    shadowOpacity: 0.035,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 1,
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 16,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -442,11 +448,19 @@ const styles = StyleSheet.create({
     color: atelierColors.deepGreenSoft,
     fontWeight: '700',
   },
+  sectionLead: {
+    fontSize: 14,
+    color: atelierColors.text,
+    lineHeight: 21,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.1,
+    fontWeight: '600',
+  },
   sectionHint: {
     fontSize: 13,
     color: atelierColors.textMuted,
     lineHeight: 20,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     letterSpacing: -0.1,
   },
   fixedIngredientRow: {
@@ -472,15 +486,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sliderRow: {
-    marginBottom: spacing.md,
-    paddingBottom: spacing.sm,
+    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: atelierColors.border + '80',
+  },
+  sliderRowLast: {
+    marginBottom: 0,
+    paddingBottom: 0,
+    borderBottomWidth: 0,
   },
   sliderLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    alignItems: 'baseline',
+    marginBottom: spacing.sm,
   },
   sliderLabel: {
     fontSize: 14,
@@ -488,9 +508,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sliderValue: {
-    fontSize: 14,
+    fontSize: 18,
     color: atelierColors.deepGreen,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   sliderControlRow: {
     flexDirection: 'row',
@@ -517,7 +538,7 @@ const styles = StyleSheet.create({
   },
   sliderTrack: {
     flex: 1,
-    height: 10,
+    height: 12,
     borderRadius: 999,
     backgroundColor: atelierColors.track,
     overflow: 'hidden',
@@ -530,16 +551,24 @@ const styles = StyleSheet.create({
   sliderHint: {
     fontSize: 12,
     color: atelierColors.textMuted,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
+    lineHeight: 19,
+    letterSpacing: -0.05,
   },
   profileCard: {
     marginTop: spacing.lg,
     backgroundColor: atelierColors.surface,
     borderRadius: 20,
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderWidth: 1,
     borderColor: atelierColors.border,
-    gap: spacing.sm,
+    gap: spacing.md,
+    shadowColor: atelierColors.cocoaStrong,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 12,
+    elevation: 1,
   },
   profileSummaryWrap: {
     gap: spacing.sm,
@@ -599,13 +628,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   analysisCard: {
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     backgroundColor: atelierColors.surface,
     borderRadius: 20,
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     borderWidth: 1,
     borderColor: atelierColors.border,
     gap: spacing.md,
+    shadowColor: atelierColors.cocoaStrong,
+    shadowOpacity: 0.022,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 1,
   },
   analysisBlock: {
     gap: spacing.sm,
@@ -675,6 +710,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '500',
   },
+  footerGuide: {
+    marginTop: spacing.md,
+    fontSize: 13,
+    color: atelierColors.textMuted,
+    lineHeight: 20,
+    letterSpacing: -0.1,
+  },
   footerText: {
     marginTop: spacing.sm,
     fontSize: 14,
@@ -684,17 +726,28 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: spacing.lg,
     backgroundColor: atelierColors.deepGreen,
-    borderRadius: 16,
-    paddingVertical: 15,
+    borderRadius: 18,
+    paddingVertical: 18,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: atelierColors.deepGreen,
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 16,
+    elevation: 3,
   },
   saveButtonSaved: {
-    backgroundColor: atelierColors.deepGreenMuted,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.deepGreenSoft,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveButtonText: {
     color: atelierColors.surface,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.15,
   },
   saveButtonTextSaved: {
     color: atelierColors.deepGreen,
