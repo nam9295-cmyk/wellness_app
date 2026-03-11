@@ -1,13 +1,51 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
-import { colors, spacing } from '@/lib/theme';
-import { OptionChips } from '@/components/OptionChips';
+import { spacing } from '@/lib/theme';
 import { SectionTitle } from '@/components/SectionTitle';
 import { useStore } from '@/lib/store';
-import { EXERCISE_STATES, MEAL_STATES, SleepState, MealState, ExerciseState, SLEEP_STATES, WATER_STATES, WaterState } from '@/types';
+import { ExerciseState, MealState, SleepState, WaterState } from '@/types';
 import { useRouter } from 'expo-router';
 import { getTodayDateString } from '@/lib/date';
+import {
+  getScoreLabel,
+  normalizeExerciseScore,
+  normalizeFatigueScore,
+  normalizeMealScore,
+  normalizeMoodScore,
+  normalizeSleepScore,
+  normalizeStressScore,
+  normalizeWaterScore,
+} from '@/lib/wellnessScoring';
+
+function ScoreChips({
+  selectedValue,
+  onSelect,
+}: {
+  selectedValue: number;
+  onSelect: (value: number) => void;
+}) {
+  return (
+    <View style={styles.scoreChipWrap}>
+      {[1, 2, 3, 4, 5].map((score) => {
+        const isSelected = score === selectedValue;
+
+        return (
+          <TouchableOpacity
+            key={score}
+            style={[styles.scoreChip, isSelected && styles.scoreChipSelected]}
+            activeOpacity={0.9}
+            onPress={() => onSelect(score)}
+          >
+            <Text style={[styles.scoreChipText, isSelected && styles.scoreChipTextSelected]}>
+              {score}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function LogScreen() {
   const router = useRouter();
@@ -15,22 +53,23 @@ export default function LogScreen() {
   const todayLog = getTodayLog();
   const isEditingTodayLog = Boolean(todayLog);
 
-  const [sleep, setSleep] = useState<SleepState>(todayLog?.sleep || '보통');
-  const [fatigue, setFatigue] = useState<number>(todayLog?.fatigue || 3);
-  const [mood, setMood] = useState<number>(todayLog?.mood || 3);
-  const [meal, setMeal] = useState<MealState>(todayLog?.meal || '보통');
-  const [exercise, setExercise] = useState<ExerciseState>(todayLog?.exercise || '안 함');
-  const [water, setWater] = useState<WaterState>(todayLog?.water || '보통');
+  const [sleep, setSleep] = useState<number>(normalizeSleepScore(todayLog?.sleep));
+  const [fatigue, setFatigue] = useState<number>(normalizeFatigueScore(todayLog?.fatigue));
+  const [mood, setMood] = useState<number>(normalizeMoodScore(todayLog?.mood));
+  const [stress, setStress] = useState<number>(normalizeStressScore(undefined));
+  const [meal, setMeal] = useState<number>(normalizeMealScore(todayLog?.meal));
+  const [exercise, setExercise] = useState<number>(normalizeExerciseScore(todayLog?.exercise));
+  const [water, setWater] = useState<number>(normalizeWaterScore(todayLog?.water));
   const [memo, setMemo] = useState<string>(todayLog?.memo || '');
 
   useEffect(() => {
     if (todayLog) {
-      setSleep(todayLog.sleep);
-      setFatigue(todayLog.fatigue);
-      setMood(todayLog.mood);
-      setMeal(todayLog.meal);
-      setExercise(todayLog.exercise);
-      setWater(todayLog.water);
+      setSleep(normalizeSleepScore(todayLog.sleep));
+      setFatigue(normalizeFatigueScore(todayLog.fatigue));
+      setMood(normalizeMoodScore(todayLog.mood));
+      setMeal(normalizeMealScore(todayLog.meal));
+      setExercise(normalizeExerciseScore(todayLog.exercise));
+      setWater(normalizeWaterScore(todayLog.water));
       setMemo(todayLog.memo);
     }
   }, [todayLog]);
@@ -38,12 +77,13 @@ export default function LogScreen() {
   const handleSave = async () => {
     await addLog({
       date: getTodayDateString(),
-      sleep,
+      sleep: getScoreLabel('sleep', sleep, '보통') as SleepState,
       fatigue,
       mood,
-      meal,
-      exercise,
-      water,
+      stress,
+      meal: getScoreLabel('meal', meal, '보통') as MealState,
+      exercise: getScoreLabel('exercise', exercise, '안 함') as ExerciseState,
+      water: getScoreLabel('water', water, '보통') as WaterState,
       memo,
     });
 
@@ -76,22 +116,53 @@ export default function LogScreen() {
         </View>
         
         <SectionTitle title="수면 상태" />
-        <OptionChips<SleepState> options={SLEEP_STATES} selectedValue={sleep} onSelect={setSleep} />
+        <ScoreChips selectedValue={sleep} onSelect={setSleep} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>매우 부족</Text>
+          <Text style={styles.scoreHelperText}>매우 좋음</Text>
+        </View>
 
-        <SectionTitle title="피로도 (1 피곤 – 5 활기참)" />
-        <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={fatigue} onSelect={setFatigue} />
+        <SectionTitle title="피로도" />
+        <ScoreChips selectedValue={fatigue} onSelect={setFatigue} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>피곤</Text>
+          <Text style={styles.scoreHelperText}>활기참</Text>
+        </View>
 
-        <SectionTitle title="기분 (1 우울 – 5 편안함)" />
-        <OptionChips<number> options={[1, 2, 3, 4, 5]} selectedValue={mood} onSelect={setMood} />
+        <SectionTitle title="기분" />
+        <ScoreChips selectedValue={mood} onSelect={setMood} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>우울</Text>
+          <Text style={styles.scoreHelperText}>행복</Text>
+        </View>
+
+        <SectionTitle title="스트레스 지수" />
+        <ScoreChips selectedValue={stress} onSelect={setStress} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>높음</Text>
+          <Text style={styles.scoreHelperText}>안정적</Text>
+        </View>
 
         <SectionTitle title="식사 상태" />
-        <OptionChips<MealState> options={MEAL_STATES} selectedValue={meal} onSelect={setMeal} />
+        <ScoreChips selectedValue={meal} onSelect={setMeal} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>불규칙</Text>
+          <Text style={styles.scoreHelperText}>균형적</Text>
+        </View>
 
         <SectionTitle title="운동 여부" />
-        <OptionChips<ExerciseState> options={EXERCISE_STATES} selectedValue={exercise} onSelect={setExercise} />
+        <ScoreChips selectedValue={exercise} onSelect={setExercise} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>안 함</Text>
+          <Text style={styles.scoreHelperText}>충분히</Text>
+        </View>
 
         <SectionTitle title="수분 섭취" />
-        <OptionChips<WaterState> options={WATER_STATES} selectedValue={water} onSelect={setWater} />
+        <ScoreChips selectedValue={water} onSelect={setWater} />
+        <View style={styles.scoreHelperRow}>
+          <Text style={styles.scoreHelperText}>부족</Text>
+          <Text style={styles.scoreHelperText}>충분</Text>
+        </View>
 
         <SectionTitle title="한 줄 메모" />
         <View style={styles.memoCard}>
@@ -139,6 +210,49 @@ const styles = StyleSheet.create({
     color: atelierColors.textMuted,
     fontSize: 14,
     lineHeight: 22,
+  },
+  scoreChipWrap: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  scoreChip: {
+    flex: 1,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: atelierColors.surface,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreChipSelected: {
+    backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
+  },
+  scoreChipText: {
+    ...atelierText.cardTitleMd,
+    fontSize: 16,
+    fontWeight: '700',
+    color: atelierColors.textMuted,
+  },
+  scoreChipTextSelected: {
+    color: atelierColors.surface,
+  },
+  scoreHelperRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xs,
+  },
+  scoreHelperText: {
+    ...atelierText.helper,
+    fontSize: 12,
+    color: atelierColors.textSoft,
   },
   memoCard: {
     ...atelierCards.section,

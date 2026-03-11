@@ -24,6 +24,16 @@ import {
 import { loadMemberProfile, saveMemberProfile } from './memberProfileStorage';
 import { loadUserSettings, saveUserSettings } from './userStorage';
 import { createWellnessLog, findTodayLog, upsertLog } from './logUtils';
+import {
+  getScoreLabel,
+  normalizeExerciseScore,
+  normalizeFatigueScore,
+  normalizeMealScore,
+  normalizeMoodScore,
+  normalizeSleepScore,
+  normalizeStressScore,
+  normalizeWaterScore,
+} from './wellnessScoring';
 
 interface StoreContextType {
   logs: WellnessLog[];
@@ -142,8 +152,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addLog = async (logData: WellnessLogInput) => {
-    const hasExistingLog = logs.some((log) => log.date === logData.date);
-    const newLog = createWellnessLog(logData);
+    const normalizedLogData: WellnessLogInput = {
+      ...logData,
+      sleep: getScoreLabel('sleep', normalizeSleepScore(logData.sleep), '보통') as WellnessLogInput['sleep'],
+      fatigue: normalizeFatigueScore(logData.fatigue),
+      mood: normalizeMoodScore(logData.mood),
+      stress: normalizeStressScore(logData.stress),
+      meal: getScoreLabel('meal', normalizeMealScore(logData.meal), '보통') as WellnessLogInput['meal'],
+      exercise: getScoreLabel('exercise', normalizeExerciseScore(logData.exercise), '안 함') as WellnessLogInput['exercise'],
+      water: getScoreLabel('water', normalizeWaterScore(logData.water), '보통') as WellnessLogInput['water'],
+    };
+
+    const hasExistingLog = logs.some((log) => log.date === normalizedLogData.date);
+    const newLog = createWellnessLog(normalizedLogData);
     const updatedLogs = upsertLog(logs, newLog);
 
     setLogs(updatedLogs);

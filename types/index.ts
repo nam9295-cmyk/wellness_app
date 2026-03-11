@@ -37,6 +37,7 @@ export interface WellnessLog {
   sleep: SleepState;
   fatigue: number; // 1-5
   mood: number; // 1-5
+  stress?: number; // 1-5, optional for legacy compatibility
   meal: MealState;
   exercise: ExerciseState;
   water: WaterState;
