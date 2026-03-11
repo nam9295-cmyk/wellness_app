@@ -1,35 +1,70 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
-import { colors, spacing } from '@/lib/theme';
+import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-import { generateReportOverview } from '@/lib/reportUtils';
+import { generateReportOverview, ReportPeriodStats } from '@/lib/reportUtils';
 import { formatDisplayDate } from '@/lib/date';
 import { getTeaRecommendationForRecentFlow } from '@/lib/teaRecommendationEngine';
 import { normalizeLogsForReport } from '@/lib/reportLogUtils';
 
+type ReportTabKey = 'daily' | 'weekly' | 'monthly';
+
+const REPORT_TABS: Array<{ key: ReportTabKey; label: string; helper: string }> = [
+  { key: 'daily', label: '하루', helper: '오늘 흐름' },
+  { key: 'weekly', label: '일주일', helper: '최근 7일' },
+  { key: 'monthly', label: '한달', helper: '최근 30일' },
+];
+
+function RhythmBand({
+  label,
+  values,
+  tone,
+}: {
+  label: string;
+  values: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
+  tone: 'physical' | 'mental';
+}) {
+  return (
+    <View style={styles.bandRow}>
+      <View style={styles.bandHeader}>
+        <Text style={styles.bandLabel}>{label}</Text>
+      </View>
+      <View style={styles.bandTrack}>
+        <View style={styles.bandLine} />
+        {values.map((entry, index) => (
+          <View key={entry.key} style={[styles.bandPointWrap, { left: `${index * 50}%` }]}>
+            <View
+              style={[
+                styles.bandPoint,
+                tone === 'physical' ? styles.bandPointPhysical : styles.bandPointMental,
+              ]}
+            >
+              <Text style={styles.bandPointValue}>{entry.value}</Text>
+            </View>
+            <Text style={styles.bandPointLabel}>{entry.shortLabel}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function buildImpactChips(stats: ReportPeriodStats) {
+  return [
+    `수면 ${stats.frequentSleep}`,
+    `기분 ${stats.avgMood}/5`,
+    `피로 ${stats.avgFatigue}/5`,
+    `스트레스 ${stats.avgStress}/5`,
+  ];
+}
+
 export default function ReportScreen() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<ReportTabKey>('weekly');
   const { logs, isReady, userSettings } = useStore();
-  const moodProgress = useRef(new Animated.Value(0)).current;
-  const fatigueProgress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(moodProgress, {
-        toValue: 5,
-        duration: 520,
-        useNativeDriver: false,
-      }),
-      Animated.timing(fatigueProgress, {
-        toValue: 5,
-        duration: 520,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [moodProgress, fatigueProgress]);
 
   if (!isReady) {
     return (
@@ -46,17 +81,100 @@ export default function ReportScreen() {
     userGoal: userSettings?.goal,
   });
 
+  const activeStats = useMemo(() => {
+    if (activeTab === 'daily') {
+      return report.daily;
+    }
+
+    if (activeTab === 'monthly') {
+      return report.monthly;
+    }
+
+    return report.weekly;
+  }, [activeTab, report.daily, report.monthly, report.weekly]);
+
+  const activeTabMeta = REPORT_TABS.find((tab) => tab.key === activeTab) ?? REPORT_TABS[1];
+  const impactChips = buildImpactChips(activeStats);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>WELLNESS DASHBOARD</Text>
       <Text style={styles.title}>웰니스 리포트</Text>
-      <Text style={styles.caption}>이번 주 흐름과 전체 누적 기록을 한눈에 볼 수 있게 정리했어요.</Text>
-      
-      <Text style={styles.sectionCaption}>이번 주 흐름</Text>
+      <Text style={styles.caption}>하루, 일주일, 한달 흐름을 리듬처럼 읽을 수 있게 정리했어요.</Text>
+
+      <View style={styles.biorhythmHero}>
+        <View style={styles.biorhythmHeader}>
+          <View style={styles.biorhythmHeaderText}>
+            <Text style={styles.sectionCaption}>바이오리듬</Text>
+            <Text style={styles.biorhythmTitle}>신체와 마음 흐름을 한눈에 살펴보세요.</Text>
+          </View>
+          <View style={styles.overallBadge}>
+            <Text style={styles.overallBadgeText}>누적 {report.overall.logCount}일</Text>
+          </View>
+        </View>
+
+        <RhythmBand
+          label="신체 리듬"
+          tone="physical"
+          values={[
+            { key: 'daily', value: report.daily.physicalRhythm, shortLabel: '하루' },
+            { key: 'weekly', value: report.weekly.physicalRhythm, shortLabel: '일주일' },
+            { key: 'monthly', value: report.monthly.physicalRhythm, shortLabel: '한달' },
+          ]}
+        />
+
+        <RhythmBand
+          label="정신 리듬"
+          tone="mental"
+          values={[
+            { key: 'daily', value: report.daily.mentalRhythm, shortLabel: '하루' },
+            { key: 'weekly', value: report.weekly.mentalRhythm, shortLabel: '일주일' },
+            { key: 'monthly', value: report.monthly.mentalRhythm, shortLabel: '한달' },
+          ]}
+        />
+      </View>
+
+      <View style={styles.tabRow}>
+        {REPORT_TABS.map((tab) => {
+          const isActive = tab.key === activeTab;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              activeOpacity={0.9}
+              style={[styles.tabButton, isActive && styles.tabButtonActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+              <Text style={[styles.tabHelper, isActive && styles.tabHelperActive]}>{tab.helper}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.sectionCaption}>{activeTabMeta.label} 리듬</Text>
+        <Text style={styles.summaryTitle}>{activeTabMeta.helper} 기준으로 본 현재 흐름</Text>
+
+        <View style={styles.summaryMetricRow}>
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryMetricLabel}>신체</Text>
+            <Text style={styles.summaryMetricValue}>{activeStats.physicalRhythm}</Text>
+          </View>
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryMetricLabel}>정신</Text>
+            <Text style={styles.summaryMetricValue}>{activeStats.mentalRhythm}</Text>
+          </View>
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryMetricLabel}>기록</Text>
+            <Text style={styles.summaryMetricValue}>{activeStats.logCount}</Text>
+          </View>
+        </View>
+      </View>
 
       <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
         <View style={styles.teaCard}>
-          <Text style={styles.teaCardLabel}>이번 주 추천 블렌드</Text>
+          <Text style={styles.teaCardLabel}>추천 블렌드</Text>
           <View style={styles.teaCardRow}>
             <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
             <View style={styles.teaCardText}>
@@ -67,140 +185,28 @@ export default function ReportScreen() {
             </View>
           </View>
           <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
-          <Text style={styles.teaUpdateHint}>최근 기록 기반 추천</Text>
-          {teaRecommendation.secondaryContent ? (
-            <Text style={styles.secondaryTea}>함께 추천: {teaRecommendation.secondaryContent.name}</Text>
-          ) : null}
           <Text style={styles.detailHint}>추천 상세 보기</Text>
         </View>
       </TouchableOpacity>
-      
-      <View style={styles.statGrid}>
-        <View style={styles.statRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>이번 주 기록</Text>
-            <Text style={styles.statValue}>{report.weekly.logCount}<Text style={styles.statSuffix}>일</Text></Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>전체 누적 기록</Text>
-            <Text style={styles.statValue}>{report.overall.logCount}<Text style={styles.statSuffix}>일</Text></Text>
-          </View>
-        </View>
-        <View style={styles.statRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>주간 평균 기분</Text>
-            <Text style={styles.statValue}>{report.weekly.avgMood}<Text style={styles.statSuffix}>/ 5</Text></Text>
-            <View style={styles.miniScaleRow}>
-              {[1, 2, 3, 4, 5].map((step) => (
-                <Animated.View
-                  key={`mood-${step}`}
-                  style={[
-                    styles.miniScaleDot,
-                    Number(report.weekly.avgMood) >= step && styles.miniScaleDotActive,
-                    {
-                      opacity: moodProgress.interpolate({
-                        inputRange: [step - 1, step],
-                        outputRange: [0.28, 1],
-                        extrapolate: 'clamp',
-                      }),
-                      transform: [
-                        {
-                          scaleX: moodProgress.interpolate({
-                            inputRange: [step - 1, step],
-                            outputRange: [0.55, 1],
-                            extrapolate: 'clamp',
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>주간 평균 피로</Text>
-            <Text style={styles.statValue}>{report.weekly.avgFatigue}<Text style={styles.statSuffix}>/ 5</Text></Text>
-            <View style={styles.miniScaleRow}>
-              {[1, 2, 3, 4, 5].map((step) => (
-                <Animated.View
-                  key={`fatigue-${step}`}
-                  style={[
-                    styles.miniScaleDot,
-                    Number(report.weekly.avgFatigue) >= step && styles.miniScaleDotSoftActive,
-                    {
-                      opacity: fatigueProgress.interpolate({
-                        inputRange: [step - 1, step],
-                        outputRange: [0.28, 1],
-                        extrapolate: 'clamp',
-                      }),
-                      transform: [
-                        {
-                          scaleX: fatigueProgress.interpolate({
-                            inputRange: [step - 1, step],
-                            outputRange: [0.55, 1],
-                            extrapolate: 'clamp',
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-        </View>
-      </View>
 
-      <View style={styles.sleepFlowCard}>
-        <Text style={styles.flowLabel}>이번 주 수면 흐름</Text>
-        <Text style={styles.flowValue}>{report.weekly.frequentSleep}</Text>
-        <Text style={styles.flowText}>
-          최근 기록에서 가장 자주 보인 수면 상태예요.
-        </Text>
-        <View style={styles.insightChipWrap}>
-          {report.weekly.insights.slice(0, 3).map((insight) => (
-            <View key={insight} style={styles.insightChip}>
-              <Text style={styles.insightChipText}>{insight}</Text>
+      <View style={styles.supportCard}>
+        <Text style={styles.supportTitle}>주요 영향 요소</Text>
+        <View style={styles.chipWrap}>
+          {impactChips.map((chip) => (
+            <View key={chip} style={styles.chip}>
+              <Text style={styles.chipText}>{chip}</Text>
             </View>
           ))}
         </View>
       </View>
 
-      <Text style={styles.sectionCaption}>전체 누적 흐름</Text>
-
-      <View style={styles.overallFlowCard}>
-        <View style={styles.overallFlowHeader}>
-          <View>
-            <Text style={styles.flowLabel}>전체 누적 흐름</Text>
-            <Text style={styles.overallPattern}>{report.overall.frequentSleep}</Text>
-          </View>
-          <View style={styles.patternPill}>
-            <Text style={styles.patternPillText}>누적 패턴</Text>
-          </View>
-        </View>
-
-        <View style={styles.miniMetricBlock}>
-          <View style={styles.miniMetricRow}>
-            <Text style={styles.miniMetricLabel}>기분</Text>
-            <View style={styles.miniMetricTrack}>
-              <View style={[styles.miniMetricFill, { width: `${(Number(report.overall.avgMood) / 5) * 100}%` }]} />
-            </View>
-            <Text style={styles.miniMetricValue}>{report.overall.avgMood}</Text>
-          </View>
-          <View style={styles.miniMetricRow}>
-            <Text style={styles.miniMetricLabel}>피로</Text>
-            <View style={styles.miniMetricTrack}>
-              <View style={[styles.miniMetricFillSoft, { width: `${(Number(report.overall.avgFatigue) / 5) * 100}%` }]} />
-            </View>
-            <Text style={styles.miniMetricValue}>{report.overall.avgFatigue}</Text>
-          </View>
-        </View>
-
-        <View style={styles.insightChipWrap}>
-          {report.overall.insights.slice(0, 3).map((insight) => (
-            <View key={insight} style={styles.insightChip}>
-              <Text style={styles.insightChipText}>{insight}</Text>
+      <View style={styles.supportCard}>
+        <Text style={styles.supportTitle}>흐름 요약</Text>
+        <View style={styles.insightStack}>
+          {activeStats.insights.slice(0, 3).map((insight) => (
+            <View key={insight} style={styles.insightRow}>
+              <View style={styles.insightDot} />
+              <Text style={styles.insightText}>{insight}</Text>
             </View>
           ))}
         </View>
@@ -208,9 +214,9 @@ export default function ReportScreen() {
 
       <Text style={styles.subTitle}>최근 기록</Text>
       {normalizedLogs.length > 0 ? (
-        normalizedLogs.slice(0, 5).map(log => (
+        normalizedLogs.slice(0, 5).map((log) => (
           <View key={log.id} style={styles.historyRow}>
-            <View>
+            <View style={styles.historyTextWrap}>
               <Text style={styles.historyDate}>{formatDisplayDate(log.date)}</Text>
               <Text style={styles.historyMemo} numberOfLines={1}>
                 {log.memo ? log.memo : '메모 없는 기록'}
@@ -227,7 +233,9 @@ export default function ReportScreen() {
           </View>
         ))
       ) : (
-        <Text style={styles.emptyText}>기록이 쌍이면 흐름이 더 또렷해져요.</Text>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>기록이 쌓이면 흐름이 더 또렷해져요.</Text>
+        </View>
       )}
 
       <TeaRecommendationDetailModal
@@ -245,194 +253,324 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.sm },
   eyebrow: { ...atelierText.helper, fontSize: 11, letterSpacing: 1.1, marginBottom: spacing.sm },
   title: { ...atelierText.heroTitle, fontSize: 28, lineHeight: 34, marginBottom: spacing.sm },
-  caption: { ...atelierText.summary, color: atelierColors.textMuted, fontSize: 14, lineHeight: 24, marginBottom: spacing.xl + spacing.xs },
-  sectionCaption: { ...atelierText.helper, fontSize: 13, marginBottom: spacing.md, color: atelierColors.textSoft },
-  subTitle: { ...atelierText.cardTitleMd, marginTop: spacing.lg, marginBottom: spacing.md },
-  teaCard: {
+  caption: {
+    ...atelierText.summary,
+    color: atelierColors.textMuted,
+    fontSize: 14,
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  biorhythmHero: {
     ...atelierCards.hero,
     padding: spacing.xl,
-    marginBottom: spacing.xl + spacing.xs,
-    borderRadius: 26,
+    borderRadius: 28,
+    marginBottom: spacing.xl,
   },
-  teaCardLabel: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, marginBottom: spacing.sm, letterSpacing: 0.2 },
-  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  teaCardText: { flex: 1 },
-  teaName: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: 4 },
-  teaIdentity: { ...atelierText.summary, fontSize: 14, marginBottom: 4, fontWeight: '600' },
-  teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.sm, fontWeight: '600' },
-  teaDescription: { ...atelierText.summary, fontSize: 15 },
-  teaContext: { ...atelierText.bodyMuted, fontSize: 13, marginTop: spacing.sm },
-  teaUpdateHint: { ...atelierText.helper, color: atelierColors.deepGreen, marginTop: spacing.sm, letterSpacing: -0.1 },
-  secondaryTea: { ...atelierText.body, fontSize: 13, marginTop: spacing.sm, fontWeight: '600', letterSpacing: -0.1 },
-  detailHint: { ...atelierText.helper, color: atelierColors.textMuted, marginTop: spacing.md, fontWeight: '600', letterSpacing: -0.1 },
-  statGrid: { gap: spacing.md, marginBottom: spacing.xl + spacing.xs },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
-  statCard: {
-    ...atelierCards.section,
+  biorhythmHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  biorhythmHeaderText: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderRadius: 22,
   },
-  statLabel: {
+  sectionCaption: {
     ...atelierText.helper,
     fontSize: 12,
     color: atelierColors.textSoft,
+    marginBottom: spacing.xs,
+  },
+  biorhythmTitle: {
+    ...atelierText.cardTitleLg,
+    fontSize: 21,
+    lineHeight: 28,
+  },
+  overallBadge: {
+    ...atelierCards.meta,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
+  overallBadgeText: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+  },
+  bandRow: {
+    marginBottom: spacing.lg,
+  },
+  bandHeader: {
     marginBottom: spacing.sm,
   },
-  statValue: {
-    ...atelierText.heroTitle,
-    fontSize: 26,
-    lineHeight: 30,
-    color: atelierColors.title,
+  bandLabel: {
+    ...atelierText.cardTitleMd,
+    fontSize: 16,
   },
-  statSuffix: {
-    ...atelierText.bodyMuted,
-    fontSize: 14,
-    color: atelierColors.textSoft,
+  bandTrack: {
+    position: 'relative',
+    minHeight: 72,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
-  miniScaleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: spacing.md,
-  },
-  miniScaleDot: {
-    flex: 1,
-    height: 8,
+  bandLine: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    top: 24,
+    height: 3,
     borderRadius: 999,
     backgroundColor: atelierColors.border,
   },
-  miniScaleDotActive: {
+  bandPointWrap: {
+    position: 'absolute',
+    top: 0,
+    width: 64,
+    marginLeft: -12,
+    alignItems: 'center',
+  },
+  bandPoint: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: atelierColors.borderStrong,
+    backgroundColor: atelierColors.surface,
+  },
+  bandPointPhysical: {
+    backgroundColor: '#DDE9E2',
+    borderColor: '#B4CBBE',
+  },
+  bandPointMental: {
+    backgroundColor: '#E8E1D8',
+    borderColor: '#D7CBBE',
+  },
+  bandPointValue: {
+    ...atelierText.cardTitleMd,
+    fontSize: 15,
+  },
+  bandPointLabel: {
+    ...atelierText.helper,
+    marginTop: spacing.xs,
+    color: atelierColors.textSoft,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  tabButton: {
+    ...atelierCards.meta,
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: 18,
+  },
+  tabButtonActive: {
     backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
   },
-  miniScaleDotSoftActive: {
-    backgroundColor: atelierColors.deepGreenSoft,
+  tabLabel: {
+    ...atelierText.cardTitleMd,
+    fontSize: 15,
+    color: atelierColors.title,
   },
-  sleepFlowCard: {
+  tabLabelActive: {
+    color: atelierColors.surface,
+  },
+  tabHelper: {
+    ...atelierText.helper,
+    marginTop: 4,
+    color: atelierColors.textSoft,
+  },
+  tabHelperActive: {
+    color: atelierColors.surface,
+    opacity: 0.82,
+  },
+  summaryCard: {
     ...atelierCards.section,
     padding: spacing.xl,
-    marginBottom: spacing.xl + spacing.xs,
     borderRadius: 24,
+    marginBottom: spacing.lg,
   },
-  flowLabel: {
-    ...atelierText.helper,
-    fontSize: 12,
-    marginBottom: spacing.xs,
-  },
-  flowValue: {
-    ...atelierText.cardTitleLg,
-    marginBottom: spacing.sm,
-  },
-  flowText: {
-    ...atelierText.bodyMuted,
+  summaryTitle: {
+    ...atelierText.cardTitleMd,
+    fontSize: 19,
+    lineHeight: 26,
     marginBottom: spacing.md,
   },
-  insightChipWrap: {
+  summaryMetricRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  summaryMetric: {
+    ...atelierCards.meta,
+    flex: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: 18,
+  },
+  summaryMetricLabel: {
+    ...atelierText.helper,
+    marginBottom: spacing.xs,
+  },
+  summaryMetricValue: {
+    ...atelierText.cardTitleMd,
+    fontSize: 18,
+  },
+  teaCard: {
+    ...atelierCards.section,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    borderRadius: 26,
+  },
+  teaCardLabel: {
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.textSoft,
+    marginBottom: spacing.sm,
+  },
+  teaCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  teaCardText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  teaName: {
+    ...atelierText.cardTitleLg,
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  teaIdentity: {
+    ...atelierText.summary,
+    fontSize: 14,
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  teaSubtitle: {
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.deepGreen,
+    marginBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  teaDescription: {
+    ...atelierText.summary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  teaContext: {
+    ...atelierText.bodyMuted,
+    fontSize: 13,
+    marginTop: spacing.sm,
+  },
+  detailHint: {
+    ...atelierText.helper,
+    color: atelierColors.textMuted,
+    marginTop: spacing.md,
+    fontWeight: '600',
+  },
+  supportCard: {
+    ...atelierCards.section,
+    padding: spacing.lg,
+    borderRadius: 24,
+    marginBottom: spacing.md,
+  },
+  supportTitle: {
+    ...atelierText.cardTitleMd,
+    marginBottom: spacing.md,
+  },
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
-  insightChip: {
+  chip: {
     ...atelierCards.meta,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
     borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
-  insightChipText: {
-    ...atelierText.helper,
-    color: atelierColors.text,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  overallFlowCard: {
-    ...atelierCards.hero,
-    padding: spacing.xl,
-    marginBottom: spacing.xl + spacing.xs,
-    borderRadius: 26,
-  },
-  overallFlowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-    gap: spacing.md,
-  },
-  overallPattern: {
-    ...atelierText.cardTitleMd,
-    marginTop: spacing.xs,
-  },
-  patternPill: {
-    ...atelierCards.meta,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreenMuted,
-    borderColor: atelierColors.deepGreenSoft,
-  },
-  patternPillText: {
+  chipText: {
     ...atelierText.pill,
+    color: atelierColors.text,
   },
-  miniMetricBlock: {
+  insightStack: {
     gap: spacing.sm,
-    marginBottom: spacing.md,
   },
-  miniMetricRow: {
+  insightRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  miniMetricLabel: {
-    ...atelierText.helper,
-    width: 34,
-    color: atelierColors.textSoft,
-  },
-  miniMetricTrack: {
-    flex: 1,
+  insightDot: {
+    width: 8,
     height: 8,
-    backgroundColor: atelierColors.border,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  miniMetricFill: {
-    height: '100%',
     borderRadius: 999,
     backgroundColor: atelierColors.deepGreen,
+    marginTop: 7,
   },
-  miniMetricFillSoft: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreenSoft,
+  insightText: {
+    ...atelierText.body,
+    flex: 1,
+    lineHeight: 22,
   },
-  miniMetricValue: {
-    ...atelierText.helper,
-    width: 28,
-    textAlign: 'right',
-    color: atelierColors.title,
+  subTitle: {
+    ...atelierText.cardTitleMd,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   historyRow: {
-    ...atelierCards.section,
+    ...atelierCards.meta,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: 22,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
   },
-  historyDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: 4, fontWeight: '600' },
-  historyMemo: { ...atelierText.bodyMuted, maxWidth: 160 },
-  historyData: { flexDirection: 'row', gap: spacing.xs },
-  historyBadge: { 
-    backgroundColor: atelierColors.surfaceMuted, 
-    borderWidth: 1,
-    borderColor: atelierColors.border,
-    paddingHorizontal: 8, 
-    paddingVertical: 6, 
-    borderRadius: 12, 
+  historyTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  historyDate: {
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.deepGreen,
+    marginBottom: 4,
+  },
+  historyMemo: {
+    ...atelierText.bodyMuted,
+  },
+  historyData: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    flexShrink: 0,
+  },
+  historyBadge: {
+    ...atelierCards.meta,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   historyBadgeText: {
-    color: atelierColors.text, 
-    fontSize: 12, 
-    fontWeight: '500',
+    ...atelierText.pill,
+    color: atelierColors.text,
   },
-  emptyText: { ...atelierText.bodyMuted, textAlign: 'center', marginTop: spacing.md, fontSize: 15, lineHeight: 24 }
+  emptyCard: {
+    ...atelierCards.meta,
+    padding: spacing.lg,
+    borderRadius: 22,
+  },
+  emptyText: {
+    ...atelierText.bodyMuted,
+  },
 });

@@ -1,4 +1,12 @@
 import { UserSettings, WellnessLog } from '@/types';
+import {
+  normalizeExerciseScore,
+  normalizeFatigueScore,
+  normalizeMoodScore,
+  normalizeSleepScore,
+  normalizeStressScore,
+  normalizeWaterScore,
+} from './wellnessScoring';
 
 export interface HomeRecommendation {
   title: string;
@@ -22,17 +30,20 @@ export function getHomeRecommendation(logs: WellnessLog[], userSettings: UserSet
     };
   }
 
-  const avgMood = recentLogs.reduce((sum, log) => sum + log.mood, 0) / recentLogs.length;
-  const activeDays = recentLogs.filter((log) => log.exercise !== '안 함').length;
+  const avgMood =
+    recentLogs.reduce((sum, log) => sum + normalizeMoodScore(log.mood), 0) / recentLogs.length;
+  const avgStress =
+    recentLogs.reduce((sum, log) => sum + normalizeStressScore(log.stress), 0) / recentLogs.length;
+  const activeDays = recentLogs.filter((log) => normalizeExerciseScore(log.exercise) >= 3).length;
 
-  if ((latestLog.sleep === '매우 부족' || latestLog.sleep === '부족') && latestLog.fatigue <= 2) {
+  if (normalizeSleepScore(latestLog.sleep) <= 2 && normalizeFatigueScore(latestLog.fatigue) <= 2) {
     return {
       title: '오늘의 추천',
       message: '오늘은 회복 위주로 리듬을 가져가보세요.',
     };
   }
 
-  if (latestLog.water === '부족') {
+  if (normalizeWaterScore(latestLog.water) <= 2) {
     return {
       title: '오늘의 추천',
       message: '수분을 조금 더 챙겨보세요.',
@@ -46,7 +57,7 @@ export function getHomeRecommendation(logs: WellnessLog[], userSettings: UserSet
     };
   }
 
-  if (avgMood <= 2.5 || latestLog.mood <= 2) {
+  if (avgMood <= 2.5 || normalizeMoodScore(latestLog.mood) <= 2 || avgStress <= 2.5) {
     return {
       title: '오늘의 추천',
       message: '무리하지 말고 천천히 컨디션을 살펴보세요.',

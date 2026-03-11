@@ -1,6 +1,14 @@
 import { isDateWithinLastDays } from '@/lib/date';
 import { TeaRecommendationContent, TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { UserSettings, WellnessGoal, WellnessLog } from '@/types';
+import {
+  normalizeExerciseScore,
+  normalizeFatigueScore,
+  normalizeMoodScore,
+  normalizeSleepScore,
+  normalizeStressScore,
+  normalizeWaterScore,
+} from './wellnessScoring';
 
 type TimeSlot = 'morning' | 'late_morning' | 'afternoon' | 'early_evening' | 'late_night';
 type TeaContextTag =
@@ -140,34 +148,34 @@ export function deriveTeaRecommendationContext({
     };
   }
 
-  if (latestLog.sleep === '매우 부족' || latestLog.sleep === '부족') {
+  if (normalizeSleepScore(latestLog.sleep) <= 2) {
     tags.add('low_stimulation');
     tags.add('gentle_balance');
   }
 
   // 피로도는 1이 가장 피곤하고 5가 가장 활기찬 방향이다.
-  if (latestLog.fatigue <= 2) {
+  if (normalizeFatigueScore(latestLog.fatigue) <= 2) {
     tags.add('gentle_balance');
   }
 
-  if (latestLog.fatigue >= 4) {
+  if (normalizeFatigueScore(latestLog.fatigue) >= 4) {
     tags.add('focus_ready');
   }
 
   // 기분도 1이 가장 낮고 5가 가장 편안한 방향이다.
-  if (latestLog.mood <= 2) {
+  if (normalizeMoodScore(latestLog.mood) <= 2 || normalizeStressScore(latestLog.stress) <= 2) {
     tags.add('mood_reset');
   }
 
-  if (latestLog.mood >= 4 && latestLog.fatigue >= 3) {
+  if (normalizeMoodScore(latestLog.mood) >= 4 && normalizeFatigueScore(latestLog.fatigue) >= 3) {
     tags.add('steady_flow');
   }
 
-  if (latestLog.water === '부족') {
+  if (normalizeWaterScore(latestLog.water) <= 2) {
     tags.add('refresh_hydration');
   }
 
-  if (latestLog.exercise === '안 함') {
+  if (normalizeExerciseScore(latestLog.exercise) <= 2) {
     tags.add('light_refresh');
   } else {
     tags.add('after_activity');
@@ -434,12 +442,15 @@ function deriveRecentFlowTeaContext({
     };
   }
 
-  const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
-  const lowMoodCount = targetLogs.filter((log) => log.mood <= 2).length;
-  const lowWaterCount = targetLogs.filter((log) => log.water === '부족').length;
-  const activeDays = targetLogs.filter((log) => log.exercise !== '안 함').length;
-  const avgMood = targetLogs.reduce((sum, log) => sum + log.mood, 0) / targetLogs.length;
-  const avgFatigue = targetLogs.reduce((sum, log) => sum + log.fatigue, 0) / targetLogs.length;
+  const lowSleepCount = targetLogs.filter((log) => normalizeSleepScore(log.sleep) <= 2).length;
+  const lowMoodCount = targetLogs.filter((log) => normalizeMoodScore(log.mood) <= 2).length;
+  const lowStressCount = targetLogs.filter((log) => normalizeStressScore(log.stress) <= 2).length;
+  const lowWaterCount = targetLogs.filter((log) => normalizeWaterScore(log.water) <= 2).length;
+  const activeDays = targetLogs.filter((log) => normalizeExerciseScore(log.exercise) >= 3).length;
+  const avgMood =
+    targetLogs.reduce((sum, log) => sum + normalizeMoodScore(log.mood), 0) / targetLogs.length;
+  const avgFatigue =
+    targetLogs.reduce((sum, log) => sum + normalizeFatigueScore(log.fatigue), 0) / targetLogs.length;
 
   if (lowSleepCount >= 2) {
     tags.add('low_stimulation');
@@ -454,7 +465,7 @@ function deriveRecentFlowTeaContext({
     tags.add('focus_ready');
   }
 
-  if (lowMoodCount >= 2 || avgMood <= 2.7) {
+  if (lowMoodCount >= 2 || lowStressCount >= 2 || avgMood <= 2.7) {
     tags.add('mood_reset');
   }
 
@@ -487,12 +498,15 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
     return '기록이 쌍이면 추천이 더 또렷해져요.';
   }
 
-  const lowSleepCount = targetLogs.filter((log) => log.sleep === '매우 부족' || log.sleep === '부족').length;
-  const lowMoodCount = targetLogs.filter((log) => log.mood <= 2).length;
-  const lowWaterCount = targetLogs.filter((log) => log.water === '부족').length;
-  const activeDays = targetLogs.filter((log) => log.exercise !== '안 함').length;
-  const avgMood = targetLogs.reduce((sum, log) => sum + log.mood, 0) / targetLogs.length;
-  const avgFatigue = targetLogs.reduce((sum, log) => sum + log.fatigue, 0) / targetLogs.length;
+  const lowSleepCount = targetLogs.filter((log) => normalizeSleepScore(log.sleep) <= 2).length;
+  const lowMoodCount = targetLogs.filter((log) => normalizeMoodScore(log.mood) <= 2).length;
+  const lowStressCount = targetLogs.filter((log) => normalizeStressScore(log.stress) <= 2).length;
+  const lowWaterCount = targetLogs.filter((log) => normalizeWaterScore(log.water) <= 2).length;
+  const activeDays = targetLogs.filter((log) => normalizeExerciseScore(log.exercise) >= 3).length;
+  const avgMood =
+    targetLogs.reduce((sum, log) => sum + normalizeMoodScore(log.mood), 0) / targetLogs.length;
+  const avgFatigue =
+    targetLogs.reduce((sum, log) => sum + normalizeFatigueScore(log.fatigue), 0) / targetLogs.length;
 
   if (lowSleepCount >= 2) {
     return teaId === 'asianGold' || teaId === 'hibiscusFruit'
@@ -504,7 +518,7 @@ function getRecentFlowReason(logs: WellnessLog[], teaId: TeaRecommendationId): s
     return '리듬을 산뜻하게 환기해줄 블렌드예요.';
   }
 
-  if (lowMoodCount >= 2 || avgMood <= 2.7) {
+  if (lowMoodCount >= 2 || lowStressCount >= 2 || avgMood <= 2.7) {
     return '분위기를 가볝게 바꿔줄 무드가 잘 맞아요.';
   }
 

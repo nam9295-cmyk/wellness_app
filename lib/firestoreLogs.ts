@@ -9,6 +9,7 @@ import {
   WellnessLog,
 } from '@/types';
 import { sortLogsByDateDesc } from './logUtils';
+import { getCurrentTimestampString } from './date';
 import { normalizeLogsForReport } from './reportLogUtils';
 import {
   getScoreLabel,
@@ -27,10 +28,6 @@ interface SyncTodayLogToFirestoreInput {
   log: WellnessLog;
   settings: UserSettings | null;
   memberProfile?: MemberProfile | null;
-}
-
-function toTimestampString(date: Date) {
-  return date.toISOString().slice(0, 16).replace('T', ' ');
 }
 
 function getMemberStatus(log: WellnessLog): MemberStatus {
@@ -108,7 +105,7 @@ export async function syncTodayLogToFirestore({
   const memberId = await getOrCreateMemberId();
   const status = getMemberStatus(log);
   const now = new Date();
-  const nowLabel = toTimestampString(now);
+  const nowLabel = getCurrentTimestampString(now);
   const memberName = settings?.nickname?.trim() || '앱 사용자';
   const resolvedProfile = mergeMemberProfile({
     ...memberProfile,
