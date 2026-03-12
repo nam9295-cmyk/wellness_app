@@ -76,54 +76,77 @@ export function CustomBlendDetailModal({
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <View style={styles.handle} />
 
-            <View style={styles.heroCard}>
+            <View style={[styles.heroCard, isCWaterOption && styles.cWaterHeroCard]}>
               <View style={styles.headerRow}>
-                <Text style={styles.eyebrow}>{isCWaterOption ? 'C.WATER 조합 테스트' : 'AI 블렌딩 제안'}</Text>
+                <Text style={styles.eyebrow}>{isCWaterOption ? 'C.WATER CURATED' : 'AI 블렌딩 제안'}</Text>
                 <Pressable onPress={onClose} hitSlop={12}>
                   <Text style={styles.closeText}>닫기</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.toneLabel}>
-                {cWaterOption ? cWaterVisualProfile?.toneLabel : customOption?.toneLabel}
-              </Text>
-              <Text style={styles.title}>{option.displayName}</Text>
-              <Text style={styles.summary}>{option.summary}</Text>
-              <Text style={styles.detail}>{option.detail}</Text>
+              {isCWaterOption ? (
+                <View style={styles.cWaterHeroMetaRow}>
+                  <Text style={[styles.toneLabel, styles.cWaterToneLabel]}>
+                    {cWaterVisualProfile?.toneLabel}
+                  </Text>
+                  <View style={styles.cWaterHeaderPill}>
+                    <Text style={styles.cWaterHeaderPillText}>
+                      {cWaterVisualProfile?.ingredientNames.length ?? 0}가지 구성
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.toneLabel}>{customOption?.toneLabel}</Text>
+              )}
+              <Text style={[styles.title, isCWaterOption && styles.cWaterTitle]}>{option.displayName}</Text>
+              <Text style={[styles.summary, isCWaterOption && styles.cWaterSummary]}>{option.summary}</Text>
+              <Text style={[styles.detail, isCWaterOption && styles.cWaterDetail]}>{option.detail}</Text>
             </View>
 
-            <View style={styles.metaCard}>
+            <View style={[styles.metaCard, isCWaterOption && styles.cWaterMetaCard]}>
               <Text style={styles.sectionTitle}>전체 재료</Text>
-              <Text style={styles.ingredientText}>
-                {cWaterOption
-                  ? cWaterVisualProfile?.ingredientNames.join(' · ')
-                  : customOption?.ingredientNames.join(' · ')}
-              </Text>
+              {isCWaterOption ? (
+                <>
+                  <Text style={styles.cWaterSectionLead}>지금 흐름에 맞춰 구성된 티 조합이에요.</Text>
+                  <View style={styles.ingredientChipWrap}>
+                    {(cWaterVisualProfile?.ingredientNames ?? []).map((ingredient) => (
+                      <View key={ingredient} style={[styles.ingredientChip, styles.cWaterIngredientChip]}>
+                        <Text style={styles.ingredientChipText}>{ingredient}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.ingredientText}>
+                  {customOption?.ingredientNames.join(' · ')}
+                </Text>
+              )}
             </View>
 
-            <View style={styles.metaCard}>
+            <View style={[styles.metaCard, isCWaterOption && styles.cWaterMetaCard]}>
               <Text style={styles.sectionTitle}>핵심 태그</Text>
+              {isCWaterOption ? <Text style={styles.cWaterSectionLead}>블렌드의 인상을 빠르게 읽어보세요.</Text> : null}
               <View style={styles.chipWrap}>
                 {(cWaterOption ? cWaterVisualProfile?.tags ?? [] : customOption?.tags ?? []).map((tag: string) => (
-                  <View key={tag} style={styles.chip}>
-                    <Text style={styles.chipText}>{tag}</Text>
+                  <View key={tag} style={[styles.chip, isCWaterOption && styles.cWaterChip]}>
+                    <Text style={[styles.chipText, isCWaterOption && styles.cWaterChipText]}>{tag}</Text>
                   </View>
                 ))}
               </View>
             </View>
 
-            <View style={styles.metaCard}>
+            <View style={[styles.metaCard, isCWaterOption && styles.cWaterMetaCard]}>
               <Text style={styles.sectionTitle}>어울리는 흐름</Text>
-              <Text style={styles.contextText}>
+              <Text style={[styles.contextText, isCWaterOption && styles.cWaterContextText]}>
                 {cWaterOption ? cWaterVisualProfile?.contextLine : customOption?.contextLine}
               </Text>
 
-              <View style={styles.barGroup}>
+              <View style={[styles.barGroup, isCWaterOption && styles.cWaterBarGroup]}>
                 {(cWaterOption ? cWaterVisualProfile?.bars ?? [] : customVisualProfile?.bars ?? []).map((bar) => (
                   <View key={bar.key} style={styles.barRow}>
-                    <Text style={styles.barLabel}>{bar.label}</Text>
+                    <Text style={[styles.barLabel, isCWaterOption && styles.cWaterBarLabel]}>{bar.label}</Text>
                     <View style={styles.barTrack}>
-                      <View style={[styles.barFill, { width: `${(bar.value / 5) * 100}%` }]} />
+                      <View style={[styles.barFill, isCWaterOption && styles.cWaterBarFill, { width: `${(bar.value / 5) * 100}%` }]} />
                     </View>
                   </View>
                 ))}
@@ -132,15 +155,16 @@ export function CustomBlendDetailModal({
 
             {isCWaterOption ? (
               <>
-                <View style={styles.readOnlyCard}>
-                  <Text style={styles.readOnlyTitle}>병렬 테스트 조합</Text>
+                <View style={[styles.readOnlyCard, styles.cWaterReadOnlyCard]}>
+                  <Text style={styles.readOnlyTitle}>추천 조합</Text>
                   <Text style={styles.readOnlyText}>
-                    C.Water 조합은 기존 추천과 나란히 비교 중이에요. 마음에 들면 블렌드함에 먼저 담아둘 수 있어요.
+                    지금 흐름을 바탕으로 정리한 C.Water 조합이에요. 마음에 들면 블렌드함에 담아두고 다시 살펴볼 수 있어요.
                   </Text>
                 </View>
 
+                <Text style={styles.cWaterSaveGuide}>마음에 드는 조합이라면 블렌드함에 담아두고 나중에 다시 비교해볼 수 있어요.</Text>
                 <Pressable
-                  style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
+                  style={[styles.saveButton, styles.cWaterSaveButton, isSaved && styles.saveButtonSaved]}
                   disabled={isSaved}
                   onPress={async () => {
                     const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult);
@@ -243,6 +267,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl + spacing.xs,
   },
+  cWaterHeroCard: {
+    backgroundColor: atelierColors.surface,
+    borderColor: atelierColors.deepGreenSoft,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -269,11 +297,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CEDCD5',
   },
+  cWaterToneLabel: {
+    backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
+    color: atelierColors.surface,
+  },
+  cWaterHeroMetaRow: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  cWaterHeaderPill: {
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  cWaterHeaderPillText: {
+    ...atelierText.pill,
+    color: atelierColors.text,
+  },
   title: {
     marginTop: spacing.md,
     ...atelierText.heroTitle,
     fontSize: 28,
     lineHeight: 34,
+  },
+  cWaterTitle: {
+    fontSize: 30,
+    lineHeight: 36,
   },
   summary: {
     marginTop: spacing.md,
@@ -282,16 +338,29 @@ const styles = StyleSheet.create({
     lineHeight: 27,
     fontWeight: '600',
   },
+  cWaterSummary: {
+    color: atelierColors.text,
+    fontWeight: '700',
+    lineHeight: 28,
+  },
   detail: {
     marginTop: spacing.md,
     ...atelierText.bodyMuted,
     lineHeight: 23,
+  },
+  cWaterDetail: {
+    marginTop: spacing.md,
+    color: atelierColors.textMuted,
+    lineHeight: 24,
   },
   metaCard: {
     marginTop: spacing.lg,
     ...atelierCards.section,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+  },
+  cWaterMetaCard: {
+    borderColor: atelierColors.borderStrong,
   },
   sectionTitle: {
     ...atelierText.helper,
@@ -300,6 +369,33 @@ const styles = StyleSheet.create({
   },
   ingredientText: {
     ...atelierText.body,
+  },
+  ingredientChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  cWaterSectionLead: {
+    ...atelierText.bodyMuted,
+    marginBottom: spacing.sm,
+  },
+  ingredientChip: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  ingredientChipText: {
+    ...atelierText.body,
+    fontSize: 13,
+    color: atelierColors.deepGreen,
+    fontWeight: '600',
+  },
+  cWaterIngredientChip: {
+    backgroundColor: atelierColors.surface,
+    borderColor: atelierColors.deepGreenSoft,
   },
   chipWrap: {
     flexDirection: 'row',
@@ -321,12 +417,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
   },
+  cWaterChip: {
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderColor: atelierColors.deepGreenSoft,
+  },
+  cWaterChipText: {
+    color: atelierColors.deepGreen,
+    fontWeight: '700',
+  },
   contextText: {
     ...atelierText.body,
+  },
+  cWaterContextText: {
+    lineHeight: 23,
+    color: atelierColors.text,
   },
   barGroup: {
     marginTop: spacing.md,
     gap: spacing.xs,
+  },
+  cWaterBarGroup: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
   },
   barRow: {
     flexDirection: 'row',
@@ -338,6 +450,11 @@ const styles = StyleSheet.create({
     ...atelierText.helper,
     color: atelierColors.textSoft,
     fontWeight: '600',
+  },
+  cWaterBarLabel: {
+    width: 62,
+    color: atelierColors.text,
+    fontWeight: '700',
   },
   barTrack: {
     flex: 1,
@@ -351,10 +468,18 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: atelierColors.deepGreen,
   },
+  cWaterBarFill: {
+    backgroundColor: atelierColors.deepGreen,
+  },
   saveButton: {
     marginTop: spacing.lg,
     ...atelierButtons.secondaryMuted,
     paddingVertical: 15,
+  },
+  cWaterSaveButton: {
+    ...atelierButtons.primarySolid,
+    paddingVertical: 17,
+    marginTop: spacing.xl,
   },
   saveButtonSaved: {
     backgroundColor: atelierColors.deepGreenMuted,
@@ -393,6 +518,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: 18,
+  },
+  cWaterReadOnlyCard: {
+    marginTop: spacing.xl,
+  },
+  cWaterSaveGuide: {
+    marginTop: spacing.xl,
+    ...atelierText.bodyMuted,
+    textAlign: 'center',
+    lineHeight: 21,
   },
   readOnlyTitle: {
     ...atelierText.cardTitleMd,

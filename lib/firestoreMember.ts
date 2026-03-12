@@ -64,13 +64,36 @@ export function getDefaultMemberProfile(): MemberProfile {
 }
 
 export function mergeMemberProfile(profile: Partial<MemberProfile> | null | undefined): MemberProfile {
+  const defaults = getDefaultMemberProfile();
+
   return {
-    ...getDefaultMemberProfile(),
-    ...profile,
-    role: normalizeRole(profile?.role, getDefaultMemberProfile().role),
-    lastActiveAt: typeof profile?.lastActiveAt === 'string' && profile.lastActiveAt
-      ? profile.lastActiveAt
-      : getDefaultMemberProfile().lastActiveAt,
+    organizationId:
+      typeof profile?.organizationId === 'string' && profile.organizationId.trim()
+        ? profile.organizationId.trim()
+        : defaults.organizationId,
+    organizationName:
+      typeof profile?.organizationName === 'string' && profile.organizationName.trim()
+        ? profile.organizationName.trim()
+        : defaults.organizationName,
+    role: normalizeRole(profile?.role, defaults.role),
+    isTestAccount:
+      typeof profile?.isTestAccount === 'boolean'
+        ? profile.isTestAccount
+        : defaults.isTestAccount,
+    testGroup:
+      typeof profile?.testGroup === 'string'
+        ? profile.testGroup.trim() || null
+        : profile?.testGroup === null
+          ? null
+          : defaults.testGroup,
+    status:
+      typeof profile?.status === 'string' && profile.status.trim()
+        ? profile.status.trim()
+        : defaults.status,
+    lastActiveAt:
+      typeof profile?.lastActiveAt === 'string' && profile.lastActiveAt
+        ? profile.lastActiveAt
+        : defaults.lastActiveAt,
   };
 }
 

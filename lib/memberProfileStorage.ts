@@ -1,5 +1,6 @@
-import { DEFAULT_MEMBER_PROFILE, MemberProfile } from '@/types';
+import { MemberProfile } from '@/types';
 import { readJson, writeJson } from './asyncStorage';
+import { mergeMemberProfile } from './firestoreMember';
 
 const MEMBER_PROFILE_KEY = '@wellness_member_profile_v1';
 
@@ -10,12 +11,9 @@ export async function loadMemberProfile(): Promise<MemberProfile | null> {
     return null;
   }
 
-  return {
-    ...DEFAULT_MEMBER_PROFILE,
-    ...profile,
-  };
+  return mergeMemberProfile(profile);
 }
 
 export async function saveMemberProfile(profile: MemberProfile): Promise<boolean> {
-  return writeJson(MEMBER_PROFILE_KEY, profile);
+  return writeJson(MEMBER_PROFILE_KEY, mergeMemberProfile(profile));
 }

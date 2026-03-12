@@ -11,11 +11,6 @@ import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
-import {
-  CustomBlendOption,
-  getCustomBlendRecommendations,
-  getCustomBlendVisualProfile,
-} from '@/lib/customBlendEngine';
 import { CWaterBlendResult, getTopCWaterBlendResults } from '@/lib/cwaterBlendEngine';
 import { CWaterTeaMoodTag, CWaterTeaTimeTag } from '@/lib/cwaterTeaMetadata';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
@@ -23,7 +18,7 @@ import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
-  const [selectedCustomBlend, setSelectedCustomBlend] = useState<CustomBlendOption | CWaterBlendResult | null>(null);
+  const [selectedCustomBlend, setSelectedCustomBlend] = useState<CWaterBlendResult | null>(null);
   const {
     logs,
     getTodayLog,
@@ -40,10 +35,6 @@ export default function Home() {
   const recordCount = logs.length;
   const recommendation = getHomeRecommendation(logs, userSettings);
   const teaRecommendation = getTeaRecommendation({
-    logs,
-    userGoal: userSettings?.goal,
-  });
-  const customBlendRecommendations = getCustomBlendRecommendations({
     logs,
     userGoal: userSettings?.goal,
   });
@@ -106,17 +97,7 @@ export default function Home() {
 
   const nickname = userSettings?.nickname || '회원';
   const goalMessage = userSettings?.goal ? `[${userSettings.goal}] 모드로 ` : '';
-  const customBlendCards: CustomBlendOption[] = [
-    customBlendRecommendations.best,
-    customBlendRecommendations.refreshingAlternative,
-    customBlendRecommendations.softAlternative,
-  ];
   const isRecommendationFallback = logs.length === 0;
-  const toneMetaByType = {
-    best: { badge: 'BEST', label: '가장 잘 맞는 조합' },
-    fresh: { badge: 'FRESH', label: '더 산뜻한 대안' },
-    soft: { badge: 'SOFT', label: '더 부드러운 대안' },
-  } as const;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -221,119 +202,58 @@ export default function Home() {
       </View>
 
       <View style={styles.aiSectionWrap}>
-        <Card title="AI 블렌딩 제안">
-        {isRecommendationFallback ? (
-          <FallbackPill label="기록 전 추천" />
-        ) : null}
-        <Text style={styles.aiBlendIntro}>카카오닙 베이스 위에 오늘 흐름에 맞는 조합 3가지를 골랐어요.</Text>
-        {customBlendCards.map((blend, index) => (
-          (() => {
-            const visualProfile = getCustomBlendVisualProfile(blend);
-            const extraIngredients = blend.ingredientNames.slice(1);
-            const ingredientPreview = extraIngredients.join(' · ');
-            const toneMeta = toneMetaByType[blend.recommendationType];
-
-            return (
-              <TouchableOpacity
-                key={blend.label}
-                activeOpacity={0.9}
-                style={[styles.aiBlendItem, index === customBlendCards.length - 1 && styles.aiBlendItemLast]}
-                onPress={() => setSelectedCustomBlend(blend)}
-              >
-                <View style={styles.aiBlendHeader}>
-                  <View style={styles.aiBlendToneWrap}>
-                    <View style={styles.aiBlendToneBadge}>
-                      <Text style={styles.aiBlendToneBadgeText}>{toneMeta.badge}</Text>
-                    </View>
-                    <Text style={styles.aiBlendLabel}>{toneMeta.label}</Text>
-                  </View>
-                  <Text style={styles.aiBlendContext} numberOfLines={1}>{blend.contextLine}</Text>
-                </View>
-                <Text style={styles.aiBlendTitle}>{blend.displayName}</Text>
-                <Text style={styles.aiBlendSummary} numberOfLines={2}>{blend.summary}</Text>
-                <Text style={styles.aiBlendDetail} numberOfLines={2}>{blend.detail}</Text>
-
-                <View style={styles.aiBlendMetaCard}>
-                  <Text style={styles.aiBlendMetaLabel}>추가 재료</Text>
-                  <Text style={styles.aiBlendIngredients} numberOfLines={1}>
-                    {ingredientPreview}
-                  </Text>
-                </View>
-
-                <View style={styles.aiBlendChipWrap}>
-                  {visualProfile.chips.slice(0, 3).map((chip) => (
-                    <View key={chip} style={styles.aiBlendChip}>
-                      <Text style={styles.aiBlendChipText}>{chip}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={styles.aiBlendBars}>
-                  {visualProfile.bars.map((bar) => (
-                    <View key={bar.key} style={styles.aiBlendBarRow}>
-                      <Text style={styles.aiBlendBarLabel}>{bar.label}</Text>
-                      <View style={styles.aiBlendBarTrack}>
-                        <View style={[styles.aiBlendBarFill, { width: `${(bar.value / 5) * 100}%` }]} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={styles.aiBlendFooter}>
-                  <Text style={styles.aiBlendDetailHint}>상세 보기</Text>
-                  <Text style={styles.aiBlendFooterArrow}>›</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })()
-        ))}
-        </Card>
-      </View>
-
-      <View style={styles.sectionWrap}>
-        <Card title="C.Water 조합 테스트">
-          <Text style={styles.aiBlendIntro}>기존 추천은 유지하고, 메타데이터 기반 조합 엔진을 병렬로 비교하고 있어요.</Text>
+        <Text style={styles.atelierSectionLabel}>C.WATER CURATED</Text>
+        <Card title="오늘의 C.Water 추천">
+          {isRecommendationFallback ? (
+            <FallbackPill label="기록 전 추천" />
+          ) : null}
+          <Text style={styles.cWaterIntro}>지금 흐름에 맞는 조합을 C.Water 방식으로 정리했어요.</Text>
           {cWaterResults.map((blend, index) => (
             <TouchableOpacity
               key={blend.id}
               activeOpacity={0.9}
-              style={[styles.aiBlendItem, index === cWaterResults.length - 1 && styles.aiBlendItemLast]}
+              style={[styles.cWaterItem, index === cWaterResults.length - 1 && styles.aiBlendItemLast]}
               onPress={() => setSelectedCustomBlend(blend)}
             >
               <View style={styles.aiBlendHeader}>
                 <View style={styles.aiBlendToneWrap}>
-                  <View style={styles.aiBlendToneBadge}>
-                    <Text style={styles.aiBlendToneBadgeText}>C.WATER</Text>
+                  <View style={styles.cWaterToneBadge}>
+                    <Text style={styles.cWaterToneBadgeText}>C.WATER</Text>
                   </View>
-                  <Text style={styles.aiBlendLabel}>병렬 추천 비교</Text>
+                  <Text style={styles.cWaterLabel}>추천 조합</Text>
                 </View>
-                <Text style={styles.aiBlendContext} numberOfLines={1}>
-                  추천 {blend.recommendationScore.toFixed(1)} · 조화 {blend.harmonyScore.toFixed(1)}
-                </Text>
+                <View style={styles.cWaterScoreWrap}>
+                  <View style={styles.cWaterScorePill}>
+                    <Text style={styles.cWaterScoreText}>추천 {blend.recommendationScore.toFixed(1)}</Text>
+                  </View>
+                  <View style={styles.cWaterScorePill}>
+                    <Text style={styles.cWaterScoreText}>조화 {blend.harmonyScore.toFixed(1)}</Text>
+                  </View>
+                </View>
               </View>
 
-              <Text style={styles.aiBlendTitle}>{blend.displayName}</Text>
-              <Text style={styles.aiBlendSummary} numberOfLines={2}>{blend.summary}</Text>
-              <Text style={styles.aiBlendDetail} numberOfLines={3}>{blend.detail}</Text>
+              <Text style={styles.cWaterTitle}>{blend.displayName}</Text>
+              <Text style={styles.cWaterSummary} numberOfLines={2}>{blend.summary}</Text>
+              <Text style={styles.cWaterDetail} numberOfLines={2}>{blend.detail}</Text>
 
-              <View style={styles.aiBlendMetaCard}>
-                <Text style={styles.aiBlendMetaLabel}>조합 티</Text>
-                <Text style={styles.aiBlendIngredients} numberOfLines={1}>
+              <View style={styles.cWaterMetaCard}>
+                <Text style={styles.aiBlendMetaLabel}>구성 티</Text>
+                <Text style={styles.cWaterIngredients} numberOfLines={1}>
                   {blend.teas.map((tea) => tea.displayName).join(' · ')}
                 </Text>
               </View>
 
-              <View style={styles.aiBlendChipWrap}>
+              <View style={styles.cWaterChipWrap}>
                 {blend.dominantTags.slice(0, 3).map((tag) => (
-                  <View key={tag} style={styles.aiBlendChip}>
-                    <Text style={styles.aiBlendChipText}>{tag}</Text>
+                  <View key={tag} style={styles.cWaterChip}>
+                    <Text style={styles.cWaterChipText}>{tag}</Text>
                   </View>
                 ))}
               </View>
 
-              <View style={styles.aiBlendFooter}>
-                <Text style={styles.aiBlendDetailHint}>상세 보기</Text>
-                <Text style={styles.aiBlendFooterArrow}>›</Text>
+              <View style={styles.cWaterFooter}>
+                <Text style={styles.cWaterFooterHint}>조합 상세 보기</Text>
+                <Text style={styles.cWaterFooterArrow}>›</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -488,21 +408,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
   },
-  aiBlendIntro: {
+  aiBlendItemLast: {
+    marginBottom: 0,
+  },
+  aiBlendMetaLabel: {
+    ...atelierText.helper,
+    fontSize: 11,
+    letterSpacing: 0.1,
+    marginBottom: 4,
+  },
+  cWaterIntro: {
     ...atelierText.bodyMuted,
     fontSize: 14,
     lineHeight: 22,
     marginBottom: spacing.lg,
-  },
-  aiBlendItem: {
-    ...atelierCards.section,
-    borderRadius: 24,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  aiBlendItemLast: {
-    marginBottom: 0,
   },
   aiBlendHeader: {
     flexDirection: 'row',
@@ -515,72 +434,36 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     gap: 6,
   },
-  aiBlendToneBadge: {
+  cWaterItem: {
+    ...atelierCards.hero,
+    backgroundColor: atelierColors.surface,
+    borderRadius: 24,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  cWaterToneBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: atelierColors.deepGreenMuted,
-    borderBottomWidth: 1,
-    borderColor: '#CEDCD5',
+    backgroundColor: atelierColors.deepGreen,
   },
-  aiBlendToneBadgeText: {
+  cWaterToneBadgeText: {
     ...atelierText.pill,
+    color: atelierColors.surface,
   },
-  aiBlendLabel: {
+  cWaterLabel: {
     ...atelierText.helper,
     color: atelierColors.textSoft,
     letterSpacing: -0.1,
   },
-  aiBlendContext: {
-    flex: 1,
-    textAlign: 'right',
-    ...atelierText.helper,
-    color: atelierColors.textSoft,
-    fontWeight: '600',
-    letterSpacing: -0.1,
+  cWaterScoreWrap: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    gap: 6,
   },
-  aiBlendTitle: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: spacing.xs },
-  aiBlendSummary: {
-    ...atelierText.summary,
-    fontSize: 15,
-    marginBottom: spacing.xs,
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  aiBlendDetail: {
-    ...atelierText.bodyMuted,
-    fontSize: 13,
-    lineHeight: 21,
-    letterSpacing: -0.1,
-    marginBottom: spacing.md,
-  },
-  aiBlendMetaCard: {
-    ...atelierCards.meta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
-  },
-  aiBlendMetaLabel: {
-    ...atelierText.helper,
-    fontSize: 11,
-    letterSpacing: 0.1,
-    marginBottom: 4,
-  },
-  aiBlendIngredients: {
-    ...atelierText.body,
-    fontSize: 13,
-    color: atelierColors.deepGreen,
-    lineHeight: 20,
-    fontWeight: '600',
-  },
-  aiBlendChipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  aiBlendChip: {
+  cWaterScorePill: {
     backgroundColor: atelierColors.surfaceMuted,
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -588,42 +471,65 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: atelierColors.border,
   },
-  aiBlendChipText: {
+  cWaterScoreText: {
+    ...atelierText.helper,
+    color: atelierColors.text,
+    fontWeight: '700',
+  },
+  cWaterTitle: {
+    ...atelierText.cardTitleLg,
+    fontSize: 24,
+    marginBottom: spacing.xs,
+  },
+  cWaterSummary: {
+    ...atelierText.summary,
+    fontSize: 15,
+    marginBottom: spacing.xs,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  cWaterDetail: {
+    ...atelierText.bodyMuted,
+    fontSize: 13,
+    lineHeight: 21,
+    letterSpacing: -0.1,
+    marginBottom: spacing.md,
+  },
+  cWaterMetaCard: {
+    ...atelierCards.meta,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cWaterIngredients: {
+    ...atelierText.body,
+    fontSize: 13,
+    color: atelierColors.deepGreen,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
+  cWaterChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  cWaterChip: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  cWaterChipText: {
     ...atelierText.helper,
     fontSize: 12,
     color: atelierColors.text,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
-  aiBlendBars: {
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  aiBlendBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  aiBlendBarLabel: {
-    width: 54,
-    ...atelierText.helper,
-    color: atelierColors.textSoft,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  aiBlendBarTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: atelierColors.border,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  aiBlendBarFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreen,
-  },
-  aiBlendFooter: {
+  cWaterFooter: {
     marginTop: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,13 +538,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: atelierColors.border,
   },
-  aiBlendDetailHint: {
+  cWaterFooterHint: {
     ...atelierText.helper,
-    color: atelierColors.textMuted,
-    fontWeight: '600',
+    color: atelierColors.deepGreen,
+    fontWeight: '700',
     letterSpacing: -0.1,
   },
-  aiBlendFooterArrow: {
+  cWaterFooterArrow: {
     fontSize: 20,
     color: atelierColors.deepGreen,
     fontWeight: '500',

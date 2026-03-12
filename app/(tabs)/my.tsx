@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
-import { TeaThumbnail } from '@/components/TeaThumbnail';
 import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { getNotificationScenarioPreviews } from '@/lib/notificationScenarios';
-import { TeaRecommendationId, teaRecommendationContent } from '@/lib/teaRecommendationContent';
 import { SavedBlendItem } from '@/lib/teaBoxStorage';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
-import { TeaRecommendationResult } from '@/lib/teaRecommendationEngine';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
 export default function MyScreen() {
@@ -25,7 +21,6 @@ export default function MyScreen() {
   } = useStore();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedTeaId, setSelectedTeaId] = useState<TeaRecommendationId | null>(null);
   const [nickname, setNickname] = useState(userSettings?.nickname || '');
   const [selectedGoal, setSelectedGoal] = useState(userSettings?.goal || DEFAULT_USER_SETTINGS.goal);
   const [notificationTime, setNotificationTime] = useState(userSettings?.notificationTime || DEFAULT_USER_SETTINGS.notificationTime);
@@ -103,25 +98,14 @@ export default function MyScreen() {
           style: 'destructive',
           onPress: async () => {
             await removeSavedBlendFromBox(item.id);
-
-            if (item.type === 'preset' && selectedTeaId === item.teaId) {
-              setSelectedTeaId(null);
-            }
           },
         },
       ]
     );
   };
-
-  const selectedTeaRecommendation: TeaRecommendationResult | null = selectedTeaId
-    ? {
-        teaId: selectedTeaId,
-        content: teaRecommendationContent[selectedTeaId],
-        reason: '담아둔 블렌드예요. 지금 무드와 맞는지 살펴보세요.',
-        contextLine: `저장한 블렌드 · ${teaRecommendationContent[selectedTeaId].timings[0]}`,
-      }
-    : null;
   const notificationPreviews = getNotificationScenarioPreviews(userSettings);
+  const cwaterBlendItems = savedBlendItems.filter((item) => item.type === 'cwater');
+  const hiddenLegacyBlendCount = savedBlendItems.length - cwaterBlendItems.length;
 
   if (!isReady) {
     return (
@@ -280,33 +264,20 @@ export default function MyScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>블렌드함</Text>
-            <Text style={styles.sectionMeta}>{savedBlendItems.length}개 저장됨</Text>
+            <Text style={styles.sectionMeta}>{cwaterBlendItems.length}개 저장됨</Text>
           </View>
 
-          {savedBlendItems.length > 0 ? (
+          {hiddenLegacyBlendCount > 0 ? (
+            <View style={styles.archivedBlendNote}>
+              <Text style={styles.archivedBlendNoteText}>
+                이전 저장 조합 {hiddenLegacyBlendCount}개는 내부 호환용으로 유지되고 있어요.
+              </Text>
+            </View>
+          ) : null}
+
+          {cwaterBlendItems.length > 0 ? (
             <View>
-              {savedBlendItems.map((item) => {
-                if (item.type === 'preset') {
-                  const tea = teaRecommendationContent[item.teaId];
-
-                  return (
-                    <View key={item.id} style={styles.teaItem}>
-                      <TouchableOpacity style={styles.teaItemMain} activeOpacity={0.88} onPress={() => setSelectedTeaId(item.teaId)}>
-                        <TeaThumbnail teaId={item.teaId} size="sm" />
-                        <View style={styles.teaItemText}>
-                          <Text style={styles.teaItemBadge}>대표 블렌드</Text>
-                          <Text style={styles.teaName}>{tea.name}</Text>
-                          <Text style={styles.teaSubtitle}>{tea.subtitle}</Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity onPress={() => handleRemoveBlend(item)} style={styles.removeButton}>
-                        <Text style={styles.removeButtonText}>삭제</Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                }
-
+              {cwaterBlendItems.map((item) => {
                 return (
                   <View key={item.id} style={styles.teaItem}>
                     <View style={styles.teaItemMain}>
@@ -337,7 +308,7 @@ export default function MyScreen() {
             </View>
           ) : (
             <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>아직 담아둔 블렌드가 없어요. 추천 블렌드를 담아두면 여기서 다시 볼 수 있어요.</Text>
+              <Text style={styles.emptyTeaText}>아직 담아둔 C.Water 블렌드가 없어요. 홈에서 추천 조합을 담아두면 여기서 다시 볼 수 있어요.</Text>
             </View>
           )}
 
@@ -349,14 +320,6 @@ export default function MyScreen() {
         </View>
       </ScrollView>
 
-      {selectedTeaRecommendation ? (
-        <TeaRecommendationDetailModal
-          visible={Boolean(selectedTeaRecommendation)}
-          recommendation={selectedTeaRecommendation}
-          reasonTitle="담아둔 블렌드"
-          onClose={() => setSelectedTeaId(null)}
-        />
-      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -505,6 +468,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: atelierColors.text,
+    letterSpacing: -0.1,
+  },
+  archivedBlendNote: {
+    ...atelierCards.meta,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  archivedBlendNoteText: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+    fontWeight: '600',
     letterSpacing: -0.1,
   },
   teaItem: {
