@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Card } from '@/components/Card';
 import { CustomBlendDetailModal } from '@/components/CustomBlendDetailModal';
@@ -12,6 +12,7 @@ import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { formatDisplayDate } from '@/lib/date';
 import { CWaterBlendResult, getTopCWaterBlendResults } from '@/lib/cwaterBlendEngine';
+import { CWaterSwipeDeck } from '@/components/CWaterSwipeDeck';
 import { CWaterTeaMoodTag, CWaterTeaTimeTag } from '@/lib/cwaterTeaMetadata';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
@@ -19,6 +20,7 @@ import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
   const [selectedCustomBlend, setSelectedCustomBlend] = useState<CWaterBlendResult | null>(null);
+  const [isSwipeActive, setIsSwipeActive] = useState(false);
   const {
     logs,
     getTodayLog,
@@ -38,7 +40,7 @@ export default function Home() {
     logs,
     userGoal: userSettings?.goal,
   });
-  const cWaterPreferredTags: CWaterTeaMoodTag[] = [
+  const cWaterPreferredTags: CWaterTeaMoodTag[] = useMemo(() => [
     ...(todayLog?.water && Number(todayLog.water) <= 2 ? (['clean', 'bright'] as CWaterTeaMoodTag[]) : []),
     ...(todayLog?.mood && Number(todayLog.mood) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
     ...(todayLog?.sleep && Number(todayLog.sleep) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
@@ -47,21 +49,21 @@ export default function Home() {
     ...(userSettings?.goal === '수면 관리' ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
     ...(userSettings?.goal === '피로 관리' ? (['focus', 'deep'] as CWaterTeaMoodTag[]) : []),
     ...(userSettings?.goal === '식습관 관리' ? (['clean', 'citrus'] as CWaterTeaMoodTag[]) : []),
-  ];
-  const cWaterPreferredTime: CWaterTeaTimeTag =
-    (() => {
+  ], [todayLog, userSettings]);
+
+  const cWaterPreferredTime: CWaterTeaTimeTag = useMemo(() => {
       const hour = new Date().getHours();
       if (hour < 11) return 'morning';
       if (hour < 17) return 'afternoon';
       if (hour < 22) return 'evening';
       return 'lateNight';
-    })();
+  }, []);
 
-  const cWaterResults = getTopCWaterBlendResults({
+  const cWaterResults = useMemo(() => getTopCWaterBlendResults({
     preferredTags: cWaterPreferredTags,
     preferredTimes: [cWaterPreferredTime],
     maxResults: 3,
-  });
+  }), [cWaterPreferredTags, cWaterPreferredTime]);
 
   useEffect(() => {
     if (!latestLogFeedback) {
@@ -100,7 +102,12 @@ export default function Home() {
   const isRecommendationFallback = logs.length === 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.content} 
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={!isSwipeActive}
+    >
       <View style={styles.heroIntro}>
         <Text style={styles.eyebrow}>WELLNESS ATELIER</Text>
         <Text style={styles.greeting}>{nickname}님, 안녕하세요</Text>
@@ -118,7 +125,8 @@ export default function Home() {
       ) : null}
 
       <View style={styles.sectionWrap}>
-        <Card title="오늘의 컨디션">
+        <Text style={styles.editorialSectionTitle}>오늘의 컨디션</Text>
+        <View style={styles.editorialCard}>
         {todayLog ? (
           <View>
             <View style={styles.summaryRow}>
@@ -133,7 +141,7 @@ export default function Home() {
               <Text style={styles.summaryLabel}>운동</Text>
               <Text style={styles.summaryValue}>{todayLog.exercise}</Text>
             </View>
-            <View style={styles.summaryRow}>
+            <View style={[styles.summaryRow, { borderBottomWidth: 0 }]}>
               <Text style={styles.summaryLabel}>수분</Text>
               <Text style={styles.summaryValue}>{todayLog.water}</Text>
             </View>
@@ -149,26 +157,50 @@ export default function Home() {
             ctaText="기록이 쌓이면 추천과 리포트가 더 정교해져요."
           />
         )}
-        </Card>
+        </View>
       </View>
 
       <View style={styles.sectionWrap}>
-        <Card title="나의 웰니스">
-        <Text style={styles.statText}><Text style={styles.statHighlight}>{recordCount}</Text>일째 기록 중</Text>
-        </Card>
+        <Text style={styles.editorialSectionTitle}>나의 웰니스</Text>
+        <View style={styles.editorialCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+            <Text style={styles.statHighlight}>{recordCount}</Text>
+            <Text style={styles.statText}>일째 기록 중</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.sectionWrap}>
-        <Card title={recommendation.title}>
-        {isRecommendationFallback ? (
-          <FallbackPill label="기록 전 추천" />
-        ) : null}
-        <Text style={styles.recommendationText}>{recommendation.message}</Text>
-        </Card>
+        <View style={styles.editorialSectionHeader}>
+          <Text style={styles.editorialSectionTitle}>{recommendation.title}</Text>
+          {isRecommendationFallback ? <FallbackPill label="기록 전 추천" inline /> : null}
+        </View>
+        <View style={styles.editorialCard}>
+          <Text style={styles.recommendationText}>{recommendation.message}</Text>
+        </View>
       </View>
 
       <View style={styles.sectionWrap}>
-        <Text style={styles.atelierSectionLabel}>TODAY&apos;S SIGNATURE</Text>
+        <Text style={styles.editorialSectionTitle}>최근 기록</Text>
+        <View style={styles.editorialCard}>
+        {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
+          <View key={log.id} style={[styles.logItem, index === Math.min(logs.length, 3) - 1 && { borderBottomWidth: 0 }]}>
+            <Text style={styles.logDate}>{formatDisplayDate(log.date)}</Text>
+            <Text style={styles.logSummary} numberOfLines={1}>
+              기분 {log.mood}점 · 수면 {log.sleep} · 운동 {log.exercise}
+            </Text>
+          </View>
+        )) : (
+          <EmptyStateBlock
+            text="아직 쌓인 기록이 없어요."
+            ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
+          />
+        )}
+        </View>
+      </View>
+
+      <View style={styles.sectionWrap}>
+        <Text style={styles.eyebrow}>TODAY'S SIGNATURE</Text>
         <TouchableOpacity activeOpacity={0.9} onPress={() => setIsTeaDetailVisible(true)} style={styles.signatureCard}>
           <View style={styles.signatureHeader}>
             <View style={styles.signatureBadgeRow}>
@@ -196,88 +228,28 @@ export default function Home() {
 
           <View style={styles.signatureFooter}>
             <Text style={styles.detailHint}>추천 상세 보기</Text>
-            <Text style={styles.signatureFooterArrow}>›</Text>
+            <Text style={styles.signatureFooterArrow}>→</Text>
           </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.aiSectionWrap}>
-        <Text style={styles.atelierSectionLabel}>C.WATER CURATED</Text>
-        <Card title="오늘의 C.Water 추천">
-          {isRecommendationFallback ? (
-            <FallbackPill label="기록 전 추천" />
-          ) : null}
-          <Text style={styles.cWaterIntro}>지금 흐름에 맞는 조합을 C.Water 방식으로 정리했어요.</Text>
-          {cWaterResults.map((blend, index) => (
-            <TouchableOpacity
-              key={blend.id}
-              activeOpacity={0.9}
-              style={[styles.cWaterItem, index === cWaterResults.length - 1 && styles.aiBlendItemLast]}
-              onPress={() => setSelectedCustomBlend(blend)}
-            >
-              <View style={styles.aiBlendHeader}>
-                <View style={styles.aiBlendToneWrap}>
-                  <View style={styles.cWaterToneBadge}>
-                    <Text style={styles.cWaterToneBadgeText}>C.WATER</Text>
-                  </View>
-                  <Text style={styles.cWaterLabel}>추천 조합</Text>
-                </View>
-                <View style={styles.cWaterScoreWrap}>
-                  <View style={styles.cWaterScorePill}>
-                    <Text style={styles.cWaterScoreText}>추천 {blend.recommendationScore.toFixed(1)}</Text>
-                  </View>
-                  <View style={styles.cWaterScorePill}>
-                    <Text style={styles.cWaterScoreText}>조화 {blend.harmonyScore.toFixed(1)}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <Text style={styles.cWaterTitle}>{blend.displayName}</Text>
-              <Text style={styles.cWaterSummary} numberOfLines={2}>{blend.summary}</Text>
-              <Text style={styles.cWaterDetail} numberOfLines={2}>{blend.detail}</Text>
-
-              <View style={styles.cWaterMetaCard}>
-                <Text style={styles.aiBlendMetaLabel}>구성 티</Text>
-                <Text style={styles.cWaterIngredients} numberOfLines={1}>
-                  {blend.teas.map((tea) => tea.displayName).join(' · ')}
-                </Text>
-              </View>
-
-              <View style={styles.cWaterChipWrap}>
-                {blend.dominantTags.slice(0, 3).map((tag) => (
-                  <View key={tag} style={styles.cWaterChip}>
-                    <Text style={styles.cWaterChipText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.cWaterFooter}>
-                <Text style={styles.cWaterFooterHint}>조합 상세 보기</Text>
-                <Text style={styles.cWaterFooterArrow}>›</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </Card>
-      </View>
-
-      <View style={styles.sectionWrap}>
-        <Card title="최근 기록">
-        {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
-          <View key={log.id} style={[styles.logItem, index === 2 && { borderBottomWidth: 0 }]}>
-            <Text style={styles.logDate}>{formatDisplayDate(log.date)}</Text>
-            <Text style={styles.logSummary} numberOfLines={1}>
-              기분 {log.mood}점 · 수면 {log.sleep} · 운동 {log.exercise}
-            </Text>
-          </View>
-        )) : (
-          <EmptyStateBlock
-            text="아직 쌓인 기록이 없어요."
-            ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
+        <View style={styles.editorialSectionHeader}>
+          <Text style={styles.eyebrow}>C.WATER CURATED</Text>
+          {isRecommendationFallback ? <FallbackPill label="기록 전 추천" inline /> : null}
+        </View>
+        <Text style={styles.editorialSectionLargeTitle}>지금 흐름에 맞는 C.Water 제안</Text>
+        
+        <View style={styles.cWaterListWrap}>
+          <CWaterSwipeDeck 
+            blends={cWaterResults} 
+            onSelect={(blend) => setSelectedCustomBlend(blend)} 
+            onSwipeStart={() => setIsSwipeActive(true)}
+            onSwipeEnd={() => setIsSwipeActive(false)}
           />
-        )}
-        </Card>
+        </View>
       </View>
-      
+
       <TeaRecommendationDetailModal
         visible={isTeaDetailVisible}
         recommendation={teaRecommendation}
@@ -294,106 +266,136 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
-  content: { padding: spacing.lg, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.sm },
+  content: { padding: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.xl },
   heroIntro: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
     paddingRight: spacing.md,
   },
   eyebrow: {
     ...atelierText.helper,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    marginBottom: spacing.sm,
+    color: atelierColors.deepGreen,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
   },
   greeting: {
     ...atelierText.heroTitle,
+    fontSize: 28,
+    lineHeight: 38,
+    fontWeight: '400',
+    letterSpacing: -0.5,
     marginBottom: spacing.sm,
   },
   subtitle: {
-    ...atelierText.summary,
-    color: atelierColors.textMuted,
-    marginBottom: spacing.md,
+    ...atelierText.bodyMuted,
+    fontSize: 16,
     lineHeight: 26,
-  },
-  sectionWrap: {
-    marginBottom: spacing.xl,
+    color: atelierColors.textSoft,
   },
   aiSectionWrap: {
     marginBottom: spacing.xxl,
   },
-  atelierSectionLabel: {
-    ...atelierText.helper,
-    fontSize: 11,
-    letterSpacing: 1.1,
-    marginBottom: spacing.sm,
+  editorialSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  editorialSectionLargeTitle: {
+    ...atelierText.heroTitle,
+    fontSize: 26,
+    fontWeight: '400',
+    letterSpacing: -0.5,
+    marginBottom: spacing.xl,
+  },
+  cWaterListWrap: {
+    // We add some bottom padding for the deck swiping area
+    paddingBottom: spacing.xxl,
+  },
+  sectionWrap: {
+    marginBottom: spacing.xxl,
+  },
+  editorialSectionTitle: {
+    ...atelierText.cardTitleMd,
+    fontSize: 18,
+    fontWeight: '400',
+    color: atelierColors.deepGreen,
+    marginBottom: spacing.md,
+  },
+  editorialCard: {
+    backgroundColor: atelierColors.surface,
+    borderRadius: 32,
+    padding: spacing.xl,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
   },
   summaryRow: {
-    ...atelierCards.meta,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: 16,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: atelierColors.surfaceMuted,
   },
-  summaryLabel: { ...atelierText.bodyMuted, fontSize: 14 },
-  summaryValue: { ...atelierText.body, fontSize: 15, fontWeight: '700', color: atelierColors.title },
+  summaryLabel: { ...atelierText.bodyMuted, fontSize: 14, color: atelierColors.textSoft },
+  summaryValue: { ...atelierText.body, fontSize: 15, fontWeight: '600', color: atelierColors.title },
   memoContainer: {
-    ...atelierCards.meta,
-    marginTop: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 18,
+    marginTop: spacing.md,
+    backgroundColor: atelierColors.surfaceMuted,
+    padding: spacing.lg,
+    borderRadius: 20,
   },
-  memoText: { ...atelierText.body, lineHeight: 22 },
-  statText: { ...atelierText.summary, fontSize: 17 },
-  statHighlight: { fontSize: 24, fontWeight: '700', color: atelierColors.deepGreen },
+  memoText: { ...atelierText.body, lineHeight: 24, color: atelierColors.text },
+  statText: { ...atelierText.summary, fontSize: 16, color: atelierColors.textSoft },
+  statHighlight: { fontSize: 32, lineHeight: 38, fontWeight: '400', color: atelierColors.deepGreen },
+  recommendationText: { ...atelierText.summary, fontSize: 16, lineHeight: 26, color: atelierColors.text },
+
   signatureCard: {
-    ...atelierCards.hero,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 32,
+    padding: spacing.xl,
   },
   signatureHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   signatureBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   signatureBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: atelierColors.deepGreenMuted,
-    borderWidth: 1,
-    borderColor: '#CEDCD5',
+    backgroundColor: atelierColors.deepGreenSoft,
   },
   signatureBadgeText: {
     ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    fontWeight: '600',
   },
   signatureContext: {
     flex: 1,
     textAlign: 'right',
     ...atelierText.helper,
     color: atelierColors.textSoft,
-    fontWeight: '600',
-    letterSpacing: -0.1,
   },
-  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginBottom: spacing.md },
   teaCardText: { flex: 1 },
-  teaName: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: 4 },
-  teaIdentity: { ...atelierText.summary, fontSize: 15, marginBottom: 4, fontWeight: '600', lineHeight: 22 },
-  teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.sm, letterSpacing: -0.1 },
-  recommendationText: { ...atelierText.summary, fontSize: 15, lineHeight: 24 },
-  teaUpdateHint: { ...atelierText.helper, color: atelierColors.deepGreen, marginTop: spacing.md, letterSpacing: -0.1 },
+  teaName: { ...atelierText.cardTitleLg, fontSize: 24, fontWeight: '400', marginBottom: 4 },
+  teaIdentity: { ...atelierText.summary, fontSize: 15, marginBottom: 8, fontWeight: '500', color: atelierColors.deepGreen },
+  teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, marginBottom: spacing.sm },
+  teaUpdateHint: { ...atelierText.helper, color: atelierColors.textSoft, marginTop: spacing.md },
   signatureFooter: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -401,162 +403,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: atelierColors.border,
   },
-  detailHint: { ...atelierText.helper, color: atelierColors.textMuted, fontWeight: '600', letterSpacing: -0.1 },
+  detailHint: { ...atelierText.helper, color: atelierColors.textSoft, fontWeight: '500' },
   signatureFooterArrow: {
-    fontSize: 20,
-    color: atelierColors.deepGreen,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
-  aiBlendItemLast: {
-    marginBottom: 0,
-  },
-  aiBlendMetaLabel: {
-    ...atelierText.helper,
-    fontSize: 11,
-    letterSpacing: 0.1,
-    marginBottom: 4,
-  },
-  cWaterIntro: {
-    ...atelierText.bodyMuted,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: spacing.lg,
-  },
-  aiBlendHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  aiBlendToneWrap: {
-    flexShrink: 1,
-    gap: 6,
-  },
-  cWaterItem: {
-    ...atelierCards.hero,
-    backgroundColor: atelierColors.surface,
-    borderRadius: 24,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  cWaterToneBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreen,
-  },
-  cWaterToneBadgeText: {
-    ...atelierText.pill,
-    color: atelierColors.surface,
-  },
-  cWaterLabel: {
-    ...atelierText.helper,
+    fontSize: 18,
     color: atelierColors.textSoft,
-    letterSpacing: -0.1,
   },
-  cWaterScoreWrap: {
-    flexShrink: 0,
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  cWaterScorePill: {
-    backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
-  },
-  cWaterScoreText: {
-    ...atelierText.helper,
-    color: atelierColors.text,
-    fontWeight: '700',
-  },
-  cWaterTitle: {
-    ...atelierText.cardTitleLg,
-    fontSize: 24,
-    marginBottom: spacing.xs,
-  },
-  cWaterSummary: {
-    ...atelierText.summary,
-    fontSize: 15,
-    marginBottom: spacing.xs,
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  cWaterDetail: {
-    ...atelierText.bodyMuted,
-    fontSize: 13,
-    lineHeight: 21,
-    letterSpacing: -0.1,
-    marginBottom: spacing.md,
-  },
-  cWaterMetaCard: {
-    ...atelierCards.meta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
-  },
-  cWaterIngredients: {
-    ...atelierText.body,
-    fontSize: 13,
-    color: atelierColors.deepGreen,
-    lineHeight: 20,
-    fontWeight: '700',
-  },
-  cWaterChipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  cWaterChip: {
-    backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
-  },
-  cWaterChipText: {
-    ...atelierText.helper,
-    fontSize: 12,
-    color: atelierColors.text,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  cWaterFooter: {
-    marginTop: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: atelierColors.border,
-  },
-  cWaterFooterHint: {
-    ...atelierText.helper,
-    color: atelierColors.deepGreen,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  cWaterFooterArrow: {
-    fontSize: 20,
-    color: atelierColors.deepGreen,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
+
   logItem: {
-    ...atelierCards.meta,
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
-    borderRadius: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: atelierColors.surfaceMuted,
   },
-  logDate: { ...atelierText.helper, fontSize: 12, color: atelierColors.deepGreen, marginBottom: spacing.xs },
-  logSummary: { ...atelierText.bodyMuted, fontSize: 14, lineHeight: 22 }
+  logDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.xs, fontWeight: '500' },
+  logSummary: { ...atelierText.bodyMuted, fontSize: 15, lineHeight: 24, color: atelierColors.text }
 });
