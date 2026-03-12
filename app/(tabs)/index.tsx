@@ -21,6 +21,9 @@ import {
   normalizeMoodScore,
   normalizeSleepScore,
   normalizeWaterScore,
+  normalizeFatigueScore,
+  normalizeStressScore,
+  normalizeMealScore,
 } from '@/lib/wellnessScoring';
 import Svg, { Circle, G } from 'react-native-svg';
 
@@ -94,6 +97,9 @@ export default function Home() {
       mood: normalizeMoodScore(todayLog.mood),
       exercise: normalizeExerciseScore(todayLog.exercise),
       water: normalizeWaterScore(todayLog.water),
+      fatigue: normalizeFatigueScore(todayLog.fatigue),
+      stress: normalizeStressScore(todayLog.stress),
+      meal: normalizeMealScore(todayLog.meal),
     };
   }, [todayLog]);
 
@@ -188,27 +194,38 @@ export default function Home() {
       ) : null}
 
       {/* 컨디션 요약 */}
-      <View style={styles.sectionWrap}>
-        <Text style={styles.editorialSectionTitle}>오늘의 컨디션</Text>
+      <View style={[styles.sectionWrap, { marginHorizontal: -spacing.xl }]}>
+        <Text style={[styles.editorialSectionTitle, { paddingHorizontal: spacing.xl }]}>오늘의 컨디션</Text>
         {todayLog ? (
           <View>
-            <View style={styles.ringGrid}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={styles.ringScrollContent}
+              snapToInterval={80}
+              decelerationRate="fast"
+            >
               <ConditionRing label="수면" value={todayConditionScores?.sleep} />
+              <ConditionRing label="피로도" value={todayConditionScores?.fatigue} />
               <ConditionRing label="기분" value={todayConditionScores?.mood} />
+              <ConditionRing label="스트레스" value={todayConditionScores?.stress} />
+              <ConditionRing label="식사" value={todayConditionScores?.meal} />
               <ConditionRing label="운동" value={todayConditionScores?.exercise} />
               <ConditionRing label="수분" value={todayConditionScores?.water} />
-            </View>
+            </ScrollView>
             {todayLog.memo ? (
-              <View style={styles.memoContainer}>
+              <View style={[styles.memoContainer, { marginHorizontal: spacing.xl }]}>
                 <Text style={styles.memoText}>{todayLog.memo}</Text>
               </View>
             ) : null}
           </View>
         ) : (
-          <EmptyStateBlock
-            text="기록 탭에서 오늘 컨디션을 남겨보세요."
-            ctaText="기록이 쌓이면 추천과 리포트가 더 정교해져요."
-          />
+          <View style={{ paddingHorizontal: spacing.xl }}>
+            <EmptyStateBlock
+              text="기록 탭에서 오늘 컨디션을 남겨보세요."
+              ctaText="기록이 쌓이면 추천과 리포트가 더 정교해져요."
+            />
+          </View>
         )}
       </View>
 
@@ -216,10 +233,10 @@ export default function Home() {
       <View style={styles.sectionWrap}>
         <View style={styles.editorialSectionHeader}>
           <Text style={styles.editorialSectionTitle}>{recommendation.title}</Text>
-          {isRecommendationFallback ? <FallbackPill label="기록 전 추천" inline /> : null}
+          {isRecommendationFallback ? <FallbackPill label="기록 전" inline /> : null}
         </View>
-        <View style={styles.editorialQuote}>
-          <Text style={styles.recommendationText}>{recommendation.message}</Text>
+        <View style={styles.reportCard}>
+          <Text style={styles.reportText}>{recommendation.message}</Text>
         </View>
       </View>
 
@@ -393,15 +410,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   
-  /* Ring Grid (4 items row) */
-  ringGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  /* Ring Grid (Horizontal Scroll) */
+  ringScrollContent: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.lg,
     alignItems: 'center',
     paddingVertical: spacing.md,
   },
   ringItem: {
     alignItems: 'center',
+    width: 64, // Keep consistent width for scrolling
   },
   ringValue: {
     ...atelierText.heroTitle,
@@ -416,6 +434,21 @@ const styles = StyleSheet.create({
     color: atelierColors.textMuted,
   },
   
+  /* Report Card */
+  reportCard: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 24,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  reportText: {
+    ...atelierText.body,
+    fontSize: 16,
+    lineHeight: 28,
+    color: atelierColors.text,
+  },
+
   /* Editorial Quote / Recommendation */
   editorialQuote: {
     borderLeftWidth: 2,
