@@ -17,6 +17,7 @@ import {
 import { loadLogs, saveLogs } from './storage';
 import {
   createCWaterSavedBlendItem,
+  createCWaterBlendItemId,
   createCustomBlendItemId,
   createCustomSavedBlendItem,
   createPresetSavedBlendItem,
@@ -51,7 +52,7 @@ interface StoreContextType {
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
   saveCustomBlendToBox: (option: CustomBlendOption) => Promise<{ added: boolean; synced: boolean }>;
-  saveCWaterBlendToBox: (result: CWaterBlendResult, cacaoNibLevel?: number | null) => Promise<{ added: boolean; synced: boolean }>;
+  saveCWaterBlendToBox: (result: CWaterBlendResult, cacaoNibLevel?: number | null, teaRatios?: Record<string, number> | null) => Promise<{ added: boolean; synced: boolean }>;
   removeSavedBlendFromBox: (itemId: string) => Promise<{ removed: boolean }>;
   removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'fallback';
@@ -258,20 +259,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const saveCWaterBlendToBox = async (result: CWaterBlendResult, cacaoNibLevel: number | null = null) => {
-    const itemId = `cwater:${result.id}:${cacaoNibLevel ?? 0}`;
+  const saveCWaterBlendToBox = async (
+    result: CWaterBlendResult,
+    cacaoNibLevel: number | null = null,
+    teaRatios: Record<string, number> | null = null
+  ) => {
+    const itemId = createCWaterBlendItemId(result, cacaoNibLevel, teaRatios);
 
     if (savedBlendItems.some((item) => item.id === itemId)) {
       return { added: false, synced: true };
     }
 
-    const nextItem = createCWaterSavedBlendItem(result, cacaoNibLevel);
+    const nextItem = createCWaterSavedBlendItem(result, cacaoNibLevel, teaRatios);
     const updatedTeaBox = [nextItem, ...savedBlendItems];
     setSavedBlendItems(updatedTeaBox);
     await saveTeaBox(updatedTeaBox);
 
     try {
-      await syncSavedCWaterBlendToFirestore({ result, cacaoNibLevel, memberProfile });
+      await syncSavedCWaterBlendToFirestore({ result, cacaoNibLevel, teaRatios, memberProfile });
       return { added: true, synced: true };
     } catch (error) {
       console.warn('Failed to sync saved C.Water blend to Firestore', error);

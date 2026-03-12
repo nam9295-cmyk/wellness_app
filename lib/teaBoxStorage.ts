@@ -48,6 +48,7 @@ export interface CWaterSavedBlendItem extends SavedBlendBase {
   catalogId: string;
   teaIds: string[];
   cacaoNibLevel: number | null;
+  teaRatios: Record<string, number> | null;
   displayName: string;
   title: string;
   summary: string;
@@ -76,6 +77,20 @@ export function createCustomBlendItemId(option: CustomBlendOption): string {
     .join('_');
 
   return `custom:${option.ingredientIds.join('-')}:${ratioKey || 'default'}`;
+}
+
+export function createCWaterBlendItemId(
+  result: CWaterBlendResult,
+  cacaoNibLevel: number | null = null,
+  teaRatios: Record<string, number> | null = null
+): string {
+  const ratioKey = teaRatios
+    ? result.teaIds
+        .map((teaId) => `${teaId}-${teaRatios[teaId] ?? 0}`)
+        .join('_')
+    : 'default';
+
+  return `cwater:${result.id}:${cacaoNibLevel ?? 0}:${ratioKey}`;
 }
 
 export function createPresetSavedBlendItem(teaId: TeaRecommendationId): PresetSavedBlendItem {
@@ -124,7 +139,11 @@ export function createCustomSavedBlendItem(option: CustomBlendOption): CustomSav
   };
 }
 
-export function createCWaterSavedBlendItem(result: CWaterBlendResult, cacaoNibLevel: number | null = null): CWaterSavedBlendItem {
+export function createCWaterSavedBlendItem(
+  result: CWaterBlendResult,
+  cacaoNibLevel: number | null = null,
+  teaRatios: Record<string, number> | null = null
+): CWaterSavedBlendItem {
   const savedAt = toTimestampString(new Date());
   const toneLabel =
     result.dominantTags[0] === 'bright' || result.dominantTags[0] === 'citrus'
@@ -136,7 +155,7 @@ export function createCWaterSavedBlendItem(result: CWaterBlendResult, cacaoNibLe
           : 'C.WATER 조합';
 
   return {
-    id: `cwater:${result.id}`,
+    id: createCWaterBlendItemId(result, cacaoNibLevel, teaRatios),
     type: 'cwater',
     blendSource: 'cwater',
     blendVersion: 1,
@@ -144,6 +163,7 @@ export function createCWaterSavedBlendItem(result: CWaterBlendResult, cacaoNibLe
     catalogId: result.id,
     teaIds: result.teaIds,
     cacaoNibLevel,
+    teaRatios,
     displayName: result.displayName,
     title: result.displayName,
     summary: result.summary,
@@ -285,6 +305,7 @@ function normalizeSavedBlendItem(item: unknown): SavedBlendItem | null {
         ? record.teaIds.filter((value): value is string => typeof value === 'string')
         : [],
       cacaoNibLevel: typeof record.cacaoNibLevel === 'number' ? record.cacaoNibLevel : null,
+      teaRatios: normalizeBlendRatios(record.teaRatios) ?? null,
       displayName:
         typeof record.displayName === 'string'
           ? record.displayName

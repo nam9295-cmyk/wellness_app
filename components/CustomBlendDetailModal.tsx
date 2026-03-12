@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBanner } from '@/components/StatusBanner';
 import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { CWaterBlendResult, getCWaterBlendVisualProfile } from '@/lib/cwaterBlendEngine';
-import { createCustomBlendItemId } from '@/lib/teaBoxStorage';
+import { createCustomBlendItemId, createCWaterBlendItemId } from '@/lib/teaBoxStorage';
 import { CustomBlendOption, getCustomBlendVisualProfile } from '@/lib/customBlendEngine';
 import { colors, spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
@@ -21,6 +21,7 @@ export function CustomBlendDetailModal({
   onClose,
 }: CustomBlendDetailModalProps) {
   const cacaoSteps = [0, 10, 20, 30] as const;
+  const teaRatioSteps = [30, 50, 70] as const;
   const router = useRouter();
   const { savedBlendItems, saveCustomBlendToBox, saveCWaterBlendToBox } = useStore();
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -28,9 +29,16 @@ export function CustomBlendDetailModal({
   const [cacaoPreviewValue, setCacaoPreviewValue] = useState(0);
   const [cacaoSliderWidth, setCacaoSliderWidth] = useState(0);
   const [isAdjustingCacao, setIsAdjustingCacao] = useState(false);
+  const [teaRatioLevel, setTeaRatioLevel] = useState<30 | 50 | 70>(50);
+  const [teaRatioPreviewValue, setTeaRatioPreviewValue] = useState(50);
+  const [teaRatioSliderWidth, setTeaRatioSliderWidth] = useState(0);
+  const [isAdjustingTeaRatio, setIsAdjustingTeaRatio] = useState(false);
   const cacaoProgress = useRef(new Animated.Value(0)).current;
+  const teaRatioProgress = useRef(new Animated.Value(0.5)).current;
   const dragStartRatioRef = useRef(0);
   const cacaoDidDragRef = useRef(false);
+  const teaRatioDragStartRef = useRef(0.5);
+  const teaRatioDidDragRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
@@ -38,8 +46,11 @@ export function CustomBlendDetailModal({
       setCacaoNibLevel(0);
       setCacaoPreviewValue(0);
       cacaoProgress.setValue(0);
+      setTeaRatioLevel(50);
+      setTeaRatioPreviewValue(50);
+      teaRatioProgress.setValue(0.5);
     }
-  }, [visible, option?.displayName, cacaoProgress]);
+  }, [visible, option?.displayName, cacaoProgress, teaRatioProgress]);
 
   const isCWaterOption = Boolean(option && 'teas' in option);
   const customOption = option && !isCWaterOption ? (option as CustomBlendOption) : null;
@@ -68,6 +79,35 @@ export function CustomBlendDetailModal({
       setCacaoPreviewValue(snappedValue);
       Animated.timing(cacaoProgress, {
         toValue: snappedValue / 30,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+  const snapTeaRatioLevel = (rawValue: number) => {
+    return teaRatioSteps.reduce((closest, step) =>
+      Math.abs(step - rawValue) < Math.abs(closest - rawValue) ? step : closest
+    , teaRatioSteps[0]);
+  };
+
+  const applyTeaRatio = (ratio: number, shouldSnap: boolean) => {
+    if (!teaRatioSliderWidth) {
+      return;
+    }
+
+    const clampedRatio = Math.max(0, Math.min(ratio, 1));
+    const rawValue = Math.round(30 + clampedRatio * 40);
+
+    setTeaRatioPreviewValue(rawValue);
+    teaRatioProgress.setValue(clampedRatio);
+
+    if (shouldSnap) {
+      const snappedValue = snapTeaRatioLevel(rawValue);
+      setTeaRatioLevel(snappedValue);
+      setTeaRatioPreviewValue(snappedValue);
+      Animated.timing(teaRatioProgress, {
+        toValue: (snappedValue - 30) / 40,
         duration: 180,
         useNativeDriver: false,
       }).start();
@@ -128,12 +168,78 @@ export function CustomBlendDetailModal({
     [cacaoNibLevel, cacaoSliderWidth]
   );
 
+  const teaRatioPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          setIsAdjustingTeaRatio(true);
+          teaRatioDidDragRef.current = false;
+          teaRatioDragStartRef.current = (teaRatioLevel - 30) / 40;
+          applyTeaRatio(teaRatioDragStartRef.current, false);
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (Math.abs(gestureState.dx) > 2) {
+            teaRatioDidDragRef.current = true;
+          }
+          const nextRatio =
+            teaRatioDragStartRef.current +
+            (teaRatioSliderWidth > 0 ? gestureState.dx / teaRatioSliderWidth : 0);
+          applyTeaRatio(nextRatio, false);
+        },
+        onPanResponderRelease: (event, gestureState) => {
+          if (!teaRatioDidDragRef.current) {
+            const tappedRatio =
+              teaRatioSliderWidth > 0
+                ? Math.max(0, Math.min(event.nativeEvent.locationX / teaRatioSliderWidth, 1))
+                : (teaRatioLevel - 30) / 40;
+            applyTeaRatio(tappedRatio, true);
+          } else {
+            const nextRatio =
+              teaRatioDragStartRef.current +
+              (teaRatioSliderWidth > 0 ? gestureState.dx / teaRatioSliderWidth : 0);
+            applyTeaRatio(nextRatio, true);
+          }
+          setIsAdjustingTeaRatio(false);
+        },
+        onPanResponderTerminate: (event, gestureState) => {
+          if (!teaRatioDidDragRef.current) {
+            const tappedRatio =
+              teaRatioSliderWidth > 0
+                ? Math.max(0, Math.min(event.nativeEvent.locationX / teaRatioSliderWidth, 1))
+                : (teaRatioLevel - 30) / 40;
+            applyTeaRatio(tappedRatio, true);
+          } else {
+            const nextRatio =
+              teaRatioDragStartRef.current +
+              (teaRatioSliderWidth > 0 ? gestureState.dx / teaRatioSliderWidth : 0);
+            applyTeaRatio(nextRatio, true);
+          }
+          setIsAdjustingTeaRatio(false);
+        },
+      }),
+    [teaRatioLevel, teaRatioSliderWidth]
+  );
+
   const cacaoFillWidth = Animated.multiply(cacaoProgress, cacaoSliderWidth);
   const cacaoThumbOffset = Animated.multiply(cacaoProgress, Math.max(cacaoSliderWidth - 28, 0));
+  const teaRatioFillWidth = Animated.multiply(teaRatioProgress, teaRatioSliderWidth);
+  const teaRatioThumbOffset = Animated.multiply(teaRatioProgress, Math.max(teaRatioSliderWidth - 28, 0));
+  const cWaterTeaRatios = useMemo(() => {
+    if (!cWaterOption || cWaterOption.teaIds.length !== 2) {
+      return null;
+    }
+
+    return {
+      [cWaterOption.teaIds[0]]: teaRatioLevel,
+      [cWaterOption.teaIds[1]]: 100 - teaRatioLevel,
+    };
+  }, [cWaterOption, teaRatioLevel]);
 
   const isSaved = useMemo(() => {
     if (cWaterOption) {
-      return savedBlendItems.some((item) => item.id === `cwater:${cWaterOption.id}:${cacaoNibLevel}`);
+      return savedBlendItems.some((item) => item.id === createCWaterBlendItemId(cWaterOption, cacaoNibLevel, cWaterTeaRatios));
     }
 
     if (!customOption) {
@@ -141,14 +247,55 @@ export function CustomBlendDetailModal({
     }
 
     return savedBlendItems.some((item) => item.id === createCustomBlendItemId(customOption));
-  }, [cWaterOption, cacaoNibLevel, customOption, savedBlendItems]);
+  }, [cWaterOption, cacaoNibLevel, cWaterTeaRatios, customOption, savedBlendItems]);
+
+  const customVisualProfile = customOption ? getCustomBlendVisualProfile(customOption) : null;
+  const cWaterVisualProfile = cWaterOption ? getCWaterBlendVisualProfile(cWaterOption) : null;
+  const cWaterProfileBars = useMemo(() => {
+    if (!cWaterOption || !cWaterVisualProfile) {
+      return [];
+    }
+
+    const tagSet = new Set(cWaterOption.dominantTags);
+    const orderValue =
+      tagSet.has('clean') || tagSet.has('focus') ? 4.4 :
+      tagSet.has('calm') || tagSet.has('daily') ? 3.8 :
+      3.2;
+
+    return [
+      ...cWaterVisualProfile.bars,
+      { key: 'order', label: '정돈감', value: orderValue },
+    ];
+  }, [cWaterOption, cWaterVisualProfile]);
+  const cWaterMoments = useMemo(() => {
+    if (!cWaterOption) {
+      return [];
+    }
+
+    const timeLabelMap: Record<string, string> = {
+      morning: '아침',
+      afternoon: '오후',
+      evening: '저녁',
+      night: '밤',
+      daily: '데일리',
+      reset: '가벼운 전환',
+      focus: '집중 전환',
+      calm: '차분한 흐름',
+    };
+
+    const labels = new Set<string>();
+    cWaterOption.teas.forEach((tea) => {
+      tea.timeTags.forEach((timeTag) => {
+        labels.add(timeLabelMap[timeTag] ?? timeTag);
+      });
+    });
+    return Array.from(labels).slice(0, 4);
+  }, [cWaterOption]);
 
   if (!option) {
     return null;
   }
 
-  const customVisualProfile = customOption ? getCustomBlendVisualProfile(customOption) : null;
-  const cWaterVisualProfile = cWaterOption ? getCWaterBlendVisualProfile(cWaterOption) : null;
   const openCustomBlendLab = () => {
     if (!customOption) {
       return;
@@ -173,7 +320,7 @@ export function CustomBlendDetailModal({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
-            scrollEnabled={!isAdjustingCacao}
+            scrollEnabled={!isAdjustingCacao && !isAdjustingTeaRatio}
           >
             <View style={styles.handle} />
 
@@ -201,6 +348,18 @@ export function CustomBlendDetailModal({
               )}
               <Text style={[styles.title, isCWaterOption && styles.cWaterTitle]}>{option.displayName}</Text>
               <Text style={[styles.summary, isCWaterOption && styles.cWaterSummary]}>{option.summary}</Text>
+              {isCWaterOption ? (
+                <View style={styles.cWaterHeroProfileWrap}>
+                  {(cWaterProfileBars ?? []).map((bar) => (
+                    <View key={bar.key} style={styles.cWaterHeroProfileRow}>
+                      <Text style={styles.cWaterHeroProfileLabel}>{bar.label}</Text>
+                      <View style={styles.cWaterHeroProfileTrack}>
+                        <View style={[styles.cWaterHeroProfileFill, { width: `${(bar.value / 5) * 100}%` }]} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
               <Text style={[styles.detail, isCWaterOption && styles.cWaterDetail]}>{option.detail}</Text>
             </View>
 
@@ -215,6 +374,104 @@ export function CustomBlendDetailModal({
                         <Text style={styles.ingredientChipText}>{ingredient}</Text>
                       </View>
                     ))}
+                  </View>
+                  <View style={styles.cWaterBalanceWrap}>
+                    <View style={styles.cWaterBalanceRow}>
+                      {(cWaterOption?.teas ?? []).map((tea) => (
+                        <View key={tea.id} style={styles.cWaterBalanceItem}>
+                          <View style={styles.cWaterBalanceLabelRow}>
+                            <Text style={styles.cWaterBalanceLabel}>{tea.displayName}</Text>
+                            <Text style={styles.cWaterBalanceValue}>{cWaterTeaRatios?.[tea.id] ?? 50}</Text>
+                          </View>
+                          <View style={styles.cWaterBalanceTrack}>
+                            <View style={[styles.cWaterBalanceFill, { width: `${cWaterTeaRatios?.[tea.id] ?? 50}%` }]} />
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.cWaterControlPanel}>
+                      <View style={styles.cWaterControlHeader}>
+                        <Text style={styles.cWaterControlGroupTitle}>조절</Text>
+                        <Text style={styles.cWaterControlGroupHint}>밸런스와 농도를 한 번에 맞춰볼 수 있어요.</Text>
+                      </View>
+                      <View style={styles.cWaterControlStack}>
+                        {cWaterOption && cWaterOption.teas.length === 2 ? (
+                          <View style={styles.cWaterControlSection}>
+                            <View style={styles.cWaterTeaRatioHeader}>
+                              <Text style={styles.cWaterControlTitle}>티 비율</Text>
+                              <Text style={styles.cWaterTeaRatioValue}>
+                                {teaRatioPreviewValue} / {100 - teaRatioPreviewValue}
+                              </Text>
+                            </View>
+                            <View
+                              style={styles.cacaoSliderWrap}
+                              onLayout={(event) => setTeaRatioSliderWidth(event.nativeEvent.layout.width)}
+                              {...teaRatioPanResponder.panHandlers}
+                            >
+                              <View style={styles.cacaoSliderTrack} />
+                              <Animated.View style={[styles.cacaoSliderFill, styles.cWaterTeaRatioFill, { width: teaRatioFillWidth }]} />
+                              <View style={styles.cacaoStepRow} pointerEvents="none">
+                                {teaRatioSteps.map((level) => (
+                                  <View key={level} style={styles.cacaoStepMark} />
+                                ))}
+                              </View>
+                              <Animated.View style={[styles.cacaoSliderThumb, { transform: [{ translateX: teaRatioThumbOffset }] }]} />
+                            </View>
+                            <View style={styles.cacaoTickLabelRow}>
+                              {teaRatioSteps.map((level) => (
+                                <Text key={level} style={[styles.cacaoTickLabel, teaRatioLevel === level && styles.cacaoTickLabelActive]}>
+                                  {level}/{100 - level}
+                                </Text>
+                              ))}
+                            </View>
+                          </View>
+                        ) : null}
+
+                        <View style={styles.cWaterControlSection}>
+                          <View style={styles.cacaoValueRow}>
+                            <Text style={styles.cWaterControlTitle}>카카오 농도</Text>
+                            <Text style={styles.cacaoValueText}>{cacaoPreviewValue}</Text>
+                          </View>
+                          <View
+                            style={styles.cacaoSliderWrap}
+                            onLayout={(event) => setCacaoSliderWidth(event.nativeEvent.layout.width)}
+                            {...cacaoPanResponder.panHandlers}
+                          >
+                            <View style={styles.cacaoSliderTrack} />
+                            <Animated.View style={[styles.cacaoSliderFill, { width: cacaoFillWidth }]} />
+                            <View style={styles.cacaoStepRow} pointerEvents="none">
+                              {cacaoSteps.map((level) => (
+                                <View key={level} style={styles.cacaoStepMark} />
+                              ))}
+                            </View>
+                            <Animated.View style={[styles.cacaoSliderThumb, { transform: [{ translateX: cacaoThumbOffset }] }]} />
+                          </View>
+                          <View style={styles.cacaoTickLabelRow}>
+                            {cacaoSteps.map((level) => (
+                              <Text key={level} style={[styles.cacaoTickLabel, cacaoNibLevel === level && styles.cacaoTickLabelActive]}>
+                                {level}
+                              </Text>
+                            ))}
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.cWaterResultMeta}>
+                        {cWaterOption && cWaterOption.teas.length === 2 ? (
+                          <View style={styles.cWaterResultMetaItem}>
+                            <Text style={styles.cWaterCacaoMetaLabel}>티 비율</Text>
+                            <Text style={styles.cWaterResultMetaValue}>
+                              {teaRatioLevel}/{100 - teaRatioLevel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        <View style={styles.cWaterResultMetaItem}>
+                          <Text style={styles.cWaterCacaoMetaLabel}>카카오 농도</Text>
+                          <Text style={styles.cWaterResultMetaValue}>{cacaoNibLevel}</Text>
+                        </View>
+                      </View>
+                    </View>
                   </View>
                 </>
               ) : (
@@ -242,8 +499,18 @@ export function CustomBlendDetailModal({
                 {cWaterOption ? cWaterVisualProfile?.contextLine : customOption?.contextLine}
               </Text>
 
+              {isCWaterOption ? (
+                <View style={styles.cWaterMomentWrap}>
+                  {cWaterMoments.map((moment) => (
+                    <View key={moment} style={styles.cWaterMomentChip}>
+                      <Text style={styles.cWaterMomentText}>{moment}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
               <View style={[styles.barGroup, isCWaterOption && styles.cWaterBarGroup]}>
-                {(cWaterOption ? cWaterVisualProfile?.bars ?? [] : customVisualProfile?.bars ?? []).map((bar) => (
+                {(cWaterOption ? cWaterProfileBars : customVisualProfile?.bars ?? []).map((bar) => (
                   <View key={bar.key} style={styles.barRow}>
                     <Text style={[styles.barLabel, isCWaterOption && styles.cWaterBarLabel]}>{bar.label}</Text>
                     <View style={styles.barTrack}>
@@ -256,36 +523,6 @@ export function CustomBlendDetailModal({
 
             {isCWaterOption ? (
               <>
-                <View style={[styles.metaCard, styles.cWaterMetaCard]}>
-                  <Text style={styles.sectionTitle}>카카오 농도</Text>
-                  <Text style={styles.cWaterSectionLead}>현재 조합 위에 카카오 풍미를 4단계로 조절할 수 있어요.</Text>
-                  <View style={styles.cacaoValueRow}>
-                    <Text style={styles.cacaoValueLabel}>현재 선택</Text>
-                    <Text style={styles.cacaoValueText}>{cacaoPreviewValue}</Text>
-                  </View>
-                  <View
-                    style={styles.cacaoSliderWrap}
-                    onLayout={(event) => setCacaoSliderWidth(event.nativeEvent.layout.width)}
-                    {...cacaoPanResponder.panHandlers}
-                  >
-                    <View style={styles.cacaoSliderTrack} />
-                    <Animated.View style={[styles.cacaoSliderFill, { width: cacaoFillWidth }]} />
-                    <View style={styles.cacaoStepRow} pointerEvents="none">
-                      {cacaoSteps.map((level) => (
-                        <View key={level} style={styles.cacaoStepMark} />
-                      ))}
-                    </View>
-                    <Animated.View style={[styles.cacaoSliderThumb, { transform: [{ translateX: cacaoThumbOffset }] }]} />
-                  </View>
-                  <View style={styles.cacaoTickLabelRow}>
-                    {cacaoSteps.map((level) => (
-                      <Text key={level} style={[styles.cacaoTickLabel, cacaoNibLevel === level && styles.cacaoTickLabelActive]}>
-                        {level}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-
                 <View style={[styles.readOnlyCard, styles.cWaterReadOnlyCard]}>
                   <Text style={styles.readOnlyTitle}>추천 조합</Text>
                   <Text style={styles.readOnlyText}>
@@ -298,7 +535,7 @@ export function CustomBlendDetailModal({
                   style={[styles.saveButton, styles.cWaterSaveButton, isSaved && styles.saveButtonSaved]}
                   disabled={isSaved}
                   onPress={async () => {
-                    const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult, cacaoNibLevel);
+                    const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult, cacaoNibLevel, cWaterTeaRatios);
                     if (!result.added) {
                       setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
                       return;
@@ -474,6 +711,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 28,
   },
+  cWaterHeroProfileWrap: {
+    marginTop: spacing.md,
+    gap: spacing.xs,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  cWaterHeroProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cWaterHeroProfileLabel: {
+    ...atelierText.helper,
+    width: 54,
+    color: atelierColors.text,
+    fontWeight: '700',
+  },
+  cWaterHeroProfileTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: atelierColors.border,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  cWaterHeroProfileFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: atelierColors.deepGreen,
+  },
   detail: {
     marginTop: spacing.md,
     ...atelierText.bodyMuted,
@@ -505,6 +775,141 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
+  },
+  cWaterBalanceWrap: {
+    marginTop: spacing.md,
+    gap: spacing.md,
+  },
+  cWaterControlPanel: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    borderRadius: 18,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  cWaterControlHeader: {
+    gap: 4,
+  },
+  cWaterControlGroupTitle: {
+    ...atelierText.cardTitleMd,
+    color: atelierColors.text,
+  },
+  cWaterControlGroupHint: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  cWaterControlSection: {
+    gap: spacing.xs,
+  },
+  cWaterControlStack: {
+    gap: spacing.md,
+  },
+  cWaterTeaRatioWrap: {
+    gap: spacing.xs,
+  },
+  cWaterTeaRatioHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  cWaterTeaRatioValue: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cWaterControlTitle: {
+    ...atelierText.cardTitleMd,
+    color: atelierColors.text,
+    fontSize: 14,
+  },
+  cWaterBalanceRow: {
+    gap: spacing.sm,
+  },
+  cWaterBalanceItem: {
+    gap: spacing.xs,
+  },
+  cWaterBalanceLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  cWaterBalanceLabel: {
+    ...atelierText.body,
+    fontSize: 13,
+    color: atelierColors.text,
+    flex: 1,
+  },
+  cWaterBalanceValue: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    fontSize: 11,
+  },
+  cWaterBalanceTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: atelierColors.border,
+    overflow: 'hidden',
+  },
+  cWaterBalanceFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: atelierColors.deepGreenSoft,
+  },
+  cWaterCacaoMeta: {
+    marginTop: spacing.xs,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    borderRadius: 18,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  cWaterCacaoMetaLabel: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  cWaterCacaoMetaTrack: {
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: atelierColors.border,
+    overflow: 'hidden',
+  },
+  cWaterCacaoMetaFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: atelierColors.cocoaStrong,
+  },
+  cWaterTeaRatioFill: {
+    backgroundColor: atelierColors.deepGreenSoft,
+  },
+  cWaterCacaoMetaValue: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    alignSelf: 'flex-end',
+  },
+  cWaterResultMeta: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  cWaterResultMetaItem: {
+    flex: 1,
+    backgroundColor: atelierColors.surface,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    borderRadius: 14,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    gap: 4,
+  },
+  cWaterResultMetaValue: {
+    ...atelierText.cardTitleMd,
+    color: atelierColors.deepGreen,
   },
   cWaterSectionLead: {
     ...atelierText.bodyMuted,
@@ -563,6 +968,27 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     color: atelierColors.text,
   },
+  cWaterMomentWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  cWaterMomentChip: {
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.deepGreenSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  cWaterMomentText: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   barGroup: {
     marginTop: spacing.md,
     gap: spacing.xs,
@@ -572,10 +998,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cacaoValueRow: {
-    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
+    gap: spacing.md,
   },
   cacaoValueLabel: {
     ...atelierText.helper,
@@ -586,7 +1012,7 @@ const styles = StyleSheet.create({
     color: atelierColors.deepGreen,
   },
   cacaoSliderWrap: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     height: 34,
     justifyContent: 'center',
   },
@@ -636,7 +1062,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cacaoTickLabelRow: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -727,10 +1153,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   cWaterReadOnlyCard: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
   cWaterSaveGuide: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     ...atelierText.bodyMuted,
     textAlign: 'center',
     lineHeight: 21,

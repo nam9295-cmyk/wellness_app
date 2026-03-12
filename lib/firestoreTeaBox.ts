@@ -28,6 +28,7 @@ interface SyncSavedCustomBlendToFirestoreInput {
 interface SyncSavedCWaterBlendToFirestoreInput {
   result: CWaterBlendResult;
   cacaoNibLevel?: number | null;
+  teaRatios?: Record<string, number> | null;
   memberProfile?: MemberProfile | null;
 }
 
@@ -73,7 +74,11 @@ function toSavedBlendItem(data: Record<string, unknown>, docId: string): SavedBl
       teaIds: Array.isArray(data.teaIds)
         ? data.teaIds.filter((value): value is string => typeof value === 'string')
         : [],
-      cacaoNibLevel: null,
+      cacaoNibLevel:
+        typeof data.cacaoNibLevel === 'number'
+          ? data.cacaoNibLevel
+          : null,
+      teaRatios: normalizeBlendRatios(data.teaRatios) ?? null,
       displayName:
         typeof data.displayName === 'string'
           ? data.displayName
@@ -300,6 +305,7 @@ export async function syncSavedCustomBlendToFirestore({
 export async function syncSavedCWaterBlendToFirestore({
   result,
   cacaoNibLevel = null,
+  teaRatios = null,
   memberProfile,
 }: SyncSavedCWaterBlendToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
@@ -308,7 +314,7 @@ export async function syncSavedCWaterBlendToFirestore({
 
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
-  const cwaterItem = createCWaterSavedBlendItem(result, cacaoNibLevel);
+  const cwaterItem = createCWaterSavedBlendItem(result, cacaoNibLevel, teaRatios);
   const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await setDoc(
@@ -321,6 +327,7 @@ export async function syncSavedCWaterBlendToFirestore({
       catalogId: cwaterItem.catalogId,
       teaIds: cwaterItem.teaIds,
       cacaoNibLevel: cwaterItem.cacaoNibLevel,
+      teaRatios: cwaterItem.teaRatios,
       displayName: cwaterItem.displayName,
       title: cwaterItem.title,
       summary: cwaterItem.summary,
