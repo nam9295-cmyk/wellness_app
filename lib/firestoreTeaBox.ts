@@ -27,6 +27,7 @@ interface SyncSavedCustomBlendToFirestoreInput {
 
 interface SyncSavedCWaterBlendToFirestoreInput {
   result: CWaterBlendResult;
+  cacaoNibLevel?: number | null;
   memberProfile?: MemberProfile | null;
 }
 
@@ -298,6 +299,7 @@ export async function syncSavedCustomBlendToFirestore({
 
 export async function syncSavedCWaterBlendToFirestore({
   result,
+  cacaoNibLevel = null,
   memberProfile,
 }: SyncSavedCWaterBlendToFirestoreInput): Promise<{ synced: boolean; memberId?: string }> {
   if (!isFirebaseConfigured() || !db) {
@@ -306,7 +308,7 @@ export async function syncSavedCWaterBlendToFirestore({
 
   const memberId = await getOrCreateMemberId();
   const nowLabel = toTimestampString(new Date());
-  const cwaterItem = createCWaterSavedBlendItem(result);
+  const cwaterItem = createCWaterSavedBlendItem(result, cacaoNibLevel);
   const resolvedProfile = mergeMemberProfile(memberProfile);
 
   await setDoc(

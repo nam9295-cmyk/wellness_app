@@ -278,6 +278,9 @@ export default function MyScreen() {
           {cwaterBlendItems.length > 0 ? (
             <View>
               {cwaterBlendItems.map((item) => {
+                const cacaoLabel =
+                  typeof item.cacaoNibLevel === 'number' ? `카카오 ${item.cacaoNibLevel}` : '카카오 0';
+
                 return (
                   <View key={item.id} style={styles.teaItem}>
                     <View style={styles.teaItemMain}>
@@ -287,11 +290,23 @@ export default function MyScreen() {
                         </Text>
                       </View>
                       <View style={styles.teaItemText}>
-                        <Text style={styles.teaItemBadge}>{item.toneLabel}</Text>
+                        <View style={styles.teaItemMetaRow}>
+                          <Text style={styles.teaItemBadge}>{item.toneLabel}</Text>
+                          <View style={styles.cacaoLevelPill}>
+                            <Text style={styles.cacaoLevelPillText}>{cacaoLabel}</Text>
+                          </View>
+                        </View>
                         <Text style={styles.teaName}>{item.displayName || item.title}</Text>
                         <Text style={styles.teaSubtitle} numberOfLines={2}>
                           {item.summary || item.shortDescription}
                         </Text>
+                        <View style={styles.savedTagRow}>
+                          {(item.tags || []).slice(0, 3).map((tag) => (
+                            <View key={tag} style={styles.savedTagChip}>
+                              <Text style={styles.savedTagText}>{tag}</Text>
+                            </View>
+                          ))}
+                        </View>
                         <Text style={styles.teaItemMeta} numberOfLines={1}>
                           {item.ingredientNames.join(' · ')}
                         </Text>
@@ -501,12 +516,33 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  teaItemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: 2,
+  },
   teaItemBadge: {
     ...atelierText.pill,
     fontSize: 12,
     color: atelierColors.deepGreen,
-    marginBottom: 2,
     letterSpacing: -0.1,
+    flexShrink: 1,
+  },
+  cacaoLevelPill: {
+    backgroundColor: atelierColors.deepGreenMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.deepGreenSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  cacaoLevelPillText: {
+    ...atelierText.pill,
+    color: atelierColors.deepGreen,
+    fontSize: 11,
+    fontWeight: '700',
   },
   customBlendBadge: {
     width: 48,
@@ -538,15 +574,38 @@ const styles = StyleSheet.create({
   teaSubtitle: {
     ...atelierText.bodyMuted,
   },
+  savedTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    marginBottom: 2,
+  },
+  savedTagChip: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  savedTagText: {
+    ...atelierText.pill,
+    color: atelierColors.text,
+    fontSize: 11,
+    fontWeight: '600',
+  },
   teaItemMeta: {
     ...atelierText.helper,
     color: atelierColors.deepGreen,
     letterSpacing: -0.1,
+    marginTop: spacing.xs,
   },
   customBlendContext: {
     ...atelierText.helper,
     color: atelierColors.textSoft,
     letterSpacing: -0.1,
+    marginTop: 2,
   },
   removeButton: {
     paddingHorizontal: spacing.lg,

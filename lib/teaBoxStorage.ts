@@ -47,7 +47,7 @@ export interface CWaterSavedBlendItem extends SavedBlendBase {
   recommendationType: 'cwater';
   catalogId: string;
   teaIds: string[];
-  cacaoNibLevel: null;
+  cacaoNibLevel: number | null;
   displayName: string;
   title: string;
   summary: string;
@@ -124,7 +124,7 @@ export function createCustomSavedBlendItem(option: CustomBlendOption): CustomSav
   };
 }
 
-export function createCWaterSavedBlendItem(result: CWaterBlendResult): CWaterSavedBlendItem {
+export function createCWaterSavedBlendItem(result: CWaterBlendResult, cacaoNibLevel: number | null = null): CWaterSavedBlendItem {
   const savedAt = toTimestampString(new Date());
   const toneLabel =
     result.dominantTags[0] === 'bright' || result.dominantTags[0] === 'citrus'
@@ -143,7 +143,7 @@ export function createCWaterSavedBlendItem(result: CWaterBlendResult): CWaterSav
     recommendationType: 'cwater',
     catalogId: result.id,
     teaIds: result.teaIds,
-    cacaoNibLevel: null,
+    cacaoNibLevel,
     displayName: result.displayName,
     title: result.displayName,
     summary: result.summary,
@@ -284,7 +284,7 @@ function normalizeSavedBlendItem(item: unknown): SavedBlendItem | null {
       teaIds: Array.isArray(record.teaIds)
         ? record.teaIds.filter((value): value is string => typeof value === 'string')
         : [],
-      cacaoNibLevel: null,
+      cacaoNibLevel: typeof record.cacaoNibLevel === 'number' ? record.cacaoNibLevel : null,
       displayName:
         typeof record.displayName === 'string'
           ? record.displayName

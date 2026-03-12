@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBanner } from '@/components/StatusBanner';
 import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
@@ -20,23 +20,120 @@ export function CustomBlendDetailModal({
   option,
   onClose,
 }: CustomBlendDetailModalProps) {
+  const cacaoSteps = [0, 10, 20, 30] as const;
   const router = useRouter();
   const { savedBlendItems, saveCustomBlendToBox, saveCWaterBlendToBox } = useStore();
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [cacaoNibLevel, setCacaoNibLevel] = useState<0 | 10 | 20 | 30>(0);
+  const [cacaoPreviewValue, setCacaoPreviewValue] = useState(0);
+  const [cacaoSliderWidth, setCacaoSliderWidth] = useState(0);
+  const [isAdjustingCacao, setIsAdjustingCacao] = useState(false);
+  const cacaoProgress = useRef(new Animated.Value(0)).current;
+  const dragStartRatioRef = useRef(0);
+  const cacaoDidDragRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
       setFeedbackMessage('');
+      setCacaoNibLevel(0);
+      setCacaoPreviewValue(0);
+      cacaoProgress.setValue(0);
     }
-  }, [visible, option?.displayName]);
+  }, [visible, option?.displayName, cacaoProgress]);
 
   const isCWaterOption = Boolean(option && 'teas' in option);
   const customOption = option && !isCWaterOption ? (option as CustomBlendOption) : null;
   const cWaterOption = option && isCWaterOption ? (option as CWaterBlendResult) : null;
 
+  const snapCacaoLevel = (rawValue: number) => {
+    return cacaoSteps.reduce((closest, step) =>
+      Math.abs(step - rawValue) < Math.abs(closest - rawValue) ? step : closest
+    , cacaoSteps[0]);
+  };
+
+  const applyCacaoRatio = (ratio: number, shouldSnap: boolean) => {
+    if (!cacaoSliderWidth) {
+      return;
+    }
+
+    const clampedRatio = Math.max(0, Math.min(ratio, 1));
+    const rawValue = Math.round(clampedRatio * 30);
+
+    setCacaoPreviewValue(rawValue);
+    cacaoProgress.setValue(clampedRatio);
+
+    if (shouldSnap) {
+      const snappedValue = snapCacaoLevel(rawValue);
+      setCacaoNibLevel(snappedValue);
+      setCacaoPreviewValue(snappedValue);
+      Animated.timing(cacaoProgress, {
+        toValue: snappedValue / 30,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+  const cacaoPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          setIsAdjustingCacao(true);
+          cacaoDidDragRef.current = false;
+          dragStartRatioRef.current = cacaoNibLevel / 30;
+          applyCacaoRatio(dragStartRatioRef.current, false);
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (Math.abs(gestureState.dx) > 2) {
+            cacaoDidDragRef.current = true;
+          }
+          const nextRatio =
+            dragStartRatioRef.current +
+            (cacaoSliderWidth > 0 ? gestureState.dx / cacaoSliderWidth : 0);
+          applyCacaoRatio(nextRatio, false);
+        },
+        onPanResponderRelease: (event, gestureState) => {
+          if (!cacaoDidDragRef.current) {
+            const tappedRatio =
+              cacaoSliderWidth > 0
+                ? Math.max(0, Math.min(event.nativeEvent.locationX / cacaoSliderWidth, 1))
+                : cacaoNibLevel / 30;
+            applyCacaoRatio(tappedRatio, true);
+          } else {
+            const nextRatio =
+              dragStartRatioRef.current +
+              (cacaoSliderWidth > 0 ? gestureState.dx / cacaoSliderWidth : 0);
+            applyCacaoRatio(nextRatio, true);
+          }
+          setIsAdjustingCacao(false);
+        },
+        onPanResponderTerminate: (event, gestureState) => {
+          if (!cacaoDidDragRef.current) {
+            const tappedRatio =
+              cacaoSliderWidth > 0
+                ? Math.max(0, Math.min(event.nativeEvent.locationX / cacaoSliderWidth, 1))
+                : cacaoNibLevel / 30;
+            applyCacaoRatio(tappedRatio, true);
+          } else {
+            const nextRatio =
+              dragStartRatioRef.current +
+              (cacaoSliderWidth > 0 ? gestureState.dx / cacaoSliderWidth : 0);
+            applyCacaoRatio(nextRatio, true);
+          }
+          setIsAdjustingCacao(false);
+        },
+      }),
+    [cacaoNibLevel, cacaoSliderWidth]
+  );
+
+  const cacaoFillWidth = Animated.multiply(cacaoProgress, cacaoSliderWidth);
+  const cacaoThumbOffset = Animated.multiply(cacaoProgress, Math.max(cacaoSliderWidth - 28, 0));
+
   const isSaved = useMemo(() => {
     if (cWaterOption) {
-      return savedBlendItems.some((item) => item.id === `cwater:${cWaterOption.id}`);
+      return savedBlendItems.some((item) => item.id === `cwater:${cWaterOption.id}:${cacaoNibLevel}`);
     }
 
     if (!customOption) {
@@ -44,7 +141,7 @@ export function CustomBlendDetailModal({
     }
 
     return savedBlendItems.some((item) => item.id === createCustomBlendItemId(customOption));
-  }, [customOption, savedBlendItems]);
+  }, [cWaterOption, cacaoNibLevel, customOption, savedBlendItems]);
 
   if (!option) {
     return null;
@@ -73,7 +170,11 @@ export function CustomBlendDetailModal({
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View style={styles.sheet}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+            scrollEnabled={!isAdjustingCacao}
+          >
             <View style={styles.handle} />
 
             <View style={[styles.heroCard, isCWaterOption && styles.cWaterHeroCard]}>
@@ -155,6 +256,36 @@ export function CustomBlendDetailModal({
 
             {isCWaterOption ? (
               <>
+                <View style={[styles.metaCard, styles.cWaterMetaCard]}>
+                  <Text style={styles.sectionTitle}>카카오 농도</Text>
+                  <Text style={styles.cWaterSectionLead}>현재 조합 위에 카카오 풍미를 4단계로 조절할 수 있어요.</Text>
+                  <View style={styles.cacaoValueRow}>
+                    <Text style={styles.cacaoValueLabel}>현재 선택</Text>
+                    <Text style={styles.cacaoValueText}>{cacaoPreviewValue}</Text>
+                  </View>
+                  <View
+                    style={styles.cacaoSliderWrap}
+                    onLayout={(event) => setCacaoSliderWidth(event.nativeEvent.layout.width)}
+                    {...cacaoPanResponder.panHandlers}
+                  >
+                    <View style={styles.cacaoSliderTrack} />
+                    <Animated.View style={[styles.cacaoSliderFill, { width: cacaoFillWidth }]} />
+                    <View style={styles.cacaoStepRow} pointerEvents="none">
+                      {cacaoSteps.map((level) => (
+                        <View key={level} style={styles.cacaoStepMark} />
+                      ))}
+                    </View>
+                    <Animated.View style={[styles.cacaoSliderThumb, { transform: [{ translateX: cacaoThumbOffset }] }]} />
+                  </View>
+                  <View style={styles.cacaoTickLabelRow}>
+                    {cacaoSteps.map((level) => (
+                      <Text key={level} style={[styles.cacaoTickLabel, cacaoNibLevel === level && styles.cacaoTickLabelActive]}>
+                        {level}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+
                 <View style={[styles.readOnlyCard, styles.cWaterReadOnlyCard]}>
                   <Text style={styles.readOnlyTitle}>추천 조합</Text>
                   <Text style={styles.readOnlyText}>
@@ -167,7 +298,7 @@ export function CustomBlendDetailModal({
                   style={[styles.saveButton, styles.cWaterSaveButton, isSaved && styles.saveButtonSaved]}
                   disabled={isSaved}
                   onPress={async () => {
-                    const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult);
+                    const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult, cacaoNibLevel);
                     if (!result.added) {
                       setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
                       return;
@@ -439,6 +570,82 @@ const styles = StyleSheet.create({
   cWaterBarGroup: {
     marginTop: spacing.lg,
     gap: spacing.sm,
+  },
+  cacaoValueRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  cacaoValueLabel: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  cacaoValueText: {
+    ...atelierText.cardTitleLg,
+    color: atelierColors.deepGreen,
+  },
+  cacaoSliderWrap: {
+    marginTop: spacing.md,
+    height: 34,
+    justifyContent: 'center',
+  },
+  cacaoSliderTrack: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: atelierColors.border,
+  },
+  cacaoSliderFill: {
+    position: 'absolute',
+    left: 0,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: atelierColors.deepGreen,
+  },
+  cacaoStepRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cacaoStepMark: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: atelierColors.surface,
+    borderWidth: 1.5,
+    borderColor: atelierColors.borderStrong,
+  },
+  cacaoSliderThumb: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: atelierColors.surface,
+    borderWidth: 2,
+    borderColor: atelierColors.deepGreen,
+    shadowColor: atelierColors.deepGreen,
+    shadowOpacity: 0.16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  cacaoTickLabelRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cacaoTickLabel: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  cacaoTickLabelActive: {
+    color: atelierColors.deepGreen,
   },
   barRow: {
     flexDirection: 'row',
