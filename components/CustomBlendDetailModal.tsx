@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { CWaterTeapotVisual } from '@/components/CWaterTeapotVisual';
 import { StatusBanner } from '@/components/StatusBanner';
 import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
 import { CWaterBlendResult, getCWaterBlendVisualProfile } from '@/lib/cwaterBlendEngine';
@@ -361,35 +362,16 @@ export function CustomBlendDetailModal({
                 </View>
               ) : null}
               <Text style={[styles.detail, isCWaterOption && styles.cWaterDetail]}>{option.detail}</Text>
-            </View>
-
-            <View style={[styles.metaCard, isCWaterOption && styles.cWaterMetaCard]}>
-              <Text style={styles.sectionTitle}>전체 재료</Text>
               {isCWaterOption ? (
                 <>
-                  <Text style={styles.cWaterSectionLead}>지금 흐름에 맞춰 구성된 티 조합이에요.</Text>
-                  <View style={styles.ingredientChipWrap}>
-                    {(cWaterVisualProfile?.ingredientNames ?? []).map((ingredient) => (
-                      <View key={ingredient} style={[styles.ingredientChip, styles.cWaterIngredientChip]}>
-                        <Text style={styles.ingredientChipText}>{ingredient}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <View style={styles.cWaterBalanceWrap}>
-                    <View style={styles.cWaterBalanceRow}>
-                      {(cWaterOption?.teas ?? []).map((tea) => (
-                        <View key={tea.id} style={styles.cWaterBalanceItem}>
-                          <View style={styles.cWaterBalanceLabelRow}>
-                            <Text style={styles.cWaterBalanceLabel}>{tea.displayName}</Text>
-                            <Text style={styles.cWaterBalanceValue}>{cWaterTeaRatios?.[tea.id] ?? 50}</Text>
-                          </View>
-                          <View style={styles.cWaterBalanceTrack}>
-                            <View style={[styles.cWaterBalanceFill, { width: `${cWaterTeaRatios?.[tea.id] ?? 50}%` }]} />
-                          </View>
-                        </View>
-                      ))}
+                  <View style={styles.cWaterHeroInteractive}>
+                    <View style={styles.cWaterVisualStage}>
+                      <CWaterTeapotVisual
+                        teaIds={cWaterOption?.teaIds ?? []}
+                        teaRatios={cWaterTeaRatios}
+                        cacaoNibLevel={cacaoPreviewValue}
+                      />
                     </View>
-
                     <View style={styles.cWaterControlPanel}>
                       <View style={styles.cWaterControlHeader}>
                         <Text style={styles.cWaterControlGroupTitle}>조절</Text>
@@ -473,6 +455,61 @@ export function CustomBlendDetailModal({
                       </View>
                     </View>
                   </View>
+
+                  <Text style={styles.cWaterSaveGuide}>마음에 드는 조합이라면 블렌드함에 담아두고 나중에 다시 비교해볼 수 있어요.</Text>
+                  <Pressable
+                    style={[styles.saveButton, styles.cWaterSaveButton, isSaved && styles.saveButtonSaved]}
+                    disabled={isSaved}
+                    onPress={async () => {
+                      const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult, cacaoNibLevel, cWaterTeaRatios);
+                      if (!result.added) {
+                        setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
+                        return;
+                      }
+
+                      if (__DEV__ && !result.synced) {
+                        setFeedbackMessage('로컬에는 저장됐고, 동기화는 보류됐어요.');
+                        return;
+                      }
+
+                      setFeedbackMessage('블렌드함에 담았어요.');
+                    }}
+                  >
+                    <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+                      {isSaved ? '이미 블렌드함에 있어요' : '블렌드함에 담기'}
+                    </Text>
+                  </Pressable>
+                </>
+              ) : null}
+            </View>
+
+            <View style={[styles.metaCard, isCWaterOption && styles.cWaterMetaCard]}>
+              <Text style={styles.sectionTitle}>전체 재료</Text>
+              {isCWaterOption ? (
+                <>
+                  <Text style={styles.cWaterSectionLead}>지금 흐름에 맞춰 구성된 티 조합이에요.</Text>
+                  <View style={styles.ingredientChipWrap}>
+                    {(cWaterVisualProfile?.ingredientNames ?? []).map((ingredient) => (
+                      <View key={ingredient} style={[styles.ingredientChip, styles.cWaterIngredientChip]}>
+                        <Text style={styles.ingredientChipText}>{ingredient}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.cWaterBalanceWrap}>
+                    <View style={styles.cWaterBalanceRow}>
+                      {(cWaterOption?.teas ?? []).map((tea) => (
+                        <View key={tea.id} style={styles.cWaterBalanceItem}>
+                          <View style={styles.cWaterBalanceLabelRow}>
+                            <Text style={styles.cWaterBalanceLabel}>{tea.displayName}</Text>
+                            <Text style={styles.cWaterBalanceValue}>{cWaterTeaRatios?.[tea.id] ?? 50}</Text>
+                          </View>
+                          <View style={styles.cWaterBalanceTrack}>
+                            <View style={[styles.cWaterBalanceFill, { width: `${cWaterTeaRatios?.[tea.id] ?? 50}%` }]} />
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 </>
               ) : (
                 <Text style={styles.ingredientText}>
@@ -530,29 +567,6 @@ export function CustomBlendDetailModal({
                   </Text>
                 </View>
 
-                <Text style={styles.cWaterSaveGuide}>마음에 드는 조합이라면 블렌드함에 담아두고 나중에 다시 비교해볼 수 있어요.</Text>
-                <Pressable
-                  style={[styles.saveButton, styles.cWaterSaveButton, isSaved && styles.saveButtonSaved]}
-                  disabled={isSaved}
-                  onPress={async () => {
-                    const result = await saveCWaterBlendToBox(cWaterOption as CWaterBlendResult, cacaoNibLevel, cWaterTeaRatios);
-                    if (!result.added) {
-                      setFeedbackMessage('이미 블렌드함에 담아둔 조합이에요.');
-                      return;
-                    }
-
-                    if (__DEV__ && !result.synced) {
-                      setFeedbackMessage('로컬에는 저장됐고, 동기화는 보류됐어요.');
-                      return;
-                    }
-
-                    setFeedbackMessage('블렌드함에 담았어요.');
-                  }}
-                >
-                  <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
-                    {isSaved ? '이미 블렌드함에 있어요' : '블렌드함에 담기'}
-                  </Text>
-                </Pressable>
               </>
             ) : (
               <>
@@ -754,6 +768,10 @@ const styles = StyleSheet.create({
     color: atelierColors.textMuted,
     lineHeight: 24,
   },
+  cWaterHeroInteractive: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
   metaCard: {
     marginTop: spacing.lg,
     ...atelierCards.section,
@@ -799,6 +817,12 @@ const styles = StyleSheet.create({
   cWaterControlGroupHint: {
     ...atelierText.helper,
     color: atelierColors.textSoft,
+  },
+  cWaterVisualStage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   cWaterControlSection: {
     gap: spacing.xs,
