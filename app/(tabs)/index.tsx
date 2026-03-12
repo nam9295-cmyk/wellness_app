@@ -16,12 +16,14 @@ import {
   getCustomBlendRecommendations,
   getCustomBlendVisualProfile,
 } from '@/lib/customBlendEngine';
+import { CWaterBlendResult, getTopCWaterBlendResults } from '@/lib/cwaterBlendEngine';
+import { CWaterTeaMoodTag, CWaterTeaTimeTag } from '@/lib/cwaterTeaMetadata';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
-  const [selectedCustomBlend, setSelectedCustomBlend] = useState<CustomBlendOption | null>(null);
+  const [selectedCustomBlend, setSelectedCustomBlend] = useState<CustomBlendOption | CWaterBlendResult | null>(null);
   const {
     logs,
     getTodayLog,
@@ -44,6 +46,30 @@ export default function Home() {
   const customBlendRecommendations = getCustomBlendRecommendations({
     logs,
     userGoal: userSettings?.goal,
+  });
+  const cWaterPreferredTags: CWaterTeaMoodTag[] = [
+    ...(todayLog?.water && Number(todayLog.water) <= 2 ? (['clean', 'bright'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.mood && Number(todayLog.mood) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.sleep && Number(todayLog.sleep) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.exercise && Number(todayLog.exercise) >= 4 ? (['clean', 'focus'] as CWaterTeaMoodTag[]) : []),
+    ...(userSettings?.goal === '기분 관리' ? (['bright', 'juicy'] as CWaterTeaMoodTag[]) : []),
+    ...(userSettings?.goal === '수면 관리' ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
+    ...(userSettings?.goal === '피로 관리' ? (['focus', 'deep'] as CWaterTeaMoodTag[]) : []),
+    ...(userSettings?.goal === '식습관 관리' ? (['clean', 'citrus'] as CWaterTeaMoodTag[]) : []),
+  ];
+  const cWaterPreferredTime: CWaterTeaTimeTag =
+    (() => {
+      const hour = new Date().getHours();
+      if (hour < 11) return 'morning';
+      if (hour < 17) return 'afternoon';
+      if (hour < 22) return 'evening';
+      return 'lateNight';
+    })();
+
+  const cWaterResults = getTopCWaterBlendResults({
+    preferredTags: cWaterPreferredTags,
+    preferredTimes: [cWaterPreferredTime],
+    maxResults: 3,
   });
 
   useEffect(() => {
@@ -261,6 +287,56 @@ export default function Home() {
             );
           })()
         ))}
+        </Card>
+      </View>
+
+      <View style={styles.sectionWrap}>
+        <Card title="C.Water 조합 테스트">
+          <Text style={styles.aiBlendIntro}>기존 추천은 유지하고, 메타데이터 기반 조합 엔진을 병렬로 비교하고 있어요.</Text>
+          {cWaterResults.map((blend, index) => (
+            <TouchableOpacity
+              key={blend.id}
+              activeOpacity={0.9}
+              style={[styles.aiBlendItem, index === cWaterResults.length - 1 && styles.aiBlendItemLast]}
+              onPress={() => setSelectedCustomBlend(blend)}
+            >
+              <View style={styles.aiBlendHeader}>
+                <View style={styles.aiBlendToneWrap}>
+                  <View style={styles.aiBlendToneBadge}>
+                    <Text style={styles.aiBlendToneBadgeText}>C.WATER</Text>
+                  </View>
+                  <Text style={styles.aiBlendLabel}>병렬 추천 비교</Text>
+                </View>
+                <Text style={styles.aiBlendContext} numberOfLines={1}>
+                  추천 {blend.recommendationScore.toFixed(1)} · 조화 {blend.harmonyScore.toFixed(1)}
+                </Text>
+              </View>
+
+              <Text style={styles.aiBlendTitle}>{blend.displayName}</Text>
+              <Text style={styles.aiBlendSummary} numberOfLines={2}>{blend.summary}</Text>
+              <Text style={styles.aiBlendDetail} numberOfLines={3}>{blend.detail}</Text>
+
+              <View style={styles.aiBlendMetaCard}>
+                <Text style={styles.aiBlendMetaLabel}>조합 티</Text>
+                <Text style={styles.aiBlendIngredients} numberOfLines={1}>
+                  {blend.teas.map((tea) => tea.displayName).join(' · ')}
+                </Text>
+              </View>
+
+              <View style={styles.aiBlendChipWrap}>
+                {blend.dominantTags.slice(0, 3).map((tag) => (
+                  <View key={tag} style={styles.aiBlendChip}>
+                    <Text style={styles.aiBlendChipText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.aiBlendFooter}>
+                <Text style={styles.aiBlendDetailHint}>상세 보기</Text>
+                <Text style={styles.aiBlendFooterArrow}>›</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </Card>
       </View>
 

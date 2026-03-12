@@ -310,8 +310,10 @@ export default function MyScreen() {
                 return (
                   <View key={item.id} style={styles.teaItem}>
                     <View style={styles.teaItemMain}>
-                      <View style={styles.customBlendBadge}>
-                        <Text style={styles.customBlendBadgeText}>AI</Text>
+                      <View style={[styles.customBlendBadge, item.type === 'cwater' && styles.cwaterBlendBadge]}>
+                        <Text style={[styles.customBlendBadgeText, item.type === 'cwater' && styles.cwaterBlendBadgeText]}>
+                          {item.type === 'cwater' ? 'CW' : 'AI'}
+                        </Text>
                       </View>
                       <View style={styles.teaItemText}>
                         <Text style={styles.teaItemBadge}>{item.toneLabel}</Text>
@@ -539,11 +541,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cwaterBlendBadge: {
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.deepGreenSoft,
+  },
   customBlendBadgeText: {
     fontSize: 14,
     fontWeight: '800',
     color: atelierColors.deepGreen,
     letterSpacing: -0.1,
+  },
+  cwaterBlendBadgeText: {
+    fontSize: 12,
+    letterSpacing: 0.1,
   },
   teaName: {
     ...atelierText.cardTitleMd,

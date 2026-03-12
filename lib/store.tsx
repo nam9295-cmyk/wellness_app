@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { CWaterBlendResult } from '@/lib/cwaterBlendEngine';
 import { TeaRecommendationId } from '@/lib/teaRecommendationContent';
 import { CustomBlendOption } from './customBlendEngine';
 import { MemberProfile, UserSettings, WellnessLog, WellnessLogInput } from '@/types';
@@ -8,12 +9,14 @@ import { loadLogsFromFirestore, syncTodayLogToFirestore } from './firestoreLogs'
 import { loadUserSettingsFromFirestore, syncUserSettingsToFirestore } from './firestoreSettings';
 import {
   loadTeaBoxFromFirestore,
+  syncSavedCWaterBlendToFirestore,
   syncRemovedBlendFromFirestore,
   syncSavedCustomBlendToFirestore,
   syncSavedTeaToFirestore,
 } from './firestoreTeaBox';
 import { loadLogs, saveLogs } from './storage';
 import {
+  createCWaterSavedBlendItem,
   createCustomBlendItemId,
   createCustomSavedBlendItem,
   createPresetSavedBlendItem,
@@ -48,6 +51,7 @@ interface StoreContextType {
   savedTeaIds: TeaRecommendationId[];
   saveTeaToBox: (teaId: TeaRecommendationId) => Promise<{ added: boolean }>;
   saveCustomBlendToBox: (option: CustomBlendOption) => Promise<{ added: boolean; synced: boolean }>;
+  saveCWaterBlendToBox: (result: CWaterBlendResult) => Promise<{ added: boolean; synced: boolean }>;
   removeSavedBlendFromBox: (itemId: string) => Promise<{ removed: boolean }>;
   removeTeaFromBox: (teaId: TeaRecommendationId) => Promise<{ removed: boolean }>;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'fallback';
@@ -254,6 +258,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const saveCWaterBlendToBox = async (result: CWaterBlendResult) => {
+    const itemId = `cwater:${result.id}`;
+
+    if (savedBlendItems.some((item) => item.id === itemId)) {
+      return { added: false, synced: true };
+    }
+
+    const nextItem = createCWaterSavedBlendItem(result);
+    const updatedTeaBox = [nextItem, ...savedBlendItems];
+    setSavedBlendItems(updatedTeaBox);
+    await saveTeaBox(updatedTeaBox);
+
+    try {
+      await syncSavedCWaterBlendToFirestore({ result, memberProfile });
+      return { added: true, synced: true };
+    } catch (error) {
+      console.warn('Failed to sync saved C.Water blend to Firestore', error);
+      return { added: true, synced: false };
+    }
+  };
+
   const removeSavedBlendFromBox = async (itemId: string) => {
     if (!savedBlendItems.some((item) => item.id === itemId)) {
       return { removed: false };
@@ -277,7 +302,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, memberProfile, savedBlendItems, savedTeaIds, saveTeaToBox, saveCustomBlendToBox, removeSavedBlendFromBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
+    <StoreContext.Provider value={{ logs, addLog, getTodayLog, userSettings, updateSettings, latestLogFeedback, clearLatestLogFeedback, memberProfile, savedBlendItems, savedTeaIds, saveTeaToBox, saveCustomBlendToBox, saveCWaterBlendToBox, removeSavedBlendFromBox, removeTeaFromBox, syncStatus, syncStatusMessage, clearSyncStatusMessage, isReady }}>
       {children}
     </StoreContext.Provider>
   );
