@@ -71,6 +71,8 @@ const ConditionRing = ({ label, value }: { label: string, value: number | undefi
   );
 };
 
+import { TrendChart } from '@/components/TrendChart';
+
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
   const [selectedCustomBlend, setSelectedCustomBlend] = useState<CWaterBlendResult | null>(null);
@@ -240,35 +242,16 @@ export default function Home() {
         </View>
       </View>
 
-      {/* 가로 스와이프 최근 기록 */}
-      <View style={[styles.sectionWrap, { marginHorizontal: -spacing.xl }]}>
-        <Text style={[styles.editorialSectionTitle, { paddingHorizontal: spacing.xl }]}>최근 기록</Text>
+      {/* 가로 스와이프 최근 기록 -> 미니 주식 차트 */}
+      <View style={styles.sectionWrap}>
+        <Text style={styles.editorialSectionTitle}>최근 기록 트렌드</Text>
         {logs.length > 0 ? (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScrollContent}
-            snapToInterval={140 + spacing.md}
-            decelerationRate="fast"
-          >
-            {logs.slice(0, 5).map((log) => (
-              <View key={log.id} style={styles.logTile}>
-                <Text style={styles.logTileDate}>{formatDisplayDate(log.date)}</Text>
-                <View style={styles.logTileStats}>
-                  <Text style={styles.logTileStatText}>기분 {log.mood}</Text>
-                  <Text style={styles.logTileStatText}>수면 {log.sleep}</Text>
-                  <Text style={styles.logTileStatText}>운동 {log.exercise}</Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+          <TrendChart logs={logs} />
         ) : (
-          <View style={{ paddingHorizontal: spacing.xl }}>
-            <EmptyStateBlock
-              text="아직 쌓인 기록이 없어요."
-              ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
-            />
-          </View>
+          <EmptyStateBlock
+            text="아직 쌓인 기록이 없어요."
+            ctaText="오늘 첫 기록을 남기면 그래프가 그려져요."
+          />
         )}
       </View>
 
@@ -308,10 +291,10 @@ export default function Home() {
       {/* C.Water */}
       <View style={styles.aiSectionWrap}>
         <View style={styles.editorialSectionHeader}>
-          <Text style={styles.eyebrow}>C.WATER CURATED</Text>
+          <Text style={styles.eyebrow}>AI CURATED</Text>
           {isRecommendationFallback ? <FallbackPill label="기록 전 추천" inline /> : null}
         </View>
-        <Text style={styles.editorialSectionLargeTitle}>지금 흐름에 맞는 C.Water 제안</Text>
+        <Text style={styles.editorialSectionLargeTitle}>AI가 추천하는 맞춤형 C.Water</Text>
         
         <View style={styles.cWaterListWrap}>
           <CWaterSwipeDeck 

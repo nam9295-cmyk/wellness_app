@@ -226,10 +226,8 @@ export function CWaterSwipeDeck({ blends, onSelect, onSwipeStart, onSwipeEnd }: 
                   left: 0,
                   right: 0,
                   transform: [
-                    { rotate: '3deg' },
-                    { translateY: 15 },
-                    { translateX: 10 },
-                    { scale: 0.95 },
+                    { translateY: 20 },
+                    { scale: 0.92 },
                   ],
                 },
               ]}
@@ -255,10 +253,8 @@ export function CWaterSwipeDeck({ blends, onSelect, onSwipeStart, onSwipeEnd }: 
                   left: 0,
                   right: 0,
                   transform: [
-                    { rotate: '-3deg' },
-                    { translateY: 30 },
-                    { translateX: -10 },
-                    { scale: 0.9 },
+                    { translateY: 40 },
+                    { scale: 0.84 },
                   ],
                 },
               ]}
