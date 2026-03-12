@@ -16,6 +16,57 @@ import { CWaterSwipeDeck } from '@/components/CWaterSwipeDeck';
 import { CWaterTeaMoodTag, CWaterTeaTimeTag } from '@/lib/cwaterTeaMetadata';
 import { getHomeRecommendation } from '@/lib/homeRecommendation';
 import { getTeaRecommendation } from '@/lib/teaRecommendationEngine';
+import {
+  normalizeExerciseScore,
+  normalizeMoodScore,
+  normalizeSleepScore,
+  normalizeWaterScore,
+} from '@/lib/wellnessScoring';
+import Svg, { Circle, G } from 'react-native-svg';
+
+const ConditionRing = ({ label, value }: { label: string, value: number | undefined }) => {
+  const numValue = value ?? 0;
+  const percentage = Math.min(Math.max((numValue / 5) * 100, 0), 100);
+  
+  const size = 64;
+  const strokeWidth = 6;
+  const center = size / 2;
+  const radius = center - strokeWidth / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <View style={styles.ringItem}>
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+        <Svg width={size} height={size} style={{ position: 'absolute' }}>
+          <G rotation="-90" origin={`${center}, ${center}`}>
+            <Circle
+              stroke={atelierColors.track}
+              cx={center}
+              cy={center}
+              r={radius}
+              strokeWidth={strokeWidth}
+              fill="none"
+            />
+            <Circle
+              stroke={atelierColors.deepGreen}
+              cx={center}
+              cy={center}
+              r={radius}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              fill="none"
+            />
+          </G>
+        </Svg>
+        <Text style={styles.ringValue}>{numValue}</Text>
+      </View>
+      <Text style={styles.ringLabel}>{label}</Text>
+    </View>
+  );
+};
 
 export default function Home() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
@@ -33,6 +84,18 @@ export default function Home() {
     clearSyncStatusMessage,
   } = useStore();
   const todayLog = getTodayLog();
+  const todayConditionScores = useMemo(() => {
+    if (!todayLog) {
+      return null;
+    }
+
+    return {
+      sleep: normalizeSleepScore(todayLog.sleep),
+      mood: normalizeMoodScore(todayLog.mood),
+      exercise: normalizeExerciseScore(todayLog.exercise),
+      water: normalizeWaterScore(todayLog.water),
+    };
+  }, [todayLog]);
 
   const recordCount = logs.length;
   const recommendation = getHomeRecommendation(logs, userSettings);
@@ -40,11 +103,12 @@ export default function Home() {
     logs,
     userGoal: userSettings?.goal,
   });
+  
   const cWaterPreferredTags: CWaterTeaMoodTag[] = useMemo(() => [
-    ...(todayLog?.water && Number(todayLog.water) <= 2 ? (['clean', 'bright'] as CWaterTeaMoodTag[]) : []),
-    ...(todayLog?.mood && Number(todayLog.mood) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
-    ...(todayLog?.sleep && Number(todayLog.sleep) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
-    ...(todayLog?.exercise && Number(todayLog.exercise) >= 4 ? (['clean', 'focus'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.water && normalizeWaterScore(todayLog.water) <= 2 ? (['clean', 'bright'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.mood && normalizeMoodScore(todayLog.mood) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.sleep && normalizeSleepScore(todayLog.sleep) <= 2 ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
+    ...(todayLog?.exercise && normalizeExerciseScore(todayLog.exercise) >= 4 ? (['clean', 'focus'] as CWaterTeaMoodTag[]) : []),
     ...(userSettings?.goal === '기분 관리' ? (['bright', 'juicy'] as CWaterTeaMoodTag[]) : []),
     ...(userSettings?.goal === '수면 관리' ? (['soft', 'calm'] as CWaterTeaMoodTag[]) : []),
     ...(userSettings?.goal === '피로 관리' ? (['focus', 'deep'] as CWaterTeaMoodTag[]) : []),
@@ -66,26 +130,14 @@ export default function Home() {
   }), [cWaterPreferredTags, cWaterPreferredTime]);
 
   useEffect(() => {
-    if (!latestLogFeedback) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      clearLatestLogFeedback();
-    }, 3500);
-
+    if (!latestLogFeedback) return;
+    const timer = setTimeout(() => clearLatestLogFeedback(), 3500);
     return () => clearTimeout(timer);
   }, [latestLogFeedback, clearLatestLogFeedback]);
 
   useEffect(() => {
-    if (!syncStatusMessage || syncStatus === 'syncing') {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      clearSyncStatusMessage();
-    }, 4000);
-
+    if (!syncStatusMessage || syncStatus === 'syncing') return;
+    const timer = setTimeout(() => clearSyncStatusMessage(), 4000);
     return () => clearTimeout(timer);
   }, [syncStatus, syncStatusMessage, clearSyncStatusMessage]);
 
@@ -111,39 +163,40 @@ export default function Home() {
       <View style={styles.heroIntro}>
         <Text style={styles.eyebrow}>WELLNESS ATELIER</Text>
         <Text style={styles.greeting}>{nickname}님, 안녕하세요</Text>
+        
+        <View style={styles.recordBadgeRow}>
+          <View style={styles.recordBadge}>
+            <Text style={styles.recordBadgeText}>{recordCount}일째 기록 중</Text>
+          </View>
+        </View>
+
         <Text style={styles.subtitle}>
           {todayLog ? '오늘 하루의 흐름을 바탕으로 블렌드와 컨디션을 함께 정리해드릴게요.' : `아직 오늘 기록이 없어요.\n${goalMessage}가볍게 컨디션을 남기면 추천이 더 또렷해져요.`}
         </Text>
       </View>
 
       {latestLogFeedback ? (
-        <StatusBanner message={latestLogFeedback} tone="success" />
+        <View style={{ marginBottom: spacing.xl }}>
+          <StatusBanner message={latestLogFeedback} tone="success" />
+        </View>
       ) : null}
 
       {syncStatusMessage ? (
-        <StatusBanner message={syncStatusMessage} tone={syncStatus === 'fallback' ? 'muted' : 'default'} />
+        <View style={{ marginBottom: spacing.xl }}>
+          <StatusBanner message={syncStatusMessage} tone={syncStatus === 'fallback' ? 'muted' : 'default'} />
+        </View>
       ) : null}
 
+      {/* 컨디션 요약 */}
       <View style={styles.sectionWrap}>
         <Text style={styles.editorialSectionTitle}>오늘의 컨디션</Text>
-        <View style={styles.editorialCard}>
         {todayLog ? (
           <View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>수면</Text>
-              <Text style={styles.summaryValue}>{todayLog.sleep}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>기분</Text>
-              <Text style={styles.summaryValue}>{todayLog.mood} / 5</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>운동</Text>
-              <Text style={styles.summaryValue}>{todayLog.exercise}</Text>
-            </View>
-            <View style={[styles.summaryRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.summaryLabel}>수분</Text>
-              <Text style={styles.summaryValue}>{todayLog.water}</Text>
+            <View style={styles.ringGrid}>
+              <ConditionRing label="수면" value={todayConditionScores?.sleep} />
+              <ConditionRing label="기분" value={todayConditionScores?.mood} />
+              <ConditionRing label="운동" value={todayConditionScores?.exercise} />
+              <ConditionRing label="수분" value={todayConditionScores?.water} />
             </View>
             {todayLog.memo ? (
               <View style={styles.memoContainer}>
@@ -157,56 +210,57 @@ export default function Home() {
             ctaText="기록이 쌓이면 추천과 리포트가 더 정교해져요."
           />
         )}
-        </View>
       </View>
 
-      <View style={styles.sectionWrap}>
-        <Text style={styles.editorialSectionTitle}>나의 웰니스</Text>
-        <View style={styles.editorialCard}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-            <Text style={styles.statHighlight}>{recordCount}</Text>
-            <Text style={styles.statText}>일째 기록 중</Text>
-          </View>
-        </View>
-      </View>
-
+      {/* 홈 추천 코멘트 */}
       <View style={styles.sectionWrap}>
         <View style={styles.editorialSectionHeader}>
           <Text style={styles.editorialSectionTitle}>{recommendation.title}</Text>
           {isRecommendationFallback ? <FallbackPill label="기록 전 추천" inline /> : null}
         </View>
-        <View style={styles.editorialCard}>
+        <View style={styles.editorialQuote}>
           <Text style={styles.recommendationText}>{recommendation.message}</Text>
         </View>
       </View>
 
-      <View style={styles.sectionWrap}>
-        <Text style={styles.editorialSectionTitle}>최근 기록</Text>
-        <View style={styles.editorialCard}>
-        {logs.length > 0 ? logs.slice(0, 3).map((log, index) => (
-          <View key={log.id} style={[styles.logItem, index === Math.min(logs.length, 3) - 1 && { borderBottomWidth: 0 }]}>
-            <Text style={styles.logDate}>{formatDisplayDate(log.date)}</Text>
-            <Text style={styles.logSummary} numberOfLines={1}>
-              기분 {log.mood}점 · 수면 {log.sleep} · 운동 {log.exercise}
-            </Text>
+      {/* 가로 스와이프 최근 기록 */}
+      <View style={[styles.sectionWrap, { marginHorizontal: -spacing.xl }]}>
+        <Text style={[styles.editorialSectionTitle, { paddingHorizontal: spacing.xl }]}>최근 기록</Text>
+        {logs.length > 0 ? (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScrollContent}
+            snapToInterval={140 + spacing.md}
+            decelerationRate="fast"
+          >
+            {logs.slice(0, 5).map((log) => (
+              <View key={log.id} style={styles.logTile}>
+                <Text style={styles.logTileDate}>{formatDisplayDate(log.date)}</Text>
+                <View style={styles.logTileStats}>
+                  <Text style={styles.logTileStatText}>기분 {log.mood}</Text>
+                  <Text style={styles.logTileStatText}>수면 {log.sleep}</Text>
+                  <Text style={styles.logTileStatText}>운동 {log.exercise}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={{ paddingHorizontal: spacing.xl }}>
+            <EmptyStateBlock
+              text="아직 쌓인 기록이 없어요."
+              ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
+            />
           </View>
-        )) : (
-          <EmptyStateBlock
-            text="아직 쌓인 기록이 없어요."
-            ctaText="오늘 첫 기록을 남기면 이곳에 최근 흐름이 쌓여요."
-          />
         )}
-        </View>
       </View>
 
+      {/* 시그니처 블렌드 */}
       <View style={styles.sectionWrap}>
         <Text style={styles.eyebrow}>TODAY'S SIGNATURE</Text>
-        <TouchableOpacity activeOpacity={0.9} onPress={() => setIsTeaDetailVisible(true)} style={styles.signatureCard}>
+        <TouchableOpacity activeOpacity={0.9} onPress={() => setIsTeaDetailVisible(true)} style={styles.signatureMinimal}>
           <View style={styles.signatureHeader}>
             <View style={styles.signatureBadgeRow}>
-              <View style={styles.signatureBadge}>
-                <Text style={styles.signatureBadgeText}>SIGNATURE</Text>
-              </View>
               {isRecommendationFallback ? (
                 <FallbackPill label="기본 추천" inline />
               ) : null}
@@ -215,16 +269,17 @@ export default function Home() {
           </View>
 
           <View style={styles.teaCardRow}>
-            <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
+            <TeaThumbnail teaId={teaRecommendation.teaId} size="lg" />
             <View style={styles.teaCardText}>
               <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
               <Text style={styles.teaIdentity}>{teaRecommendation.content.identityLine}</Text>
               <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
-              <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
             </View>
           </View>
 
-          <Text style={styles.teaUpdateHint}>오늘 기록을 바탕으로 추천했어요</Text>
+          <View style={styles.editorialQuote}>
+            <Text style={styles.recommendationText}>{teaRecommendation.reason}</Text>
+          </View>
 
           <View style={styles.signatureFooter}>
             <Text style={styles.detailHint}>추천 상세 보기</Text>
@@ -233,6 +288,7 @@ export default function Home() {
         </TouchableOpacity>
       </View>
 
+      {/* C.Water */}
       <View style={styles.aiSectionWrap}>
         <View style={styles.editorialSectionHeader}>
           <Text style={styles.eyebrow}>C.WATER CURATED</Text>
@@ -268,8 +324,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
   content: { padding: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.xl },
   heroIntro: {
-    marginBottom: spacing.xxl,
-    paddingRight: spacing.md,
+    marginBottom: spacing.xxl + spacing.md,
+    paddingRight: spacing.sm,
   },
   eyebrow: {
     ...atelierText.helper,
@@ -281,26 +337,53 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...atelierText.heroTitle,
-    fontSize: 28,
-    lineHeight: 38,
-    fontWeight: '400',
-    letterSpacing: -0.5,
-    marginBottom: spacing.sm,
+    fontSize: 34,
+    lineHeight: 44,
+    fontWeight: '300',
+    letterSpacing: -1,
+    marginBottom: spacing.md,
+  },
+  recordBadgeRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.xl,
+  },
+  recordBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  recordBadgeText: {
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.textMuted,
+    fontWeight: '500',
   },
   subtitle: {
     ...atelierText.bodyMuted,
     fontSize: 16,
-    lineHeight: 26,
-    color: atelierColors.textSoft,
+    lineHeight: 28,
+    color: atelierColors.textMuted,
   },
-  aiSectionWrap: {
-    marginBottom: spacing.xxl,
+  
+  sectionWrap: {
+    marginBottom: spacing.xxl + spacing.md,
   },
   editorialSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  editorialSectionTitle: {
+    ...atelierText.cardTitleMd,
+    fontSize: 19,
+    fontWeight: '500',
+    color: atelierColors.title,
+    letterSpacing: -0.4,
+    marginBottom: spacing.lg,
   },
   editorialSectionLargeTitle: {
     ...atelierText.heroTitle,
@@ -309,55 +392,89 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginBottom: spacing.xl,
   },
-  cWaterListWrap: {
-    // We add some bottom padding for the deck swiping area
-    paddingBottom: spacing.xxl,
-  },
-  sectionWrap: {
-    marginBottom: spacing.xxl,
-  },
-  editorialSectionTitle: {
-    ...atelierText.cardTitleMd,
-    fontSize: 18,
-    fontWeight: '400',
-    color: atelierColors.deepGreen,
-    marginBottom: spacing.md,
-  },
-  editorialCard: {
-    backgroundColor: atelierColors.surface,
-    borderRadius: 32,
-    padding: spacing.xl,
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 1,
-  },
-  summaryRow: {
+  
+  /* Ring Grid (4 items row) */
+  ringGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: atelierColors.surfaceMuted,
   },
-  summaryLabel: { ...atelierText.bodyMuted, fontSize: 14, color: atelierColors.textSoft },
-  summaryValue: { ...atelierText.body, fontSize: 15, fontWeight: '600', color: atelierColors.title },
-  memoContainer: {
-    marginTop: spacing.md,
-    backgroundColor: atelierColors.surfaceMuted,
-    padding: spacing.lg,
-    borderRadius: 20,
+  ringItem: {
+    alignItems: 'center',
   },
-  memoText: { ...atelierText.body, lineHeight: 24, color: atelierColors.text },
-  statText: { ...atelierText.summary, fontSize: 16, color: atelierColors.textSoft },
-  statHighlight: { fontSize: 32, lineHeight: 38, fontWeight: '400', color: atelierColors.deepGreen },
-  recommendationText: { ...atelierText.summary, fontSize: 16, lineHeight: 26, color: atelierColors.text },
+  ringValue: {
+    ...atelierText.heroTitle,
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: -0.5,
+    color: atelierColors.title,
+  },
+  ringLabel: {
+    ...atelierText.bodyMuted,
+    fontSize: 14,
+    color: atelierColors.textMuted,
+  },
+  
+  /* Editorial Quote / Recommendation */
+  editorialQuote: {
+    borderLeftWidth: 2,
+    borderLeftColor: atelierColors.deepGreen,
+    paddingLeft: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+  recommendationText: {
+    ...atelierText.summary,
+    fontSize: 16,
+    lineHeight: 26,
+    color: atelierColors.text,
+  },
 
-  signatureCard: {
-    backgroundColor: atelierColors.surfaceMuted,
-    borderRadius: 32,
-    padding: spacing.xl,
+  /* Memo */
+  memoContainer: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: atelierColors.border,
+  },
+  memoText: {
+    ...atelierText.body,
+    lineHeight: 24,
+    color: atelierColors.textMuted,
+    fontStyle: 'italic',
+  },
+
+  /* Horizontal Logs */
+  horizontalScrollContent: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
+  },
+  logTile: {
+    width: 140,
+    backgroundColor: atelierColors.surface,
+    padding: spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  logTileDate: {
+    ...atelierText.helper,
+    color: atelierColors.deepGreen,
+    marginBottom: spacing.md,
+  },
+  logTileStats: {
+    gap: 4,
+  },
+  logTileStatText: {
+    ...atelierText.bodyMuted,
+    fontSize: 13,
+  },
+
+  /* Signature Minimal Card */
+  signatureMinimal: {
+    borderTopWidth: 1,
+    borderTopColor: atelierColors.border,
+    paddingTop: spacing.xl,
   },
   signatureHeader: {
     flexDirection: 'row',
@@ -371,49 +488,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  signatureBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreenSoft,
-  },
-  signatureBadgeText: {
-    ...atelierText.pill,
-    color: atelierColors.deepGreen,
-    fontWeight: '600',
-  },
   signatureContext: {
     flex: 1,
     textAlign: 'right',
     ...atelierText.helper,
     color: atelierColors.textSoft,
   },
-  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginBottom: spacing.md },
-  teaCardText: { flex: 1 },
-  teaName: { ...atelierText.cardTitleLg, fontSize: 24, fontWeight: '400', marginBottom: 4 },
-  teaIdentity: { ...atelierText.summary, fontSize: 15, marginBottom: 8, fontWeight: '500', color: atelierColors.deepGreen },
-  teaSubtitle: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, marginBottom: spacing.sm },
-  teaUpdateHint: { ...atelierText.helper, color: atelierColors.textSoft, marginTop: spacing.md },
+  teaCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    marginBottom: spacing.xl,
+  },
+  teaCardText: {
+    flex: 1,
+  },
+  teaName: {
+    ...atelierText.cardTitleLg,
+    fontSize: 28,
+    fontWeight: '300',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  teaIdentity: {
+    ...atelierText.summary,
+    fontSize: 15,
+    marginBottom: 8,
+    fontWeight: '500',
+    color: atelierColors.deepGreen,
+  },
+  teaSubtitle: {
+    ...atelierText.helper,
+    fontSize: 13,
+    color: atelierColors.textSoft,
+  },
   signatureFooter: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: atelierColors.border,
+    paddingBottom: spacing.sm,
   },
-  detailHint: { ...atelierText.helper, color: atelierColors.textSoft, fontWeight: '500' },
+  detailHint: {
+    ...atelierText.helper,
+    color: atelierColors.textMuted,
+    fontWeight: '600',
+  },
   signatureFooterArrow: {
     fontSize: 18,
-    color: atelierColors.textSoft,
+    color: atelierColors.deepGreen,
   },
 
-  logItem: {
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: atelierColors.surfaceMuted,
+  aiSectionWrap: {
+    marginBottom: spacing.xxl,
   },
-  logDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: spacing.xs, fontWeight: '500' },
-  logSummary: { ...atelierText.bodyMuted, fontSize: 15, lineHeight: 24, color: atelierColors.text }
+  cWaterListWrap: {
+    paddingBottom: spacing.xxl,
+  },
 });
