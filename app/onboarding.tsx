@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, spacing } from '@/lib/theme';
+import { atelierColors, atelierText } from '@/lib/atelierTheme';
+import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
 
@@ -38,12 +39,19 @@ export default function Onboarding() {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+      style={{ flex: 1, backgroundColor: atelierColors.background }} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>나만의 웰니스 설정</Text>
-        <Text style={styles.subtitle}>기록과 추천이 잘 맞도록 기본 설정을 먼저 맞춰볼게요.</Text>
+      <ScrollView 
+        contentContainerStyle={styles.container} 
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>GET STARTED</Text>
+          <Text style={styles.title}>나만의 웰니스 설정</Text>
+          <Text style={styles.subtitle}>기록과 추천이 잘 맞도록{'\n'}기본 설정을 먼저 맞춰볼게요.</Text>
+        </View>
         
         {/* 닉네임 입력 */}
         <View style={styles.section}>
@@ -54,7 +62,7 @@ export default function Onboarding() {
             value={nickname}
             onChangeText={setNickname}
             maxLength={10}
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor={atelierColors.textSoft}
           />
         </View>
 
@@ -65,6 +73,7 @@ export default function Onboarding() {
             {WELLNESS_GOALS.map((goal) => (
               <TouchableOpacity
                 key={goal}
+                activeOpacity={0.7}
                 style={[
                   styles.chip,
                   selectedGoal === goal && styles.chipSelected
@@ -83,49 +92,53 @@ export default function Onboarding() {
         {/* 알림 시간 설정 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>알림 시간을 정해둘까요?</Text>
-          <Text style={styles.sectionDesc}>원하는 시간을 미리 정해둘 수 있어요. 예: 21:00</Text>
+          <Text style={styles.sectionDesc}>원하는 시간을 미리 정해둘 수 있어요.</Text>
           <TextInput
             style={styles.input}
             placeholder="09:00"
             value={notificationTime}
             onChangeText={setNotificationTime}
             keyboardType="numbers-and-punctuation"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor={atelierColors.textSoft}
           />
         </View>
 
-        <View style={[styles.section, styles.switchSection]}>
+        <View style={[styles.section, styles.switchRow]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>알림 준비</Text>
-            <Text style={styles.sectionDesc}>실제 발송 전이지만, 시간을 먼저 정해둘 수 있어요.</Text>
+            <Text style={styles.sectionTitleInline}>알림 서비스 준비</Text>
+            <Text style={styles.sectionDesc}>기록 시간을 잊지 않게 도와드려요.</Text>
           </View>
           <Switch
             value={notificationEnabled}
             onValueChange={setNotificationEnabled}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: atelierColors.border, true: atelierColors.deepGreen }}
+            ios_backgroundColor={atelierColors.border}
           />
         </View>
 
         {/* 추가 기능 설정 */}
-        <View style={[styles.section, styles.switchSection]}>
+        <View style={[styles.section, styles.switchRow]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>바이오리듬 기록</Text>
-            <Text style={styles.sectionDesc}>필요할 때 기록과 함께 살펴볼 수 있어요.</Text>
+            <Text style={styles.sectionTitleInline}>바이오리듬 연동</Text>
+            <Text style={styles.sectionDesc}>여성 건강 주기와 컨디션을 함께 살펴봅니다.</Text>
           </View>
           <Switch
             value={useMenstrualCycle}
             onValueChange={setUseMenstrualCycle}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: atelierColors.border, true: atelierColors.deepGreen }}
+            ios_backgroundColor={atelierColors.border}
           />
         </View>
 
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleStart}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>기록 시작하기</Text>
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={handleStart}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.buttonText}>기록 시작하기</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -133,103 +146,123 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.lg,
-    paddingTop: 60,
-    backgroundColor: colors.background,
+    padding: spacing.xl,
+    paddingTop: 80,
+    backgroundColor: atelierColors.background,
     flexGrow: 1,
   },
+  header: {
+    marginBottom: spacing.xxl,
+  },
+  eyebrow: {
+    ...atelierText.helper,
+    color: atelierColors.deepGreen,
+    letterSpacing: 2,
+    marginBottom: spacing.sm,
+  },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-    color: colors.text,
-    letterSpacing: -0.5,
+    ...atelierText.heroTitle,
+    fontSize: 32,
+    lineHeight: 42,
+    marginBottom: spacing.sm,
+    fontWeight: '300',
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 15,
-    color: colors.textLight,
-    marginBottom: spacing.xl,
-    letterSpacing: -0.2,
+    ...atelierText.bodyMuted,
+    fontSize: 16,
+    lineHeight: 26,
+    color: atelierColors.textMuted,
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
-    letterSpacing: -0.3,
+    ...atelierText.cardTitleMd,
+    fontSize: 18,
+    fontWeight: '500',
+    color: atelierColors.title,
+    marginBottom: spacing.md,
+    letterSpacing: -0.4,
+  },
+  sectionTitleInline: {
+    ...atelierText.cardTitleMd,
+    fontSize: 17,
+    fontWeight: '500',
+    color: atelierColors.title,
+    marginBottom: 4,
   },
   sectionDesc: {
-    fontSize: 13,
-    color: colors.textLight,
+    ...atelierText.bodyMuted,
+    fontSize: 14,
+    color: atelierColors.textSoft,
     marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: spacing.md,
+    backgroundColor: atelierColors.surface,
+    borderRadius: 12,
+    padding: spacing.lg,
     fontSize: 16,
+    color: atelierColors.text,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 1,
+    borderColor: atelierColors.border,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: 10,
   },
   chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: colors.card,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    backgroundColor: atelierColors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: atelierColors.border,
   },
   chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
   },
   chipText: {
+    ...atelierText.body,
     fontSize: 14,
-    color: colors.textLight,
+    color: atelierColors.textMuted,
     fontWeight: '500',
   },
   chipTextSelected: {
-    color: colors.card,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  switchSection: {
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    padding: spacing.md,
-    borderRadius: 16,
+    backgroundColor: atelierColors.surface,
+    padding: spacing.lg,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 1,
+    borderColor: atelierColors.border,
+  },
+  footer: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
+    backgroundColor: atelierColors.deepGreen,
+    paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 'auto',
+    shadowColor: atelierColors.deepGreen,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 15,
+    elevation: 4,
   },
   buttonText: {
-    color: colors.card,
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 17,
     fontWeight: '600',
+    letterSpacing: -0.2,
   }
 });

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
+import { atelierColors, atelierText } from '@/lib/atelierTheme';
 import { spacing } from '@/lib/theme';
-import { SectionTitle } from '@/components/SectionTitle';
 import { useStore } from '@/lib/store';
 import { ExerciseState, MealState, SleepState, WaterState } from '@/types';
 import { useRouter } from 'expo-router';
 import { getTodayDateString } from '@/lib/date';
+import { MagneticSlider } from '@/components/MagneticSlider';
 import {
   getScoreLabel,
   normalizeExerciseScore,
@@ -18,35 +18,6 @@ import {
   normalizeWaterScore,
 } from '@/lib/wellnessScoring';
 
-function ScoreChips({
-  selectedValue,
-  onSelect,
-}: {
-  selectedValue: number;
-  onSelect: (value: number) => void;
-}) {
-  return (
-    <View style={styles.scoreChipWrap}>
-      {[1, 2, 3, 4, 5].map((score) => {
-        const isSelected = score === selectedValue;
-
-        return (
-          <TouchableOpacity
-            key={score}
-            style={[styles.scoreChip, isSelected && styles.scoreChipSelected]}
-            activeOpacity={0.9}
-            onPress={() => onSelect(score)}
-          >
-            <Text style={[styles.scoreChipText, isSelected && styles.scoreChipTextSelected]}>
-              {score}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
 export default function LogScreen() {
   const router = useRouter();
   const { addLog, getTodayLog, isReady } = useStore();
@@ -56,17 +27,19 @@ export default function LogScreen() {
   const [sleep, setSleep] = useState<number>(normalizeSleepScore(todayLog?.sleep));
   const [fatigue, setFatigue] = useState<number>(normalizeFatigueScore(todayLog?.fatigue));
   const [mood, setMood] = useState<number>(normalizeMoodScore(todayLog?.mood));
-  const [stress, setStress] = useState<number>(normalizeStressScore(undefined));
+  const [stress, setStress] = useState<number>(normalizeStressScore(todayLog?.stress || undefined));
   const [meal, setMeal] = useState<number>(normalizeMealScore(todayLog?.meal));
   const [exercise, setExercise] = useState<number>(normalizeExerciseScore(todayLog?.exercise));
   const [water, setWater] = useState<number>(normalizeWaterScore(todayLog?.water));
   const [memo, setMemo] = useState<string>(todayLog?.memo || '');
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   useEffect(() => {
     if (todayLog) {
       setSleep(normalizeSleepScore(todayLog.sleep));
       setFatigue(normalizeFatigueScore(todayLog.fatigue));
       setMood(normalizeMoodScore(todayLog.mood));
+      setStress(normalizeStressScore(todayLog.stress));
       setMeal(normalizeMealScore(todayLog.meal));
       setExercise(normalizeExerciseScore(todayLog.exercise));
       setWater(normalizeWaterScore(todayLog.water));
@@ -89,9 +62,7 @@ export default function LogScreen() {
 
     Alert.alert(
       isEditingTodayLog ? '수정 완료' : '저장 완료',
-      isEditingTodayLog
-        ? '기록이 저장됐고, 추천도 함께 반영됐어요.'
-        : '기록이 저장됐고, 추천도 함께 반영됐어요.',
+      '기록이 저장됐고, 오늘의 분석이 업데이트됐어요.',
       [
         { text: '확인', onPress: () => router.replace('/(tabs)') }
       ]
@@ -108,181 +79,212 @@ export default function LogScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>TODAY&apos;S CHECK-IN</Text>
-          <Text style={styles.mainTitle}>{isEditingTodayLog ? '오늘 기록 수정' : '오늘 컨디션 남기기'}</Text>
-          <Text style={styles.subTitle}>상태를 남기면 추천이 함께 업데이트돼요.</Text>
-        </View>
-        
-        <SectionTitle title="수면 상태" />
-        <ScoreChips selectedValue={sleep} onSelect={setSleep} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>매우 부족</Text>
-          <Text style={styles.scoreHelperText}>매우 좋음</Text>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
+      >
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>TODAY'S JOURNAL</Text>
+          <Text style={styles.title}>{isEditingTodayLog ? '오늘 기록 수정' : '오늘 컨디션 남기기'}</Text>
+          <Text style={styles.subtitle}>현재 상태를 솔직하게 남겨주세요.</Text>
         </View>
 
-        <SectionTitle title="피로도" />
-        <ScoreChips selectedValue={fatigue} onSelect={setFatigue} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>피곤</Text>
-          <Text style={styles.scoreHelperText}>활기참</Text>
-        </View>
-
-        <SectionTitle title="기분" />
-        <ScoreChips selectedValue={mood} onSelect={setMood} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>우울</Text>
-          <Text style={styles.scoreHelperText}>행복</Text>
-        </View>
-
-        <SectionTitle title="스트레스 지수" />
-        <ScoreChips selectedValue={stress} onSelect={setStress} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>높음</Text>
-          <Text style={styles.scoreHelperText}>안정적</Text>
-        </View>
-
-        <SectionTitle title="식사 상태" />
-        <ScoreChips selectedValue={meal} onSelect={setMeal} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>불규칙</Text>
-          <Text style={styles.scoreHelperText}>균형적</Text>
-        </View>
-
-        <SectionTitle title="운동 여부" />
-        <ScoreChips selectedValue={exercise} onSelect={setExercise} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>안 함</Text>
-          <Text style={styles.scoreHelperText}>충분히</Text>
-        </View>
-
-        <SectionTitle title="수분 섭취" />
-        <ScoreChips selectedValue={water} onSelect={setWater} />
-        <View style={styles.scoreHelperRow}>
-          <Text style={styles.scoreHelperText}>부족</Text>
-          <Text style={styles.scoreHelperText}>충분</Text>
-        </View>
-
-        <SectionTitle title="한 줄 메모" />
-        <View style={styles.memoCard}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="오늘 하루를 짧게 남겨보세요."
-            value={memo}
-            onChangeText={setMemo}
-            multiline
-            placeholderTextColor={atelierColors.textSoft}
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>간밤에 잠은 푹 주무셨나요?</Text>
+          <MagneticSlider 
+            selectedValue={sleep} 
+            onSelect={setSleep} 
+            leftLabel="설쳤어요" 
+            rightLabel="개운해요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
           />
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>{isEditingTodayLog ? '기록 수정하기' : '기록 저장하기'}</Text>
-        </TouchableOpacity>
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>지금 신체적인 피로감은 어떤가요?</Text>
+          <MagneticSlider 
+            selectedValue={fatigue} 
+            onSelect={setFatigue} 
+            leftLabel="너무 지쳐요" 
+            rightLabel="에너지 넘쳐요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>오늘 전반적인 기분은 어떠신가요?</Text>
+          <MagneticSlider 
+            selectedValue={mood} 
+            onSelect={setMood} 
+            leftLabel="우울해요" 
+            rightLabel="아주 좋아요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>스트레스를 많이 받으셨나요?</Text>
+          <MagneticSlider 
+            selectedValue={stress} 
+            onSelect={setStress} 
+            leftLabel="아주 심해요" 
+            rightLabel="평온해요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>식사는 규칙적으로 잘 챙겨 드셨나요?</Text>
+          <MagneticSlider 
+            selectedValue={meal} 
+            onSelect={setMeal} 
+            leftLabel="불규칙했어요" 
+            rightLabel="건강하게 먹었어요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>가벼운 산책이나 운동을 하셨나요?</Text>
+          <MagneticSlider 
+            selectedValue={exercise} 
+            onSelect={setExercise} 
+            leftLabel="전혀 안 했어요" 
+            rightLabel="충분히 했어요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={styles.questionSection}>
+          <Text style={styles.questionTitle}>수분 섭취는 충분했나요?</Text>
+          <MagneticSlider 
+            selectedValue={water} 
+            onSelect={setWater} 
+            leftLabel="거의 안 마셨어요" 
+            rightLabel="충분히 마셨어요" 
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
+        </View>
+
+        <View style={[styles.questionSection, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+          <Text style={styles.questionTitle}>오늘 남기고 싶은 짧은 메모 (선택)</Text>
+          <TextInput
+            style={styles.memoInput}
+            placeholder="특별한 일이나 감정을 편하게 적어주세요."
+            value={memo}
+            onChangeText={setMemo}
+            multiline
+            numberOfLines={4}
+            placeholderTextColor={atelierColors.textSoft}
+            textAlignVertical="top"
+          />
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            activeOpacity={0.9} 
+            onPress={handleSave}
+          >
+            <Text style={styles.saveButtonText}>{isEditingTodayLog ? '기록 수정하기' : '기록 완료하기'}</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: atelierColors.background },
-  scrollContent: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.sm },
-  heroCard: {
-    ...atelierCards.hero,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    marginBottom: spacing.xl + spacing.xs,
+  container: {
+    flex: 1,
+    backgroundColor: atelierColors.background,
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 80,
+    paddingBottom: spacing.xxl + 40,
+  },
+  header: {
+    marginBottom: spacing.xxl + spacing.md,
   },
   eyebrow: {
     ...atelierText.helper,
-    fontSize: 11,
-    letterSpacing: 1.1,
+    color: atelierColors.deepGreen,
+    letterSpacing: 2,
     marginBottom: spacing.sm,
   },
-  mainTitle: {
+  title: {
     ...atelierText.heroTitle,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 32,
+    lineHeight: 42,
     marginBottom: spacing.sm,
+    fontWeight: '300',
+    letterSpacing: -1,
   },
-  subTitle: {
-    ...atelierText.summary,
+  subtitle: {
+    ...atelierText.bodyMuted,
+    fontSize: 16,
+    lineHeight: 26,
     color: atelierColors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
   },
-  scoreChipWrap: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
+  
+  questionSection: {
+    marginBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: atelierColors.border,
   },
-  scoreChip: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
-    borderRadius: 18,
+  questionTitle: {
+    ...atelierText.cardTitleMd,
+    fontSize: 18,
+    fontWeight: '400',
+    color: atelierColors.title,
+    marginBottom: spacing.lg,
+    letterSpacing: -0.3,
+  },
+
+  /* Memo */
+  memoInput: {
     backgroundColor: atelierColors.surface,
+    borderRadius: 16,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    fontSize: 16,
+    color: atelierColors.text,
     borderWidth: 1,
     borderColor: atelierColors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreChipSelected: {
-    backgroundColor: atelierColors.deepGreen,
-    borderColor: atelierColors.deepGreen,
-  },
-  scoreChipText: {
-    ...atelierText.cardTitleMd,
-    fontSize: 16,
-    fontWeight: '700',
-    color: atelierColors.textMuted,
-  },
-  scoreChipTextSelected: {
-    color: atelierColors.surface,
-  },
-  scoreHelperRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
-  },
-  scoreHelperText: {
-    ...atelierText.helper,
-    fontSize: 12,
-    color: atelierColors.textSoft,
-  },
-  memoCard: {
-    ...atelierCards.section,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  textInput: {
-    borderWidth: 0,
-    borderRadius: 16,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xs,
     minHeight: 120,
-    textAlignVertical: 'top',
-    fontSize: 15,
-    backgroundColor: 'transparent',
-    color: atelierColors.text,
+    lineHeight: 24,
   },
-  button: {
-    ...atelierButtons.primarySolid,
+
+  /* Footer */
+  footer: {
+    marginTop: spacing.xxl,
+  },
+  saveButton: {
+    backgroundColor: atelierColors.deepGreen,
     paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: spacing.md,
+    shadowColor: atelierColors.deepGreen,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 15,
+    elevation: 4,
   },
-  buttonText: {
-    ...atelierText.summary,
-    color: atelierColors.surface,
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-  }
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
 });
