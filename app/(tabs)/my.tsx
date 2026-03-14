@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { atelierButtons, atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
+import { atelierColors, atelierText } from '@/lib/atelierTheme';
 import { getNotificationScenarioPreviews } from '@/lib/notificationScenarios';
 import { SavedBlendItem } from '@/lib/teaBoxStorage';
-import { colors, spacing } from '@/lib/theme';
+import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { DEFAULT_USER_SETTINGS, WELLNESS_GOALS } from '@/types';
+import { formatDisplayDate } from '@/lib/date';
 
 export default function MyScreen() {
   const {
@@ -13,7 +14,6 @@ export default function MyScreen() {
     userSettings,
     updateSettings,
     savedBlendItems,
-    savedTeaIds,
     removeSavedBlendFromBox,
     syncStatus,
     syncStatusMessage,
@@ -65,14 +65,14 @@ export default function MyScreen() {
 
     await updateSettings({
       nickname: nickname.trim(),
-      goal: selectedGoal,
+      goal: selectedGoal as (typeof WELLNESS_GOALS)[number],
       notificationTime,
       notificationEnabled,
       useMenstrualCycle
     });
     
     setIsEditing(false);
-    Alert.alert('저장 완료', '설정이 저장됐어요.');
+    Alert.alert('저장 완료', '설정이 업데이트되었습니다.');
   };
 
   const handleStartEditing = () => {
@@ -90,7 +90,7 @@ export default function MyScreen() {
 
     Alert.alert(
       '블렌드함에서 삭제',
-      `${itemName}을(를) 블렌드함에서 뺄까요?`,
+      `${itemName}을(를) 삭제하시겠습니까?`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -103,6 +103,7 @@ export default function MyScreen() {
       ]
     );
   };
+
   const notificationPreviews = getNotificationScenarioPreviews(userSettings);
   const cwaterBlendItems = savedBlendItems.filter((item) => item.type === 'cwater');
   const hiddenLegacyBlendCount = savedBlendItems.length - cwaterBlendItems.length;
@@ -117,529 +118,468 @@ export default function MyScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{isEditing ? nickname?.[0] || '?' : userSettings?.nickname?.[0] || '?'}</Text>
-          </View>
-          {isEditing ? (
-            <TextInput
-              style={styles.nameInput}
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder="닉네임"
-              maxLength={10}
-              placeholderTextColor={atelierColors.textSoft}
-            />
-          ) : (
-            <Text style={styles.name}>{userSettings?.nickname || '회원'} 님</Text>
-          )}
-          <Text style={styles.goalText}>현재 목표 · {isEditing ? selectedGoal : userSettings?.goal || '설정 필요'}</Text>
-        </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
-        <View style={styles.menuList}>
-          {syncStatusMessage ? (
-            <View style={[styles.syncBanner, syncStatus === 'fallback' && styles.syncBannerFallback]}>
-              <Text style={[styles.syncText, syncStatus === 'fallback' && styles.syncTextFallback]}>
-                {syncStatusMessage}
-              </Text>
-            </View>
-          ) : null}
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>나의 설정</Text>
-            {!isEditing ? (
-              <TouchableOpacity onPress={handleStartEditing}>
-                <Text style={styles.editButtonText}>수정</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 16 }}>
-                <TouchableOpacity onPress={handleCancel}>
-                  <Text style={styles.cancelButtonText}>취소</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleSave}>
-                  <Text style={styles.saveButtonText}>저장</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          {isEditing ? (
-            <View style={styles.editForm}>
-              <Text style={styles.label}>주요 목표</Text>
-              <View style={styles.chipContainer}>
-                {WELLNESS_GOALS.map((g) => (
-                  <TouchableOpacity
-                    key={g}
-                    style={[styles.chip, selectedGoal === g && styles.chipSelected]}
-                    onPress={() => setSelectedGoal(g)}
-                  >
-                    <Text style={[styles.chipText, selectedGoal === g && styles.chipTextSelected]}>{g}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={[styles.label, { marginTop: spacing.xl }]}>알림 시간</Text>
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.profileInfo}>
+            <Text style={styles.eyebrow}>MY PROFILE</Text>
+            {isEditing ? (
               <TextInput
-                style={styles.timeInput}
-                value={notificationTime}
-                onChangeText={setNotificationTime}
-                placeholder="예: 21:00"
-                keyboardType="numbers-and-punctuation"
+                style={styles.nameInput}
+                value={nickname}
+                onChangeText={setNickname}
+                placeholder="닉네임"
+                maxLength={10}
                 placeholderTextColor={atelierColors.textSoft}
               />
-
-              <View style={[styles.settingItem, styles.inlineSettingItem]}>
-                <Text style={[styles.label, { marginBottom: 0 }]}>알림 준비</Text>
-                <Switch
-                  value={notificationEnabled}
-                  onValueChange={setNotificationEnabled}
-                  trackColor={{ false: atelierColors.border, true: atelierColors.deepGreenSoft }}
-                />
-              </View>
-
-              <View style={[styles.settingItem, styles.inlineSettingItem]}>
-                <Text style={[styles.label, { marginBottom: 0 }]}>바이오리듬 트래킹</Text>
-                <Switch
-                  value={useMenstrualCycle}
-                  onValueChange={setUseMenstrualCycle}
-                  trackColor={{ false: atelierColors.border, true: atelierColors.deepGreenSoft }}
-                />
-              </View>
-            </View>
-          ) : (
-            <View>
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>주요 목표</Text>
-                <Text style={styles.settingValue}>{userSettings?.goal || '설정 안 함'}</Text>
-              </View>
-
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>알림 시간</Text>
-                <Text style={styles.settingValue}>{userSettings?.notificationTime || '설정 안 함'}</Text>
-              </View>
-
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>알림 준비</Text>
-                <Text style={styles.settingValue}>{userSettings?.notificationEnabled ? '준비됨' : '준비 중'}</Text>
-              </View>
-
-              <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>바이오리듬 트래킹</Text>
-                <Text style={styles.settingValue}>{userSettings?.useMenstrualCycle ? '사용 중' : '사용 안 함'}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.divider} />
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>알림 준비</Text>
-            <Text style={styles.sectionMeta}>{userSettings?.notificationEnabled ? '시나리오 연결됨' : '시나리오 준비 중'}</Text>
-          </View>
-
-          <View style={styles.notificationCard}>
-            <Text style={styles.notificationIntro}>
-              실제 발송 전이지만, 아래 흐름으로 바로 확장할 수 있어요.
+            ) : (
+              <Text style={styles.title}>{userSettings?.nickname || '회원'}님</Text>
+            )}
+            <Text style={styles.subtitle}>
+              {isEditing ? '나에게 맞는 웰니스 목표를 선택해주세요.' : `현재 목표: ${userSettings?.goal || '설정 필요'}`}
             </Text>
-
-            {notificationPreviews.map((scenario, index) => (
-              <View
-                key={scenario.id}
-                style={[styles.notificationItem, index === 0 && styles.notificationItemFirst]}
-              >
-                <View style={styles.notificationItemHeader}>
-                  <Text style={styles.notificationTitle}>{scenario.title}</Text>
-                  <Text style={[styles.notificationStatus, scenario.enabled && styles.notificationStatusReady]}>
-                    {scenario.statusLabel}
-                  </Text>
-                </View>
-                <Text style={styles.notificationDesc}>{scenario.description}</Text>
-                <Text style={styles.notificationMeta}>{scenario.scheduleLabel}</Text>
-              </View>
-            ))}
           </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>블렌드함</Text>
-            <Text style={styles.sectionMeta}>{cwaterBlendItems.length}개 저장됨</Text>
-          </View>
-
-          {hiddenLegacyBlendCount > 0 ? (
-            <View style={styles.archivedBlendNote}>
-              <Text style={styles.archivedBlendNoteText}>
-                이전 저장 조합 {hiddenLegacyBlendCount}개는 내부 호환용으로 유지되고 있어요.
-              </Text>
-            </View>
-          ) : null}
-
-          {cwaterBlendItems.length > 0 ? (
-            <View>
-              {cwaterBlendItems.map((item) => {
-                const cacaoLabel =
-                  typeof item.cacaoNibLevel === 'number' ? `카카오 ${item.cacaoNibLevel}` : '카카오 0';
-
-                return (
-                  <View key={item.id} style={styles.teaItem}>
-                    <View style={styles.teaItemMain}>
-                      <View style={[styles.customBlendBadge, item.type === 'cwater' && styles.cwaterBlendBadge]}>
-                        <Text style={[styles.customBlendBadgeText, item.type === 'cwater' && styles.cwaterBlendBadgeText]}>
-                          {item.type === 'cwater' ? 'CW' : 'AI'}
-                        </Text>
-                      </View>
-                      <View style={styles.teaItemText}>
-                        <View style={styles.teaItemMetaRow}>
-                          <Text style={styles.teaItemBadge}>{item.toneLabel}</Text>
-                          <View style={styles.cacaoLevelPill}>
-                            <Text style={styles.cacaoLevelPillText}>{cacaoLabel}</Text>
-                          </View>
-                        </View>
-                        <Text style={styles.teaName}>{item.displayName || item.title}</Text>
-                        <Text style={styles.teaSubtitle} numberOfLines={2}>
-                          {item.summary || item.shortDescription}
-                        </Text>
-                        <View style={styles.savedTagRow}>
-                          {(item.tags || []).slice(0, 3).map((tag) => (
-                            <View key={tag} style={styles.savedTagChip}>
-                              <Text style={styles.savedTagText}>{tag}</Text>
-                            </View>
-                          ))}
-                        </View>
-                        <Text style={styles.teaItemMeta} numberOfLines={1}>
-                          {item.ingredientNames.join(' · ')}
-                        </Text>
-                        <Text style={styles.customBlendContext}>{item.contextLine}</Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity onPress={() => handleRemoveBlend(item)} style={styles.removeButton}>
-                      <Text style={styles.removeButtonText}>삭제</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={styles.emptyTeaBox}>
-              <Text style={styles.emptyTeaText}>아직 담아둔 C.Water 블렌드가 없어요. 홈에서 추천 조합을 담아두면 여기서 다시 볼 수 있어요.</Text>
-            </View>
+          {!isEditing && (
+            <TouchableOpacity onPress={handleStartEditing} style={styles.editButton}>
+              <Text style={styles.editButtonText}>수정</Text>
+            </TouchableOpacity>
           )}
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>앱 정보 (v1.0.0)</Text>
-          </TouchableOpacity>
         </View>
-      </ScrollView>
 
+        {syncStatusMessage ? (
+          <View style={[styles.syncBanner, syncStatus === 'fallback' && styles.syncBannerFallback]}>
+            <Text style={[styles.syncText, syncStatus === 'fallback' && styles.syncTextFallback]}>
+              {syncStatusMessage}
+            </Text>
+          </View>
+        ) : null}
+
+        {isEditing ? (
+          <View style={styles.editSection}>
+            <Text style={styles.sectionTitle}>가장 중요한 목표는 무엇인가요?</Text>
+            <View style={styles.chipContainer}>
+              {WELLNESS_GOALS.map((goal) => (
+                <TouchableOpacity
+                  key={goal}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.chip,
+                    selectedGoal === goal && styles.chipSelected
+                  ]}
+                  onPress={() => setSelectedGoal(goal)}
+                >
+                  <Text style={[
+                    styles.chipText,
+                    selectedGoal === goal && styles.chipTextSelected
+                  ]}>{goal}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <Text style={styles.saveButtonText}>저장하기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <>
+            {/* App Settings */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>앱 설정</Text>
+              
+              <View style={styles.settingsGroup}>
+                <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: atelierColors.border }]}>
+                  <View style={styles.settingTextWrap}>
+                    <Text style={styles.settingLabel}>알림 수신</Text>
+                    <Text style={styles.settingDesc}>기록과 추천 알림을 보내드려요.</Text>
+                  </View>
+                  <Switch
+                    value={notificationEnabled}
+                    onValueChange={async (val) => {
+                      setNotificationEnabled(val);
+                      await updateSettings({ notificationEnabled: val });
+                    }}
+                    trackColor={{ false: atelierColors.border, true: atelierColors.deepGreen }}
+                    ios_backgroundColor={atelierColors.surfaceMuted}
+                  />
+                </View>
+
+                {notificationEnabled && (
+                  <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: atelierColors.border }]}>
+                    <View style={styles.settingTextWrap}>
+                      <Text style={styles.settingLabel}>알림 시간</Text>
+                      <Text style={styles.settingDesc}>원하는 시간에 알려드릴게요.</Text>
+                    </View>
+                    <TextInput
+                      style={styles.timeInput}
+                      value={notificationTime}
+                      onChangeText={setNotificationTime}
+                      onEndEditing={async () => await updateSettings({ notificationTime })}
+                      placeholder="09:00"
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                )}
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingTextWrap}>
+                    <Text style={styles.settingLabel}>여성 건강 주기 연동</Text>
+                    <Text style={styles.settingDesc}>주기에 맞춘 컨디션 분석을 제공합니다.</Text>
+                  </View>
+                  <Switch
+                    value={useMenstrualCycle}
+                    onValueChange={async (val) => {
+                      setUseMenstrualCycle(val);
+                      await updateSettings({ useMenstrualCycle: val });
+                    }}
+                    trackColor={{ false: atelierColors.border, true: atelierColors.deepGreen }}
+                    ios_backgroundColor={atelierColors.surfaceMuted}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Notification Preview */}
+            {notificationEnabled && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>이런 알림이 도착할 수 있어요</Text>
+                <View style={styles.previewContainer}>
+                  {notificationPreviews.map((preview, index) => (
+                    <View key={index} style={styles.previewCard}>
+                      <Text style={styles.previewTitle}>{preview.title}</Text>
+                      <Text style={styles.previewBody}>{preview.body}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Saved Blends */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>나만의 블렌드 보관함</Text>
+              {cwaterBlendItems.length > 0 ? (
+                <View style={styles.blendList}>
+                  {cwaterBlendItems.map((item) => (
+                    <View key={item.id} style={styles.blendCard}>
+                      <View style={styles.blendInfo}>
+                        <Text style={styles.blendName}>{item.title}</Text>
+                        <Text style={styles.blendDate}>{formatDisplayDate(item.savedAt)} 저장됨</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.deleteButton}
+                        onPress={() => handleRemoveBlend(item)}
+                      >
+                        <Text style={styles.deleteButtonText}>삭제</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>아직 보관된 블렌드가 없어요.</Text>
+                </View>
+              )}
+            </View>
+
+            {/* 개발/디버그용: 구버전 데이터가 있다면 표시 */}
+            {hiddenLegacyBlendCount > 0 && (
+              <Text style={styles.legacyDataNotice}>
+                (구버전 데이터 {hiddenLegacyBlendCount}개가 숨겨져 있습니다.)
+              </Text>
+            )}
+          </>
+        )}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: atelierColors.background },
-  content: { paddingBottom: spacing.xxl + spacing.sm },
-  loadingContainer: { justifyContent: 'center', alignItems: 'center' },
-  profileSection: { 
-    ...atelierCards.hero,
+  container: {
+    flex: 1,
+    backgroundColor: atelierColors.background,
+  },
+  content: {
     padding: spacing.xl,
-    alignItems: 'center', 
-    paddingTop: spacing.xxl + spacing.xs,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
+    paddingTop: 80,
+    paddingBottom: 100,
   },
-  avatar: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
-    backgroundColor: atelierColors.deepGreenMuted, 
-    marginBottom: spacing.md,
+  loadingContainer: {
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  avatarText: {
-    fontSize: 28,
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xxl,
+  },
+  profileInfo: {
+    flex: 1,
+    paddingRight: spacing.lg,
+  },
+  eyebrow: {
+    ...atelierText.helper,
+    color: atelierColors.deepGreen,
+    letterSpacing: 2,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    ...atelierText.heroTitle,
+    fontSize: 32,
+    lineHeight: 42,
+    marginBottom: spacing.xs,
+    fontWeight: '300',
+    letterSpacing: -1,
+  },
+  subtitle: {
+    ...atelierText.bodyMuted,
+    fontSize: 16,
+    color: atelierColors.textMuted,
+  },
+  editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    marginTop: 4,
+  },
+  editButtonText: {
+    ...atelierText.helper,
+    color: atelierColors.text,
     fontWeight: '600',
-    color: atelierColors.deepGreen
   },
-  name: { ...atelierText.heroTitle, fontSize: 24, lineHeight: 30, marginBottom: 4 },
+  
+  /* Edit Mode Styles */
   nameInput: {
     ...atelierText.heroTitle,
-    fontSize: 24,
-    lineHeight: 30,
-    marginBottom: 4,
+    fontSize: 32,
+    lineHeight: 42,
+    marginBottom: spacing.xs,
+    fontWeight: '300',
+    letterSpacing: -1,
+    color: atelierColors.title,
     borderBottomWidth: 1,
-    borderBottomColor: atelierColors.deepGreenSoft,
+    borderBottomColor: atelierColors.borderStrong,
     paddingBottom: 4,
-    minWidth: 120,
-    textAlign: 'center',
+    minWidth: '80%',
   },
-  goalText: { ...atelierText.bodyMuted, fontSize: 15, lineHeight: 23 },
-  menuList: { padding: spacing.lg, paddingTop: spacing.xl + spacing.xs },
-  syncBanner: {
+  editSection: {
+    marginTop: spacing.xl,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: spacing.xxl,
+  },
+  chip: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 999,
     backgroundColor: atelierColors.surface,
-    borderRadius: 16,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: atelierColors.border,
   },
+  chipSelected: {
+    backgroundColor: atelierColors.deepGreen,
+    borderColor: atelierColors.deepGreen,
+  },
+  chipText: {
+    ...atelierText.body,
+    fontSize: 14,
+    color: atelierColors.textMuted,
+    fontWeight: '500',
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: atelierColors.surfaceMuted,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  cancelButtonText: {
+    ...atelierText.body,
+    fontWeight: '600',
+    color: atelierColors.text,
+  },
+  saveButton: {
+    flex: 2,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: atelierColors.deepGreen,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    ...atelierText.body,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+
+  /* Sections */
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    ...atelierText.cardTitleMd,
+    fontSize: 18,
+    color: atelierColors.title,
+    marginBottom: spacing.lg,
+  },
+  
+  /* Settings Group */
+  settingsGroup: {
+    backgroundColor: atelierColors.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.xl,
+  },
+  settingTextWrap: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
+  settingLabel: {
+    ...atelierText.cardTitleMd,
+    fontSize: 16,
+    color: atelierColors.title,
+    marginBottom: 4,
+  },
+  settingDesc: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  timeInput: {
+    ...atelierText.body,
+    backgroundColor: atelierColors.background,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    textAlign: 'center',
+    minWidth: 80,
+  },
+
+  /* Previews */
+  previewContainer: {
+    gap: spacing.sm,
+  },
+  previewCard: {
+    backgroundColor: atelierColors.surfaceMuted,
+    padding: spacing.lg,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  previewTitle: {
+    ...atelierText.helper,
+    fontWeight: '600',
+    color: atelierColors.deepGreen,
+    marginBottom: 6,
+  },
+  previewBody: {
+    ...atelierText.bodyMuted,
+    fontSize: 14,
+    lineHeight: 22,
+    color: atelierColors.text,
+  },
+
+  /* Blends */
+  blendList: {
+    gap: spacing.md,
+  },
+  blendCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: atelierColors.surface,
+    padding: spacing.xl,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  blendInfo: {
+    flex: 1,
+  },
+  blendName: {
+    ...atelierText.cardTitleMd,
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  blendDate: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  deleteButtonText: {
+    ...atelierText.helper,
+    color: atelierColors.dustyRose,
+    fontWeight: '600',
+  },
+  
+  /* Empty State */
+  emptyCard: {
+    backgroundColor: atelierColors.surfaceMuted,
+    padding: spacing.xl,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    alignItems: 'center',
+  },
+  emptyText: {
+    ...atelierText.bodyMuted,
+    color: atelierColors.textSoft,
+  },
+
+  /* Banners */
+  syncBanner: {
+    backgroundColor: atelierColors.surface,
+    padding: spacing.md,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: atelierColors.deepGreen,
+    marginBottom: spacing.xl,
+  },
   syncBannerFallback: {
-    backgroundColor: atelierColors.deepGreenMuted,
-    borderColor: atelierColors.deepGreenSoft,
+    borderLeftColor: atelierColors.textSoft,
   },
   syncText: {
     ...atelierText.bodyMuted,
-    fontSize: 13,
-    lineHeight: 20,
-    letterSpacing: -0.2,
-    fontWeight: '600',
+    color: atelierColors.text,
   },
   syncTextFallback: {
-    color: atelierColors.text,
+    color: atelierColors.textSoft,
   },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  sectionTitle: { ...atelierText.cardTitleMd },
-  sectionMeta: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, fontWeight: '600', letterSpacing: -0.2 },
-  editButtonText: { ...atelierButtons.inlineText, color: atelierColors.deepGreen },
-  cancelButtonText: { ...atelierButtons.inlineText, color: atelierColors.textSoft },
-  saveButtonText: { ...atelierButtons.inlineText, color: atelierColors.deepGreen },
-  settingItem: { 
-    ...atelierCards.section,
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: 20,
-  },
-  inlineSettingItem: {
+  legacyDataNotice: {
+    ...atelierText.helper,
+    color: atelierColors.textSoft,
+    textAlign: 'center',
     marginTop: spacing.xl,
-    borderWidth: 0,
-    paddingHorizontal: 0,
-    backgroundColor: 'transparent',
-    elevation: 0,
-    shadowOpacity: 0,
   },
-  settingLabel: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
-  settingValue: { ...atelierText.bodyMuted, fontSize: 15, fontWeight: '500' },
-  divider: { height: 1, backgroundColor: atelierColors.border, marginVertical: spacing.xl + spacing.xs },
-  menuItem: { ...atelierCards.section, paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 20 },
-  menuText: { ...atelierText.body, fontSize: 15, fontWeight: '500' },
-  notificationCard: {
-    ...atelierCards.section,
-    padding: spacing.xl,
-    borderRadius: 24,
-  },
-  notificationIntro: {
-    ...atelierText.bodyMuted,
-    lineHeight: 22,
-    marginBottom: spacing.lg,
-  },
-  notificationItem: {
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: atelierColors.border,
-  },
-  notificationItemFirst: {
-    paddingTop: 0,
-    borderTopWidth: 0,
-  },
-  notificationItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  notificationTitle: {
-    flex: 1,
-    ...atelierText.body,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  notificationStatus: {
-    ...atelierText.helper,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  notificationStatusReady: {
-    color: atelierColors.deepGreen,
-  },
-  notificationDesc: {
-    marginTop: spacing.xs,
-    ...atelierText.bodyMuted,
-    lineHeight: 22,
-  },
-  notificationMeta: {
-    marginTop: spacing.xs,
-    ...atelierText.helper,
-    fontSize: 12,
-    fontWeight: '600',
-    color: atelierColors.text,
-    letterSpacing: -0.1,
-  },
-  archivedBlendNote: {
-    ...atelierCards.meta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  archivedBlendNoteText: {
-    ...atelierText.helper,
-    color: atelierColors.textSoft,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  teaItem: {
-    ...atelierCards.section,
-    borderRadius: 20,
-    marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  teaItemMain: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  teaItemText: {
-    flex: 1,
-    gap: 4,
-  },
-  teaItemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: 2,
-  },
-  teaItemBadge: {
-    ...atelierText.pill,
-    fontSize: 12,
-    color: atelierColors.deepGreen,
-    letterSpacing: -0.1,
-    flexShrink: 1,
-  },
-  cacaoLevelPill: {
-    backgroundColor: atelierColors.deepGreenMuted,
-    borderWidth: 1,
-    borderColor: atelierColors.deepGreenSoft,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  cacaoLevelPillText: {
-    ...atelierText.pill,
-    color: atelierColors.deepGreen,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  customBlendBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: atelierColors.deepGreenMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cwaterBlendBadge: {
-    backgroundColor: atelierColors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: atelierColors.deepGreenSoft,
-  },
-  customBlendBadgeText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: atelierColors.deepGreen,
-    letterSpacing: -0.1,
-  },
-  cwaterBlendBadgeText: {
-    fontSize: 12,
-    letterSpacing: 0.1,
-  },
-  teaName: {
-    ...atelierText.cardTitleMd,
-    fontSize: 16,
-  },
-  teaSubtitle: {
-    ...atelierText.bodyMuted,
-  },
-  savedTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    marginBottom: 2,
-  },
-  savedTagChip: {
-    backgroundColor: atelierColors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: atelierColors.border,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  savedTagText: {
-    ...atelierText.pill,
-    color: atelierColors.text,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  teaItemMeta: {
-    ...atelierText.helper,
-    color: atelierColors.deepGreen,
-    letterSpacing: -0.1,
-    marginTop: spacing.xs,
-  },
-  customBlendContext: {
-    ...atelierText.helper,
-    color: atelierColors.textSoft,
-    letterSpacing: -0.1,
-    marginTop: 2,
-  },
-  removeButton: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: atelierColors.border,
-    alignSelf: 'stretch',
-  },
-  removeButtonText: {
-    ...atelierText.helper,
-    fontSize: 13,
-    color: colors.error,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  emptyTeaBox: {
-    ...atelierCards.section,
-    padding: spacing.lg,
-    borderRadius: 20,
-  },
-  emptyTeaText: {
-    ...atelierText.bodyMuted,
-    lineHeight: 22,
-  },
-  
-  // Edit Form Styles
-  editForm: { ...atelierCards.section, padding: spacing.xl, borderRadius: 24 },
-  label: { ...atelierText.body, fontSize: 14, fontWeight: '600', marginBottom: spacing.md },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 22, backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border },
-  chipSelected: { backgroundColor: atelierColors.deepGreen, borderColor: atelierColors.deepGreen },
-  chipText: { ...atelierText.bodyMuted, fontSize: 14, fontWeight: '500' },
-  chipTextSelected: { color: atelierColors.surface, fontWeight: '600' },
-  timeInput: { backgroundColor: atelierColors.surfaceMuted, borderRadius: 12, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: atelierColors.border, width: 140, color: atelierColors.text }
 });
