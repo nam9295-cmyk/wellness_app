@@ -1,22 +1,20 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions, Animated } from 'react-native';
-import Svg, { Circle, Line, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
-import { TeaThumbnail } from '@/components/TeaThumbnail';
+import Svg, { Circle, Line, Path, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import { atelierColors, atelierText } from '@/lib/atelierTheme';
 import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { generateReportOverview, ReportPeriodStats } from '@/lib/reportUtils';
 import { formatDisplayDate } from '@/lib/date';
-import { getTeaRecommendationForRecentFlow } from '@/lib/teaRecommendationEngine';
 import { normalizeLogsForReport } from '@/lib/reportLogUtils';
+import { calculateMentalRhythmScore, calculatePhysicalRhythmScore } from '@/lib/wellnessScoring';
 
 type ReportTabKey = 'daily' | 'weekly' | 'monthly';
 
 const REPORT_TABS: Array<{ key: ReportTabKey; label: string; helper: string }> = [
-  { key: 'daily', label: '하루', helper: '오늘 흐름' },
-  { key: 'weekly', label: '일주일', helper: '최근 7일' },
-  { key: 'monthly', label: '한달', helper: '최근 30일' },
+  { key: 'daily', label: '1D', helper: '오늘 하루' },
+  { key: 'weekly', label: '1W', helper: '최근 7일' },
+  { key: 'monthly', label: '1M', helper: '최근 30일' },
 ];
 
 function clampRhythmValue(value: string) {
@@ -67,18 +65,63 @@ function pointsToAreaPath(points: Array<{ x: number; y: number }>, baselineY: nu
   return `${pointsToPath(points)} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
 }
 
+function ReportEnergyBar({ label, value }: { label: string, value: string }) {
+  const numValue = Number(value) || 0;
+  const percentage = Math.min(Math.max((numValue / 5) * 100, 0), 100);
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: percentage,
+      duration: 600,
+      useNativeDriver: false,
+    }).start();
+  }, [percentage, animValue]);
+  
+  return (
+    <View style={styles.energyBarRow}>
+      <View style={styles.energyBarHeader}>
+        <Text style={styles.energyBarLabel}>{label}</Text>
+        <Text style={styles.energyBarValue}>{numValue.toFixed(1)}</Text>
+      </View>
+      <View style={styles.energyBarContainer}>
+        <View style={styles.energyBarTrack}>
+          <Animated.View style={[styles.energyBarFillWrap, { 
+            width: animValue.interpolate({
+              inputRange: [0, 100],
+              outputRange: ['0%', '100%']
+            }) 
+          }]}>
+            <View style={styles.energyBarGradient}>
+              {/* Fake segments using borders */}
+              {[1, 2, 3, 4].map(i => (
+                <View key={i} style={[styles.energyBarDivider, { left: `${i * 20}%` }]} />
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function BiorhythmChart({
   physicalValues,
   mentalValues,
 }: {
-  physicalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
-  mentalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
+  physicalValues: Array<{ key: string; value: string; shortLabel: string }>;
+  mentalValues: Array<{ key: string; value: string; shortLabel: string }>;
 }) {
   const screenWidth = Dimensions.get('window').width;
   const width = screenWidth - spacing.xl * 2 - spacing.xl * 2;
   const height = 180;
   const baselineY = height / 2;
-  const xPositions = [20, width / 2, width - 20];
+  
+  const count = Math.max(physicalValues.length, 1);
+  const paddingX = count === 1 ? width / 2 : 20;
+  const xPositions = physicalValues.map((_, i) => 
+    count === 1 ? paddingX : paddingX + (i / (count - 1)) * (width - paddingX * 2)
+  );
   
   const physicalWave = createCosineWavePoints(
     physicalValues.map((entry) => clampRhythmValue(entry.value)),
@@ -127,33 +170,37 @@ function BiorhythmChart({
             strokeWidth={1}
             strokeDasharray="4 4"
           />
-          <Path d={pointsToAreaPath(physicalWave.points, baselineY)} fill="url(#physicalGradient)" />
-          <Path d={pointsToAreaPath(mentalWave.points, baselineY)} fill="url(#mentalGradient)" />
-          <Path
-            d={pointsToPath(physicalWave.points)}
-            fill="none"
-            stroke={atelierColors.deepGreen}
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d={pointsToPath(mentalWave.points)}
-            fill="none"
-            stroke={atelierColors.deepGreenSoft}
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {physicalWave.points.length > 1 && (
+            <>
+              <Path d={pointsToAreaPath(physicalWave.points, baselineY)} fill="url(#physicalGradient)" />
+              <Path d={pointsToAreaPath(mentalWave.points, baselineY)} fill="url(#mentalGradient)" />
+              <Path
+                d={pointsToPath(physicalWave.points)}
+                fill="none"
+                stroke={atelierColors.deepGreen}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d={pointsToPath(mentalWave.points)}
+                fill="none"
+                stroke={atelierColors.deepGreenSoft}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </>
+          )}
           {physicalWave.anchors.map((point, index) => (
             <Circle
               key={`physical-${physicalValues[index].key}`}
               cx={point.x}
               cy={point.y}
-              r={6}
+              r={index === physicalWave.anchors.length - 1 ? 6 : 4}
               fill={atelierColors.surface}
               stroke={atelierColors.deepGreen}
-              strokeWidth={2.5}
+              strokeWidth={index === physicalWave.anchors.length - 1 ? 2.5 : 2}
             />
           ))}
           {mentalWave.anchors.map((point, index) => (
@@ -161,62 +208,60 @@ function BiorhythmChart({
               key={`mental-${mentalValues[index].key}`}
               cx={point.x}
               cy={point.y}
-              r={5}
+              r={index === mentalWave.anchors.length - 1 ? 5 : 3.5}
               fill={atelierColors.surfaceMuted}
               stroke={atelierColors.deepGreenSoft}
-              strokeWidth={2}
+              strokeWidth={index === mentalWave.anchors.length - 1 ? 2 : 1.5}
             />
           ))}
         </Svg>
-      </View>
 
-      <View style={styles.chartLabelsRow}>
-        {physicalValues.map((entry, index) => (
-          <View key={entry.key} style={styles.chartLabelItem}>
-            <Text style={styles.chartValuePrimary}>{physicalValues[index].value}</Text>
-            <Text style={styles.chartPointLabel}>{entry.shortLabel}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function ReportBarChart({ label, value }: { label: string, value: string }) {
-  const numValue = Number(value) || 0;
-  const percentage = Math.min(Math.max((numValue / 5) * 100, 0), 100);
-  const animValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(animValue, {
-      toValue: percentage,
-      duration: 600,
-      useNativeDriver: false,
-    }).start();
-  }, [percentage, animValue]);
-  
-  return (
-    <View style={styles.barItem}>
-      <View style={styles.barHeader}>
-        <Text style={styles.barLabel}>{label}</Text>
-        <Text style={styles.barValue}>{numValue.toFixed(1)}<Text style={styles.barValueMax}>/5</Text></Text>
-      </View>
-      <View style={styles.barTrack}>
-        <Animated.View style={[styles.barFill, { 
-          width: animValue.interpolate({
-            inputRange: [0, 100],
-            outputRange: ['0%', '100%']
-          }) 
-        }]} />
+        <View style={styles.xAxis}>
+          {physicalValues.map((entry, index) => {
+            const x = xPositions[index];
+            const isActive = index === physicalValues.length - 1;
+            return (
+              <View key={entry.key} style={[styles.xLabelContainer, { left: x - 20 }]}>
+                <Text style={[styles.xLabel, isActive && styles.xLabelActive]}>{entry.shortLabel}</Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 }
 
 export default function ReportScreen() {
-  const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ReportTabKey>('weekly');
-  const { logs = [], isReady, userSettings } = useStore();
+  const { logs = [], isReady } = useStore();
+
+  const report = useMemo(() => generateReportOverview(logs), [logs]);
+  const normalizedLogs = useMemo(() => normalizeLogsForReport(logs), [logs]);
+
+  const activeStats = useMemo(() => {
+    if (activeTab === 'daily') return report.daily;
+    if (activeTab === 'monthly') return report.monthly;
+    return report.weekly;
+  }, [activeTab, report]);
+
+  const activeTabMeta = useMemo(() => 
+    REPORT_TABS.find((tab) => tab.key === activeTab) ?? REPORT_TABS[1],
+    [activeTab]
+  );
+
+  // Prepare chart data based on active tab
+  const chartLogs = useMemo(() => {
+    let targetLogs = [];
+    if (activeTab === 'daily') {
+      targetLogs = normalizedLogs.slice(0, 1);
+    } else if (activeTab === 'weekly') {
+      targetLogs = normalizedLogs.slice(0, 7);
+    } else {
+      targetLogs = normalizedLogs.slice(0, 14); // Limit to 14 points for readability
+    }
+    return [...targetLogs].reverse();
+  }, [normalizedLogs, activeTab]);
 
   if (!isReady) {
     return (
@@ -226,116 +271,80 @@ export default function ReportScreen() {
     );
   }
 
-  const report = generateReportOverview(logs);
-  const normalizedLogs = normalizeLogsForReport(logs);
-  const teaRecommendation = getTeaRecommendationForRecentFlow({
-    logs,
-    userGoal: userSettings?.goal,
-  });
-
-  const activeStats = 
-    activeTab === 'daily' ? report.daily :
-    activeTab === 'monthly' ? report.monthly :
-    report.weekly;
-
-  const activeTabMeta = REPORT_TABS.find((tab) => tab.key === activeTab) ?? REPORT_TABS[1];
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.eyebrow}>WELLNESS DASHBOARD</Text>
       <Text style={styles.title}>웰니스 리포트</Text>
-      <Text style={styles.caption}>하루, 일주일, 한달 흐름을{'\n'}리듬처럼 읽을 수 있게 정리했어요.</Text>
+      <Text style={styles.caption}>나의 흐름을 데이터로 정확하게 진단합니다.</Text>
 
+      {/* 1. Biorhythm Chart with Compact Tabs */}
       <View style={styles.biorhythmHero}>
         <View style={styles.biorhythmHeader}>
-          <View style={styles.biorhythmHeaderText}>
-            <Text style={styles.sectionCaption}>바이오리듬</Text>
-            <Text style={styles.biorhythmTitle}>신체와 마음 흐름</Text>
-          </View>
-          <View style={styles.overallBadge}>
-            <Text style={styles.overallBadgeText}>누적 {report.overall.logCount}일</Text>
+          <Text style={styles.biorhythmTitle}>바이오리듬</Text>
+          <View style={styles.compactTabRow}>
+            {REPORT_TABS.map((tab) => {
+              const isActive = tab.key === activeTab;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  activeOpacity={0.8}
+                  style={[styles.compactTab, isActive && styles.compactTabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text style={[styles.compactTabText, isActive && styles.compactTabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         <BiorhythmChart
-          physicalValues={[
-            { key: 'daily', value: report.daily.physicalRhythm, shortLabel: '하루' },
-            { key: 'weekly', value: report.weekly.physicalRhythm, shortLabel: '일주일' },
-            { key: 'monthly', value: report.monthly.physicalRhythm, shortLabel: '한달' },
-          ]}
-          mentalValues={[
-            { key: 'daily', value: report.daily.mentalRhythm, shortLabel: '하루' },
-            { key: 'weekly', value: report.weekly.mentalRhythm, shortLabel: '일주일' },
-            { key: 'monthly', value: report.monthly.mentalRhythm, shortLabel: '한달' },
-          ]}
+          physicalValues={chartLogs.map((log) => {
+            const dateParts = log.date.split('-');
+            const shortDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}` : log.date;
+            const p = calculatePhysicalRhythmScore(log);
+            return { key: log.id + '-p', value: p.toString(), shortLabel: shortDate };
+          })}
+          mentalValues={chartLogs.map((log) => {
+            const dateParts = log.date.split('-');
+            const shortDate = dateParts.length === 3 ? `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}` : log.date;
+            const m = calculateMentalRhythmScore(log);
+            return { key: log.id + '-m', value: m.toString(), shortLabel: shortDate };
+          })}
         />
       </View>
 
-      <View style={styles.tabRow}>
-        {REPORT_TABS.map((tab) => {
-          const isActive = tab.key === activeTab;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              activeOpacity={0.9}
-              style={[styles.tabButton, isActive && styles.tabButtonActive]}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
-              <Text style={[styles.tabHelper, isActive && styles.tabHelperActive]}>{tab.helper}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
+      {/* 2. Summary Metric */}
       <View style={styles.summaryCard}>
-        <Text style={styles.sectionCaption}>{activeTabMeta.label} 리듬 요약</Text>
-        <Text style={styles.summaryTitle}>{activeTabMeta.helper} 흐름 분석</Text>
-
+        <Text style={styles.sectionCaption}>{activeTabMeta.helper} 종합 점수</Text>
         <View style={styles.summaryMetricRow}>
           <View style={styles.summaryMetric}>
-            <Text style={styles.summaryMetricLabel}>신체</Text>
+            <Text style={styles.summaryMetricLabel}>신체 밸런스</Text>
             <Text style={styles.summaryMetricValue}>{activeStats.physicalRhythm}</Text>
           </View>
           <View style={styles.summaryMetric}>
-            <Text style={styles.summaryMetricLabel}>정신</Text>
+            <Text style={styles.summaryMetricLabel}>정신 밸런스</Text>
             <Text style={styles.summaryMetricValue}>{activeStats.mentalRhythm}</Text>
           </View>
-          <View style={styles.summaryMetric}>
-            <Text style={styles.summaryMetricLabel}>기록</Text>
-            <Text style={styles.summaryMetricValue}>{activeStats.logCount}</Text>
-          </View>
         </View>
       </View>
 
-      <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)} style={styles.teaCard}>
-        <Text style={styles.teaCardLabel}>FLOW RECOMMENDATION</Text>
-        <View style={styles.teaCardRow}>
-          <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
-          <View style={styles.teaCardText}>
-            <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
-            <Text style={styles.teaIdentity}>{teaRecommendation.content.identityLine}</Text>
-            <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
-          </View>
-        </View>
-        <View style={styles.signatureFooter}>
-          <Text style={styles.detailHint}>추천 상세 보기</Text>
-          <Text style={styles.signatureFooterArrow}>→</Text>
-        </View>
-      </TouchableOpacity>
-
+      {/* 3. Detailed Stats (Energy Bars) */}
       <View style={styles.supportCard}>
         <Text style={styles.supportTitle}>상세 지표 분석</Text>
-        <View style={styles.barChartWrap}>
-          <ReportBarChart label="평균 수면" value={activeStats.avgSleep} />
-          <ReportBarChart label="평균 기분" value={activeStats.avgMood} />
-          <ReportBarChart label="평균 피로도" value={activeStats.avgFatigue} />
-          <ReportBarChart label="평균 스트레스" value={activeStats.avgStress} />
+        <View style={styles.energyBarWrap}>
+          <ReportEnergyBar label="평균 수면" value={activeStats.avgSleep} />
+          <ReportEnergyBar label="평균 기분" value={activeStats.avgMood} />
+          <ReportEnergyBar label="평균 피로도" value={activeStats.avgFatigue} />
+          <ReportEnergyBar label="평균 스트레스" value={activeStats.avgStress} />
         </View>
       </View>
 
+      {/* 4. Text Insights */}
       <View style={styles.supportCard}>
-        <Text style={styles.supportTitle}>흐름 요약</Text>
+        <Text style={styles.supportTitle}>전문가 코멘트</Text>
         <View style={styles.insightStack}>
           {activeStats.insights.slice(0, 3).map((insight) => (
             <View key={insight} style={styles.insightRow}>
@@ -346,7 +355,8 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      <Text style={styles.subTitle}>최근 기록</Text>
+      {/* 5. Raw Data (Logs) */}
+      <Text style={styles.subTitle}>기록 데이터</Text>
       {normalizedLogs.length > 0 ? (
         normalizedLogs.slice(0, 5).map((log) => (
           <View key={log.id} style={styles.historyRow}>
@@ -368,16 +378,9 @@ export default function ReportScreen() {
         ))
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>기록이 쌓이면 흐름이 더 또렷해져요.</Text>
+          <Text style={styles.emptyText}>기록이 쌓이면 데이터가 표시됩니다.</Text>
         </View>
       )}
-
-      <TeaRecommendationDetailModal
-        visible={isTeaDetailVisible}
-        recommendation={teaRecommendation}
-        reasonTitle="오늘의 추천 이유"
-        onClose={() => setIsTeaDetailVisible(false)}
-      />
     </ScrollView>
   );
 }
@@ -385,13 +388,32 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
   content: { padding: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.xl },
-  eyebrow: { ...atelierText.helper, color: atelierColors.deepGreen, letterSpacing: 2, marginBottom: spacing.sm },
-  title: { ...atelierText.heroTitle, fontSize: 32, lineHeight: 42, marginBottom: spacing.sm, fontWeight: '300', letterSpacing: -1 },
-  caption: { ...atelierText.bodyMuted, fontSize: 16, lineHeight: 26, color: atelierColors.textMuted, marginBottom: spacing.xxl },
+  eyebrow: { 
+    ...atelierText.helper, 
+    color: atelierColors.deepGreen,
+    letterSpacing: 2, 
+    marginBottom: spacing.sm 
+  },
+  title: { 
+    ...atelierText.heroTitle, 
+    fontSize: 32, 
+    lineHeight: 42, 
+    marginBottom: spacing.sm,
+    fontWeight: '300',
+    letterSpacing: -1,
+  },
+  caption: {
+    ...atelierText.bodyMuted,
+    fontSize: 16,
+    lineHeight: 26,
+    color: atelierColors.textMuted,
+    marginBottom: spacing.xxl,
+  },
   
   biorhythmHero: {
     backgroundColor: atelierColors.surface,
     padding: spacing.xl,
+    paddingBottom: spacing.lg,
     borderRadius: 28,
     borderWidth: 1,
     borderColor: atelierColors.border,
@@ -400,84 +422,179 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 16,
     elevation: 1,
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.lg,
   },
   biorhythmHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
-  biorhythmHeaderText: { flex: 1 },
-  sectionCaption: { ...atelierText.helper, fontSize: 12, color: atelierColors.textSoft, marginBottom: 4 },
-  biorhythmTitle: { ...atelierText.cardTitleLg, fontSize: 21, lineHeight: 28 },
-  overallBadge: { backgroundColor: atelierColors.surfaceMuted, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: atelierColors.border },
-  overallBadgeText: { ...atelierText.pill, color: atelierColors.deepGreen },
+  biorhythmTitle: { 
+    ...atelierText.cardTitleMd, 
+    fontSize: 19,
+    color: atelierColors.title,
+  },
+  compactTabRow: {
+    flexDirection: 'row',
+    backgroundColor: atelierColors.surfaceMuted,
+    borderRadius: 999,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  compactTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  compactTabActive: {
+    backgroundColor: atelierColors.deepGreen,
+  },
+  compactTabText: {
+    ...atelierText.helper,
+    fontSize: 12,
+    fontWeight: '600',
+    color: atelierColors.textSoft,
+  },
+  compactTabTextActive: {
+    color: '#FFF',
+  },
   
-  chartWrap: { width: '100%' },
-  chartLegendRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  chartWrap: { width: '100%', position: 'relative' },
+  chartLegendRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
   chartLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   chartLegendDot: { width: 8, height: 8, borderRadius: 4 },
   chartLegendDotPhysical: { backgroundColor: atelierColors.deepGreen },
   chartLegendDotMental: { backgroundColor: atelierColors.deepGreenSoft },
   chartLegendText: { ...atelierText.helper, color: atelierColors.textSoft, fontSize: 11 },
   chartBox: { width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
-  chartLabelsRow: { width: '100%', flexDirection: 'row', justifyContent: 'space-between' },
-  chartLabelItem: { alignItems: 'center' },
-  chartValuePrimary: { ...atelierText.cardTitleMd, fontSize: 18, color: atelierColors.title },
-  chartPointLabel: { ...atelierText.helper, marginTop: 4, color: atelierColors.textSoft, fontSize: 11 },
   
-  tabRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl },
-  tabButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: atelierColors.surface, borderWidth: 1, borderColor: atelierColors.border },
-  tabButtonActive: { backgroundColor: atelierColors.deepGreen, borderColor: atelierColors.deepGreen },
-  tabLabel: { ...atelierText.cardTitleMd, fontSize: 14, color: atelierColors.title },
-  tabLabelActive: { color: atelierColors.surface },
-  tabHelper: { ...atelierText.helper, marginTop: 2, color: atelierColors.textSoft, fontSize: 10 },
-  tabHelperActive: { color: atelierColors.surface, opacity: 0.8 },
+  xAxis: {
+    height: 20,
+    marginTop: 8,
+    position: 'absolute',
+    bottom: -24,
+    left: 0,
+    right: 0,
+  },
+  xLabelContainer: {
+    position: 'absolute',
+    width: 40,
+    alignItems: 'center',
+  },
+  xLabel: {
+    ...atelierText.helper,
+    fontSize: 11,
+    color: atelierColors.textMuted,
+  },
+  xLabelActive: {
+    color: atelierColors.deepGreen,
+    fontWeight: '700',
+  },
   
-  summaryCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, borderRadius: 24, marginBottom: spacing.lg, borderWidth: 1, borderColor: atelierColors.border },
-  summaryTitle: { ...atelierText.cardTitleMd, fontSize: 19, lineHeight: 26, marginBottom: spacing.md },
+  summaryCard: { 
+    backgroundColor: atelierColors.surface, 
+    padding: spacing.xl, 
+    borderRadius: 24, 
+    marginBottom: spacing.lg, 
+    borderWidth: 1, 
+    borderColor: atelierColors.border 
+  },
+  sectionCaption: { ...atelierText.helper, fontSize: 13, color: atelierColors.textSoft, marginBottom: spacing.md },
   summaryMetricRow: { flexDirection: 'row', gap: spacing.sm },
-  summaryMetric: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: 18 },
+  summaryMetric: { 
+    backgroundColor: atelierColors.surfaceMuted, 
+    borderWidth: 1, 
+    borderColor: atelierColors.border, 
+    flex: 1, 
+    paddingVertical: spacing.md, 
+    alignItems: 'center', 
+    borderRadius: 18 
+  },
   summaryMetricLabel: { ...atelierText.helper, color: atelierColors.textSoft, marginBottom: 4 },
-  summaryMetricValue: { ...atelierText.cardTitleMd, fontSize: 18 },
-  
-  teaCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, marginBottom: spacing.lg, borderRadius: 26, borderWidth: 1, borderColor: atelierColors.border },
-  teaCardLabel: { ...atelierText.helper, fontSize: 11, color: atelierColors.deepGreen, letterSpacing: 1, marginBottom: spacing.lg },
-  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  teaCardText: { flex: 1 },
-  teaName: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: 4 },
-  teaIdentity: { ...atelierText.summary, fontSize: 14, marginBottom: 8, fontWeight: '600', color: atelierColors.deepGreen },
-  teaDescription: { ...atelierText.summary, fontSize: 15, lineHeight: 22, color: atelierColors.text },
-  signatureFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: atelierColors.border },
-  signatureFooterArrow: { fontSize: 18, color: atelierColors.deepGreen },
+  summaryMetricValue: { ...atelierText.cardTitleLg, fontSize: 24 },
   
   supportCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, borderRadius: 24, marginBottom: spacing.lg, borderWidth: 1, borderColor: atelierColors.border },
   supportTitle: { ...atelierText.cardTitleMd, fontSize: 18, marginBottom: spacing.lg },
-  barChartWrap: { gap: spacing.lg },
-  barItem: { width: '100%' },
-  barHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: spacing.sm },
-  barLabel: { ...atelierText.body, fontSize: 14, color: atelierColors.textMuted },
-  barValue: { ...atelierText.cardTitleMd, fontSize: 18, color: atelierColors.title },
-  barValueMax: { fontSize: 13, color: atelierColors.textSoft, fontWeight: '400' },
-  barTrack: { height: 8, backgroundColor: atelierColors.surfaceMuted, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: atelierColors.border },
-  barFill: { height: '100%', backgroundColor: atelierColors.deepGreen, borderRadius: 4 },
+  
+  /* Soft Gaming Energy Bar */
+  energyBarWrap: { gap: spacing.lg },
+  energyBarRow: { width: '100%' },
+  energyBarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 },
+  energyBarLabel: { ...atelierText.body, fontSize: 14, color: atelierColors.textMuted },
+  energyBarValue: { ...atelierText.cardTitleMd, fontSize: 16, color: atelierColors.title },
+  energyBarContainer: {
+    height: 14,
+    transform: [{ skewX: '-10deg' }], // slanted gaming look
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  energyBarTrack: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: atelierColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+  },
+  energyBarFillWrap: {
+    height: '100%',
+    overflow: 'hidden',
+  },
+  energyBarGradient: {
+    width: Dimensions.get('window').width - (spacing.xl * 2) - (spacing.xl * 2), // Match card width to stretch gradient properly
+    height: '100%',
+    backgroundColor: atelierColors.deepGreen, // Fallback if no linear gradient
+    flexDirection: 'row',
+  },
+  energyBarDivider: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: atelierColors.surface, // Matches background to look like a gap
+    opacity: 0.8,
+  },
   
   insightStack: { gap: spacing.md },
   insightRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   insightDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: atelierColors.deepGreenSoft, marginTop: 8 },
-  insightText: { ...atelierText.body, flex: 1, lineHeight: 22, color: atelierColors.text },
+  insightText: { ...atelierText.body, flex: 1, lineHeight: 24, color: atelierColors.text },
   
   subTitle: { ...atelierText.cardTitleMd, marginTop: spacing.xl, marginBottom: spacing.md, color: atelierColors.title },
-  historyRow: { backgroundColor: atelierColors.surface, borderWidth: 1, borderColor: atelierColors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderRadius: 24, marginBottom: spacing.md, gap: spacing.md },
-  historyTextWrap: { flex: 1 },
-  historyDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: 4, letterSpacing: 0.5 },
+  historyRow: { 
+    backgroundColor: atelierColors.surface, 
+    borderWidth: 1, 
+    borderColor: atelierColors.border, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: spacing.xl, 
+    borderRadius: 24, 
+    marginBottom: spacing.md, 
+    gap: spacing.md 
+  },
+  historyTextWrap: { flex: 1, minWidth: 0 },
+  historyDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: 6, letterSpacing: 0.5 },
   historyMemo: { ...atelierText.bodyMuted, lineHeight: 22 },
-  historyData: { flexDirection: 'row', gap: 8 },
-  historyBadge: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  historyBadgeText: { ...atelierText.pill, color: atelierColors.textMuted, fontSize: 11 },
-  emptyCard: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, padding: spacing.xl, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  historyData: { flexDirection: 'row', gap: spacing.xs, flexShrink: 0 },
+  historyBadge: { 
+    backgroundColor: atelierColors.surfaceMuted, 
+    borderWidth: 1, 
+    borderColor: atelierColors.border, 
+    paddingHorizontal: 10, 
+    paddingVertical: 8, 
+    borderRadius: 12 
+  },
+  historyBadgeText: { ...atelierText.pill, color: atelierColors.textMuted },
+  
+  emptyCard: { 
+    backgroundColor: atelierColors.surfaceMuted, 
+    borderWidth: 1, 
+    borderColor: atelierColors.border, 
+    padding: spacing.xl, 
+    borderRadius: 24, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
   emptyText: { ...atelierText.bodyMuted, textAlign: 'center' },
-  detailHint: { ...atelierText.helper, color: atelierColors.textMuted, fontWeight: '600' },
 });
