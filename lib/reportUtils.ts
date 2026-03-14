@@ -16,6 +16,7 @@ export interface ReportPeriodStats {
   avgMood: string;
   avgFatigue: string;
   avgStress: string;
+  avgSleep: string; // Add numeric average sleep
   physicalRhythm: string;
   mentalRhythm: string;
   frequentSleep: string;
@@ -37,6 +38,7 @@ function buildReportPeriodStats(logs: WellnessLog[], insights: string[]): Report
       avgMood: '0.0',
       avgFatigue: '0.0',
       avgStress: '0.0',
+      avgSleep: '0.0',
       physicalRhythm: '0.0',
       mentalRhythm: '0.0',
       frequentSleep: '-',
@@ -53,6 +55,10 @@ function buildReportPeriodStats(logs: WellnessLog[], insights: string[]): Report
   const avgStress = (
     logs.reduce((acc, log) => acc + normalizeStressScore(log.stress), 0) / logCount
   ).toFixed(1);
+  const avgSleep = (
+    logs.reduce((acc, log) => acc + normalizeSleepScore(log.sleep), 0) / logCount
+  ).toFixed(1);
+  
   const sleepCount: Partial<Record<SleepState, number>> = {};
   logs.forEach((log) => {
     const normalizedSleep = normalizeSleepScore(log.sleep);

@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import Svg, { Circle, Line, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { TeaRecommendationDetailModal } from '@/components/TeaRecommendationDetailModal';
 import { TeaThumbnail } from '@/components/TeaThumbnail';
-import { atelierCards, atelierColors, atelierText } from '@/lib/atelierTheme';
+import { atelierColors, atelierText } from '@/lib/atelierTheme';
 import { spacing } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import { generateReportOverview, ReportPeriodStats } from '@/lib/reportUtils';
@@ -24,14 +24,12 @@ function clampRhythmValue(value: string) {
   if (!Number.isFinite(numericValue)) {
     return 3;
   }
-
   return Math.min(Math.max(numericValue, 1), 5);
 }
 
 function createCosineWavePoints(values: number[], xPositions: number[], baselineY: number, amplitudeScale: number) {
   const anchors = values.map((value, index) => {
     const normalized = (value - 3) / 2;
-
     return {
       x: xPositions[index],
       y: baselineY - normalized * amplitudeScale,
@@ -45,10 +43,7 @@ function createCosineWavePoints(values: number[], xPositions: number[], baseline
     const steps = 24;
 
     for (let step = 0; step <= steps; step += 1) {
-      if (index > 0 && step === 0) {
-        continue;
-      }
-
+      if (index > 0 && step === 0) continue;
       const t = step / steps;
       const eased = (1 - Math.cos(Math.PI * t)) / 2;
       points.push({
@@ -57,23 +52,16 @@ function createCosineWavePoints(values: number[], xPositions: number[], baseline
       });
     }
   }
-
   return { anchors, points };
 }
 
 function pointsToPath(points: Array<{ x: number; y: number }>) {
-  if (points.length === 0) {
-    return '';
-  }
-
+  if (points.length === 0) return '';
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 }
 
 function pointsToAreaPath(points: Array<{ x: number; y: number }>, baselineY: number) {
-  if (points.length === 0) {
-    return '';
-  }
-
+  if (points.length === 0) return '';
   const first = points[0];
   const last = points[points.length - 1];
   return `${pointsToPath(points)} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
@@ -86,21 +74,23 @@ function BiorhythmChart({
   physicalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
   mentalValues: Array<{ key: ReportTabKey; value: string; shortLabel: string }>;
 }) {
-  const width = 320;
-  const height = 214;
-  const baselineY = 92;
-  const xPositions = [32, width / 2, width - 32];
+  const screenWidth = Dimensions.get('window').width;
+  const width = screenWidth - spacing.xl * 2 - spacing.xl * 2;
+  const height = 180;
+  const baselineY = height / 2;
+  const xPositions = [20, width / 2, width - 20];
+  
   const physicalWave = createCosineWavePoints(
     physicalValues.map((entry) => clampRhythmValue(entry.value)),
     xPositions,
     baselineY,
-    34,
+    50,
   );
   const mentalWave = createCosineWavePoints(
     mentalValues.map((entry) => clampRhythmValue(entry.value)),
     xPositions,
     baselineY,
-    28,
+    40,
   );
 
   return (
@@ -108,32 +98,42 @@ function BiorhythmChart({
       <View style={styles.chartLegendRow}>
         <View style={styles.chartLegendItem}>
           <View style={[styles.chartLegendDot, styles.chartLegendDotPhysical]} />
-          <Text style={styles.chartLegendText}>신체 리듬</Text>
+          <Text style={styles.chartLegendText}>신체</Text>
         </View>
         <View style={styles.chartLegendItem}>
           <View style={[styles.chartLegendDot, styles.chartLegendDotMental]} />
-          <Text style={styles.chartLegendText}>정신 리듬</Text>
+          <Text style={styles.chartLegendText}>정신</Text>
         </View>
       </View>
 
       <View style={styles.chartBox}>
-        <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+        <Svg width={width} height={height}>
+          <Defs>
+            <LinearGradient id="physicalGradient" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={atelierColors.deepGreen} stopOpacity="0.2" />
+              <Stop offset="1" stopColor={atelierColors.deepGreen} stopOpacity="0.0" />
+            </LinearGradient>
+            <LinearGradient id="mentalGradient" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={atelierColors.deepGreenSoft} stopOpacity="0.25" />
+              <Stop offset="1" stopColor={atelierColors.deepGreenSoft} stopOpacity="0.0" />
+            </LinearGradient>
+          </Defs>
           <Line
-            x1={20}
+            x1={0}
             y1={baselineY}
-            x2={width - 20}
+            x2={width}
             y2={baselineY}
             stroke={atelierColors.borderStrong}
-            strokeWidth={2}
-            strokeLinecap="round"
+            strokeWidth={1}
+            strokeDasharray="4 4"
           />
-          <Path d={pointsToAreaPath(physicalWave.points, baselineY)} fill={atelierColors.deepGreen} opacity={0.08} />
-          <Path d={pointsToAreaPath(mentalWave.points, baselineY)} fill={atelierColors.deepGreenSoft} opacity={0.1} />
+          <Path d={pointsToAreaPath(physicalWave.points, baselineY)} fill="url(#physicalGradient)" />
+          <Path d={pointsToAreaPath(mentalWave.points, baselineY)} fill="url(#mentalGradient)" />
           <Path
             d={pointsToPath(physicalWave.points)}
             fill="none"
             stroke={atelierColors.deepGreen}
-            strokeWidth={3.5}
+            strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -141,7 +141,7 @@ function BiorhythmChart({
             d={pointsToPath(mentalWave.points)}
             fill="none"
             stroke={atelierColors.deepGreenSoft}
-            strokeWidth={3}
+            strokeWidth={2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -150,7 +150,7 @@ function BiorhythmChart({
               key={`physical-${physicalValues[index].key}`}
               cx={point.x}
               cy={point.y}
-              r={7}
+              r={6}
               fill={atelierColors.surface}
               stroke={atelierColors.deepGreen}
               strokeWidth={2.5}
@@ -161,10 +161,10 @@ function BiorhythmChart({
               key={`mental-${mentalValues[index].key}`}
               cx={point.x}
               cy={point.y}
-              r={6}
+              r={5}
               fill={atelierColors.surfaceMuted}
               stroke={atelierColors.deepGreenSoft}
-              strokeWidth={2.5}
+              strokeWidth={2}
             />
           ))}
         </Svg>
@@ -174,7 +174,6 @@ function BiorhythmChart({
         {physicalValues.map((entry, index) => (
           <View key={entry.key} style={styles.chartLabelItem}>
             <Text style={styles.chartValuePrimary}>{physicalValues[index].value}</Text>
-            <Text style={styles.chartValueSecondary}>{mentalValues[index].value}</Text>
             <Text style={styles.chartPointLabel}>{entry.shortLabel}</Text>
           </View>
         ))}
@@ -183,19 +182,41 @@ function BiorhythmChart({
   );
 }
 
-function buildImpactChips(stats: ReportPeriodStats) {
-  return [
-    `수면 ${stats.frequentSleep}`,
-    `기분 ${stats.avgMood}/5`,
-    `피로 ${stats.avgFatigue}/5`,
-    `스트레스 ${stats.avgStress}/5`,
-  ];
+function ReportBarChart({ label, value }: { label: string, value: string }) {
+  const numValue = Number(value) || 0;
+  const percentage = Math.min(Math.max((numValue / 5) * 100, 0), 100);
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: percentage,
+      duration: 600,
+      useNativeDriver: false,
+    }).start();
+  }, [percentage, animValue]);
+  
+  return (
+    <View style={styles.barItem}>
+      <View style={styles.barHeader}>
+        <Text style={styles.barLabel}>{label}</Text>
+        <Text style={styles.barValue}>{numValue.toFixed(1)}<Text style={styles.barValueMax}>/5</Text></Text>
+      </View>
+      <View style={styles.barTrack}>
+        <Animated.View style={[styles.barFill, { 
+          width: animValue.interpolate({
+            inputRange: [0, 100],
+            outputRange: ['0%', '100%']
+          }) 
+        }]} />
+      </View>
+    </View>
+  );
 }
 
 export default function ReportScreen() {
   const [isTeaDetailVisible, setIsTeaDetailVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ReportTabKey>('weekly');
-  const { logs, isReady, userSettings } = useStore();
+  const { logs = [], isReady, userSettings } = useStore();
 
   if (!isReady) {
     return (
@@ -212,32 +233,24 @@ export default function ReportScreen() {
     userGoal: userSettings?.goal,
   });
 
-  const activeStats = useMemo(() => {
-    if (activeTab === 'daily') {
-      return report.daily;
-    }
-
-    if (activeTab === 'monthly') {
-      return report.monthly;
-    }
-
-    return report.weekly;
-  }, [activeTab, report.daily, report.monthly, report.weekly]);
+  const activeStats = 
+    activeTab === 'daily' ? report.daily :
+    activeTab === 'monthly' ? report.monthly :
+    report.weekly;
 
   const activeTabMeta = REPORT_TABS.find((tab) => tab.key === activeTab) ?? REPORT_TABS[1];
-  const impactChips = buildImpactChips(activeStats);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.eyebrow}>WELLNESS DASHBOARD</Text>
       <Text style={styles.title}>웰니스 리포트</Text>
-      <Text style={styles.caption}>하루, 일주일, 한달 흐름을 리듬처럼 읽을 수 있게 정리했어요.</Text>
+      <Text style={styles.caption}>하루, 일주일, 한달 흐름을{'\n'}리듬처럼 읽을 수 있게 정리했어요.</Text>
 
       <View style={styles.biorhythmHero}>
         <View style={styles.biorhythmHeader}>
           <View style={styles.biorhythmHeaderText}>
             <Text style={styles.sectionCaption}>바이오리듬</Text>
-            <Text style={styles.biorhythmTitle}>신체와 마음 흐름을 한눈에 살펴보세요.</Text>
+            <Text style={styles.biorhythmTitle}>신체와 마음 흐름</Text>
           </View>
           <View style={styles.overallBadge}>
             <Text style={styles.overallBadgeText}>누적 {report.overall.logCount}일</Text>
@@ -261,7 +274,6 @@ export default function ReportScreen() {
       <View style={styles.tabRow}>
         {REPORT_TABS.map((tab) => {
           const isActive = tab.key === activeTab;
-
           return (
             <TouchableOpacity
               key={tab.key}
@@ -277,8 +289,8 @@ export default function ReportScreen() {
       </View>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.sectionCaption}>{activeTabMeta.label} 리듬</Text>
-        <Text style={styles.summaryTitle}>{activeTabMeta.helper} 기준으로 본 현재 흐름</Text>
+        <Text style={styles.sectionCaption}>{activeTabMeta.label} 리듬 요약</Text>
+        <Text style={styles.summaryTitle}>{activeTabMeta.helper} 흐름 분석</Text>
 
         <View style={styles.summaryMetricRow}>
           <View style={styles.summaryMetric}>
@@ -296,31 +308,29 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)}>
-        <View style={styles.teaCard}>
-          <Text style={styles.teaCardLabel}>추천 블렌드</Text>
-          <View style={styles.teaCardRow}>
-            <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
-            <View style={styles.teaCardText}>
-              <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
-              <Text style={styles.teaIdentity}>{teaRecommendation.content.identityLine}</Text>
-              <Text style={styles.teaSubtitle}>{teaRecommendation.content.subtitle}</Text>
-              <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
-            </View>
+      <TouchableOpacity activeOpacity={0.88} onPress={() => setIsTeaDetailVisible(true)} style={styles.teaCard}>
+        <Text style={styles.teaCardLabel}>FLOW RECOMMENDATION</Text>
+        <View style={styles.teaCardRow}>
+          <TeaThumbnail teaId={teaRecommendation.teaId} size="md" />
+          <View style={styles.teaCardText}>
+            <Text style={styles.teaName}>{teaRecommendation.content.name}</Text>
+            <Text style={styles.teaIdentity}>{teaRecommendation.content.identityLine}</Text>
+            <Text style={styles.teaDescription}>{teaRecommendation.reason}</Text>
           </View>
-          <Text style={styles.teaContext}>{teaRecommendation.contextLine}</Text>
+        </View>
+        <View style={styles.signatureFooter}>
           <Text style={styles.detailHint}>추천 상세 보기</Text>
+          <Text style={styles.signatureFooterArrow}>→</Text>
         </View>
       </TouchableOpacity>
 
       <View style={styles.supportCard}>
-        <Text style={styles.supportTitle}>주요 영향 요소</Text>
-        <View style={styles.chipWrap}>
-          {impactChips.map((chip) => (
-            <View key={chip} style={styles.chip}>
-              <Text style={styles.chipText}>{chip}</Text>
-            </View>
-          ))}
+        <Text style={styles.supportTitle}>상세 지표 분석</Text>
+        <View style={styles.barChartWrap}>
+          <ReportBarChart label="평균 수면" value={activeStats.avgSleep} />
+          <ReportBarChart label="평균 기분" value={activeStats.avgMood} />
+          <ReportBarChart label="평균 피로도" value={activeStats.avgFatigue} />
+          <ReportBarChart label="평균 스트레스" value={activeStats.avgStress} />
         </View>
       </View>
 
@@ -374,21 +384,23 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: atelierColors.background },
-  content: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.sm },
-  eyebrow: { ...atelierText.helper, fontSize: 11, letterSpacing: 1.1, marginBottom: spacing.sm },
-  title: { ...atelierText.heroTitle, fontSize: 28, lineHeight: 34, marginBottom: spacing.sm },
-  caption: {
-    ...atelierText.summary,
-    color: atelierColors.textMuted,
-    fontSize: 14,
-    lineHeight: 24,
-    marginBottom: spacing.xl,
-  },
+  content: { padding: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.xxl + spacing.xl },
+  eyebrow: { ...atelierText.helper, color: atelierColors.deepGreen, letterSpacing: 2, marginBottom: spacing.sm },
+  title: { ...atelierText.heroTitle, fontSize: 32, lineHeight: 42, marginBottom: spacing.sm, fontWeight: '300', letterSpacing: -1 },
+  caption: { ...atelierText.bodyMuted, fontSize: 16, lineHeight: 26, color: atelierColors.textMuted, marginBottom: spacing.xxl },
+  
   biorhythmHero: {
-    ...atelierCards.hero,
+    backgroundColor: atelierColors.surface,
     padding: spacing.xl,
     borderRadius: 28,
-    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: atelierColors.border,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 1,
+    marginBottom: spacing.xxl,
   },
   biorhythmHeader: {
     flexDirection: 'row',
@@ -397,304 +409,75 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.lg,
   },
-  biorhythmHeaderText: {
-    flex: 1,
-  },
-  sectionCaption: {
-    ...atelierText.helper,
-    fontSize: 12,
-    color: atelierColors.textSoft,
-    marginBottom: spacing.xs,
-  },
-  biorhythmTitle: {
-    ...atelierText.cardTitleLg,
-    fontSize: 21,
-    lineHeight: 28,
-  },
-  overallBadge: {
-    ...atelierCards.meta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: 999,
-    alignSelf: 'flex-start',
-  },
-  overallBadgeText: {
-    ...atelierText.pill,
-    color: atelierColors.deepGreen,
-  },
-  chartWrap: {
-    width: '100%',
-  },
-  chartLegendRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  chartLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chartLegendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-  },
-  chartLegendDotPhysical: {
-    backgroundColor: atelierColors.deepGreen,
-  },
-  chartLegendDotMental: {
-    backgroundColor: atelierColors.deepGreenSoft,
-  },
-  chartLegendText: {
-    ...atelierText.helper,
-    color: atelierColors.textSoft,
-  },
-  chartBox: {
-    width: '100%',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  chartLabelsRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  chartLabelItem: {
-    flex: 1,
-    alignItems: 'center',
-    minWidth: 0,
-  },
-  chartValuePrimary: {
-    ...atelierText.cardTitleMd,
-    fontSize: 19,
-  },
-  chartValueSecondary: {
-    ...atelierText.helper,
-    marginTop: 2,
-    color: atelierColors.deepGreenSoft,
-    fontSize: 12,
-  },
-  chartPointLabel: {
-    ...atelierText.helper,
-    marginTop: spacing.xs,
-    color: atelierColors.textSoft,
-  },
-  tabRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  tabButton: {
-    ...atelierCards.meta,
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    borderRadius: 18,
-  },
-  tabButtonActive: {
-    backgroundColor: atelierColors.deepGreen,
-    borderColor: atelierColors.deepGreen,
-  },
-  tabLabel: {
-    ...atelierText.cardTitleMd,
-    fontSize: 15,
-    color: atelierColors.title,
-  },
-  tabLabelActive: {
-    color: atelierColors.surface,
-  },
-  tabHelper: {
-    ...atelierText.helper,
-    marginTop: 4,
-    color: atelierColors.textSoft,
-  },
-  tabHelperActive: {
-    color: atelierColors.surface,
-    opacity: 0.82,
-  },
-  summaryCard: {
-    ...atelierCards.section,
-    padding: spacing.xl,
-    borderRadius: 24,
-    marginBottom: spacing.lg,
-  },
-  summaryTitle: {
-    ...atelierText.cardTitleMd,
-    fontSize: 19,
-    lineHeight: 26,
-    marginBottom: spacing.md,
-  },
-  summaryMetricRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  summaryMetric: {
-    ...atelierCards.meta,
-    flex: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    borderRadius: 18,
-  },
-  summaryMetricLabel: {
-    ...atelierText.helper,
-    marginBottom: spacing.xs,
-  },
-  summaryMetricValue: {
-    ...atelierText.cardTitleMd,
-    fontSize: 18,
-  },
-  teaCard: {
-    ...atelierCards.section,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    borderRadius: 26,
-  },
-  teaCardLabel: {
-    ...atelierText.helper,
-    fontSize: 13,
-    color: atelierColors.textSoft,
-    marginBottom: spacing.sm,
-  },
-  teaCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  teaCardText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  teaName: {
-    ...atelierText.cardTitleLg,
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  teaIdentity: {
-    ...atelierText.summary,
-    fontSize: 14,
-    marginBottom: 4,
-    fontWeight: '600',
-  },
-  teaSubtitle: {
-    ...atelierText.helper,
-    fontSize: 13,
-    color: atelierColors.deepGreen,
-    marginBottom: spacing.sm,
-    fontWeight: '600',
-  },
-  teaDescription: {
-    ...atelierText.summary,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  teaContext: {
-    ...atelierText.bodyMuted,
-    fontSize: 13,
-    marginTop: spacing.sm,
-  },
-  detailHint: {
-    ...atelierText.helper,
-    color: atelierColors.textMuted,
-    marginTop: spacing.md,
-    fontWeight: '600',
-  },
-  supportCard: {
-    ...atelierCards.section,
-    padding: spacing.lg,
-    borderRadius: 24,
-    marginBottom: spacing.md,
-  },
-  supportTitle: {
-    ...atelierText.cardTitleMd,
-    marginBottom: spacing.md,
-  },
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  chip: {
-    ...atelierCards.meta,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  chipText: {
-    ...atelierText.pill,
-    color: atelierColors.text,
-  },
-  insightStack: {
-    gap: spacing.sm,
-  },
-  insightRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  insightDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: atelierColors.deepGreen,
-    marginTop: 7,
-  },
-  insightText: {
-    ...atelierText.body,
-    flex: 1,
-    lineHeight: 22,
-  },
-  subTitle: {
-    ...atelierText.cardTitleMd,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  historyRow: {
-    ...atelierCards.meta,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: 22,
-    marginBottom: spacing.sm,
-    gap: spacing.md,
-  },
-  historyTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  historyDate: {
-    ...atelierText.helper,
-    fontSize: 13,
-    color: atelierColors.deepGreen,
-    marginBottom: 4,
-  },
-  historyMemo: {
-    ...atelierText.bodyMuted,
-  },
-  historyData: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    flexShrink: 0,
-  },
-  historyBadge: {
-    ...atelierCards.meta,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  historyBadgeText: {
-    ...atelierText.pill,
-    color: atelierColors.text,
-  },
-  emptyCard: {
-    ...atelierCards.meta,
-    padding: spacing.lg,
-    borderRadius: 22,
-  },
-  emptyText: {
-    ...atelierText.bodyMuted,
-  },
+  biorhythmHeaderText: { flex: 1 },
+  sectionCaption: { ...atelierText.helper, fontSize: 12, color: atelierColors.textSoft, marginBottom: 4 },
+  biorhythmTitle: { ...atelierText.cardTitleLg, fontSize: 21, lineHeight: 28 },
+  overallBadge: { backgroundColor: atelierColors.surfaceMuted, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: atelierColors.border },
+  overallBadgeText: { ...atelierText.pill, color: atelierColors.deepGreen },
+  
+  chartWrap: { width: '100%' },
+  chartLegendRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  chartLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chartLegendDot: { width: 8, height: 8, borderRadius: 4 },
+  chartLegendDotPhysical: { backgroundColor: atelierColors.deepGreen },
+  chartLegendDotMental: { backgroundColor: atelierColors.deepGreenSoft },
+  chartLegendText: { ...atelierText.helper, color: atelierColors.textSoft, fontSize: 11 },
+  chartBox: { width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  chartLabelsRow: { width: '100%', flexDirection: 'row', justifyContent: 'space-between' },
+  chartLabelItem: { alignItems: 'center' },
+  chartValuePrimary: { ...atelierText.cardTitleMd, fontSize: 18, color: atelierColors.title },
+  chartPointLabel: { ...atelierText.helper, marginTop: 4, color: atelierColors.textSoft, fontSize: 11 },
+  
+  tabRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl },
+  tabButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: atelierColors.surface, borderWidth: 1, borderColor: atelierColors.border },
+  tabButtonActive: { backgroundColor: atelierColors.deepGreen, borderColor: atelierColors.deepGreen },
+  tabLabel: { ...atelierText.cardTitleMd, fontSize: 14, color: atelierColors.title },
+  tabLabelActive: { color: atelierColors.surface },
+  tabHelper: { ...atelierText.helper, marginTop: 2, color: atelierColors.textSoft, fontSize: 10 },
+  tabHelperActive: { color: atelierColors.surface, opacity: 0.8 },
+  
+  summaryCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, borderRadius: 24, marginBottom: spacing.lg, borderWidth: 1, borderColor: atelierColors.border },
+  summaryTitle: { ...atelierText.cardTitleMd, fontSize: 19, lineHeight: 26, marginBottom: spacing.md },
+  summaryMetricRow: { flexDirection: 'row', gap: spacing.sm },
+  summaryMetric: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: 18 },
+  summaryMetricLabel: { ...atelierText.helper, color: atelierColors.textSoft, marginBottom: 4 },
+  summaryMetricValue: { ...atelierText.cardTitleMd, fontSize: 18 },
+  
+  teaCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, marginBottom: spacing.lg, borderRadius: 26, borderWidth: 1, borderColor: atelierColors.border },
+  teaCardLabel: { ...atelierText.helper, fontSize: 11, color: atelierColors.deepGreen, letterSpacing: 1, marginBottom: spacing.lg },
+  teaCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  teaCardText: { flex: 1 },
+  teaName: { ...atelierText.cardTitleLg, fontSize: 22, marginBottom: 4 },
+  teaIdentity: { ...atelierText.summary, fontSize: 14, marginBottom: 8, fontWeight: '600', color: atelierColors.deepGreen },
+  teaDescription: { ...atelierText.summary, fontSize: 15, lineHeight: 22, color: atelierColors.text },
+  signatureFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: atelierColors.border },
+  signatureFooterArrow: { fontSize: 18, color: atelierColors.deepGreen },
+  
+  supportCard: { backgroundColor: atelierColors.surface, padding: spacing.xl, borderRadius: 24, marginBottom: spacing.lg, borderWidth: 1, borderColor: atelierColors.border },
+  supportTitle: { ...atelierText.cardTitleMd, fontSize: 18, marginBottom: spacing.lg },
+  barChartWrap: { gap: spacing.lg },
+  barItem: { width: '100%' },
+  barHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: spacing.sm },
+  barLabel: { ...atelierText.body, fontSize: 14, color: atelierColors.textMuted },
+  barValue: { ...atelierText.cardTitleMd, fontSize: 18, color: atelierColors.title },
+  barValueMax: { fontSize: 13, color: atelierColors.textSoft, fontWeight: '400' },
+  barTrack: { height: 8, backgroundColor: atelierColors.surfaceMuted, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: atelierColors.border },
+  barFill: { height: '100%', backgroundColor: atelierColors.deepGreen, borderRadius: 4 },
+  
+  insightStack: { gap: spacing.md },
+  insightRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  insightDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: atelierColors.deepGreenSoft, marginTop: 8 },
+  insightText: { ...atelierText.body, flex: 1, lineHeight: 22, color: atelierColors.text },
+  
+  subTitle: { ...atelierText.cardTitleMd, marginTop: spacing.xl, marginBottom: spacing.md, color: atelierColors.title },
+  historyRow: { backgroundColor: atelierColors.surface, borderWidth: 1, borderColor: atelierColors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderRadius: 24, marginBottom: spacing.md, gap: spacing.md },
+  historyTextWrap: { flex: 1 },
+  historyDate: { ...atelierText.helper, fontSize: 13, color: atelierColors.deepGreen, marginBottom: 4, letterSpacing: 0.5 },
+  historyMemo: { ...atelierText.bodyMuted, lineHeight: 22 },
+  historyData: { flexDirection: 'row', gap: 8 },
+  historyBadge: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  historyBadgeText: { ...atelierText.pill, color: atelierColors.textMuted, fontSize: 11 },
+  emptyCard: { backgroundColor: atelierColors.surfaceMuted, borderWidth: 1, borderColor: atelierColors.border, padding: spacing.xl, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { ...atelierText.bodyMuted, textAlign: 'center' },
+  detailHint: { ...atelierText.helper, color: atelierColors.textMuted, fontWeight: '600' },
 });
